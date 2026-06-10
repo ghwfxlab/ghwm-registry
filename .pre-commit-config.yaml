@@ -1,0 +1,25 @@
+---
+repos:
+  - repo: local
+    hooks:
+      - id: workflow-package-version-tests
+        name: Run workflow package version tests
+        entry: make script-tests
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+      - id: workflow-package-version-sync
+        name: Patch changed workflow package versions
+        entry: python3 scripts/workflow_package_versions.py fix-staged
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
+  - repo: local
+    hooks:
+      - id: super-linter
+        name: super-linter
+        language: system
+        entry: make super-linter-fix
+        pass_filenames: false
