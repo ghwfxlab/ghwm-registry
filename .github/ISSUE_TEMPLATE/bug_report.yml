@@ -1,0 +1,73 @@
+---
+name: Bug Report
+description: Report a bug in the ghwm-marketplace
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thank you for taking the time to report a bug.
+        Please fill out the sections below to help us reproduce and fix the issue.
+
+  - type: textarea
+    id: description
+    attributes:
+      label: Description
+      description: A clear and concise description of the bug.
+      placeholder: Describe what happened.
+    validations:
+      required: true
+
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: Steps to reproduce the behavior.
+      placeholder: |
+        1. Install or update the affected workflow
+        2. Trigger the workflow in GitHub Actions
+        3. See the unexpected behavior
+    validations:
+      required: true
+
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected behavior
+      description: What you expected to happen.
+    validations:
+      required: true
+
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior
+      description: What actually happened. Include error messages or logs if available.
+    validations:
+      required: true
+
+  - type: input
+    id: version
+    attributes:
+      label: Workflow version / ref
+      description: The tag, branch, or commit you are using.
+      placeholder: "e.g. v1.0.0 or main"
+
+  - type: dropdown
+    id: environment
+    attributes:
+      label: Environment
+      options:
+        - GitHub-hosted runner
+        - Self-hosted runner
+        - Local validation
+        - Not sure
+    validations:
+      required: true
+
+  - type: textarea
+    id: context
+    attributes:
+      label: Additional context
+      description: Any other context, screenshots, or logs.
