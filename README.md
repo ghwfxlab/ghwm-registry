@@ -1,6 +1,6 @@
 # ghwm-marketplace
 
-A private marketplace repository for ghwm (GitHub Workflow Manager).
+A marketplace repository for ghwm (GitHub Workflow Manager).
 
 This repository contains:
 - **Astro UI (`src/ui/`)**: The marketplace UI build with Astro.
