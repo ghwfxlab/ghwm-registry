@@ -1,0 +1,97 @@
+---
+interface Props {
+  activeTab?: 'explore' | 'registry' | 'official' | 'docs' | 'cli';
+  searchPlaceholder?: string;
+}
+
+const { activeTab = 'explore', searchPlaceholder = 'Search...' } = Astro.props;
+
+// Helper to determine classes based on active state
+const getLinkClass = (tab: string) => {
+  const base = "font-body-sm text-body-sm transition-colors px-sm py-xs rounded duration-100 active:scale-95";
+  if (activeTab === tab) {
+    return `${base} text-primary border-b-2 border-primary rounded-none pb-1 font-semibold`;
+  }
+  return `${base} text-on-surface-variant hover:text-primary hover:bg-surface-container`;
+};
+---
+
+<header class="bg-surface w-full top-0 sticky border-b border-outline-variant z-50">
+  <div class="flex justify-between items-center px-lg py-md max-w-7xl mx-auto w-full">
+    <!-- Brand Logo -->
+    <div class="flex items-center gap-lg">
+      <a href="/" class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-sm hover:opacity-90 transition-opacity">
+        <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">terminal</span>
+        <span>GHWM</span>
+      </a>
+
+      <!-- Desktop Navigation -->
+      <nav class="hidden font-body-lg md:flex gap-md items-center">
+        <a class={getLinkClass('explore')} href="/">Explore</a>
+        <a class={getLinkClass('registry')} href="/registry">Registry</a>
+        <a class={getLinkClass('official')} href="/official">Official</a>
+        <a class={getLinkClass('docs')} href="/docs">Docs</a>
+        <a class={getLinkClass('cli')} href="/cli">CLI</a>
+      </nav>
+    </div>
+
+    <!-- Search Bar & Controls -->
+    <div class="flex items-center gap-md">
+      <div class="hidden md:flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus">
+        <span class="material-symbols-outlined text-outline text-[18px] mr-2">search</span>
+        <input 
+          type="text" 
+          class="bg-transparent border-none outline-none text-body-sm font-body-sm text-on-surface w-48 focus:ring-0 p-0 placeholder-outline" 
+          placeholder={searchPlaceholder} 
+        />
+      </div>
+
+      <!-- Mobile Menu Toggle Button (For high-fidelity responsiveness) -->
+      <button 
+        id="mobile-menu-toggle" 
+        class="md:hidden flex items-center justify-center p-sm rounded-default text-on-surface-variant hover:text-primary hover:bg-surface-container transition-colors active:scale-95"
+        aria-label="Toggle Navigation Menu"
+      >
+        <span class="material-symbols-outlined text-[24px]">menu</span>
+      </button>
+    </div>
+  </div>
+
+  <!-- Mobile Drawer Menu (Hidden by default, toggled via script below) -->
+  <div id="mobile-menu" class="hidden md:hidden w-full border-t border-outline-variant bg-surface px-lg py-md flex flex-col gap-sm">
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'explore' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/">Explore</a>
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'registry' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/registry">Registry</a>
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'official' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/official">Official</a>
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'docs' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/docs">Docs</a>
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'cli' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/cli">CLI</a>
+    
+    <!-- Mobile Search -->
+    <div class="flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus mt-xs">
+      <span class="material-symbols-outlined text-outline text-[18px] mr-2">search</span>
+      <input 
+        type="text" 
+        class="bg-transparent border-none outline-none text-body-sm font-body-sm text-on-surface w-full focus:ring-0 p-0 placeholder-outline" 
+        placeholder={searchPlaceholder} 
+      />
+    </div>
+  </div>
+</header>
+
+<script>
+  // Simple, high-performance vanilla JS to toggle the mobile menu drawer
+  const toggleBtn = document.getElementById('mobile-menu-toggle');
+  const mobileMenu = document.getElementById('mobile-menu');
+
+  if (toggleBtn && mobileMenu) {
+    toggleBtn.addEventListener('click', () => {
+      const isHidden = mobileMenu.classList.contains('hidden');
+      if (isHidden) {
+        mobileMenu.classList.remove('hidden');
+        toggleBtn.querySelector('span')!.textContent = 'close';
+      } else {
+        mobileMenu.classList.add('hidden');
+        toggleBtn.querySelector('span')!.textContent = 'menu';
+      }
+    });
+  }
+</script>
