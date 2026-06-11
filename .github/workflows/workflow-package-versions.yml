@@ -28,6 +28,7 @@ jobs:
         with:
           fetch-depth: 0
           ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
 
       - name: Set up Python
         uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
@@ -46,7 +47,7 @@ jobs:
         continue-on-error: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
+        run: | # zizmor: ignore[template-injection]
           python scripts/workflow_package_versions.py check-range \
             --base-ref "origin/${{ github.event.pull_request.base.ref }}" \
             --head-ref "HEAD" \
