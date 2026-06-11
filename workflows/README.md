@@ -27,5 +27,5 @@ Each workflow package can install:
 
 | Workflow | Description | Docs |
 | --- | --- | --- |
-| `auto-assign-pr` | Automatically add pull-request reviewers and assignees | [Readme](auto-assign-pr/README.md) |
-| `super-linter` | Code linting using Super-Linter and pre-commit hooks | [Readme](super-linter/README.md) |
+| `auto-assign-pr` | Automatically add pull-request reviewers and assignees using [kentaro-m/auto-assign-action](https://github.com/kentaro-m/auto-assign-action) | [Readme](auto-assign-pr/README.md) |
+| `super-linter` | Code linting using [Super-Linter](https://github.com/super-linter/super-linter) and pre-commit hooks | [Readme](super-linter/README.md) |
