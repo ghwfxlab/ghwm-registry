@@ -1,0 +1,141 @@
+---
+name: Validate Workflow Package Versions
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/workflow-package-versions.yml'
+      - '.pre-commit-config.yaml'
+      - 'scripts/workflow_package_versions.py'
+      - 'workflows/**'
+
+permissions: {}
+
+jobs:
+  validate:
+    name: Check Workflow Package Versions
+    runs-on: ubuntu-slim
+    permissions:
+      contents: read
+      issues: write
+      packages: read
+      pull-requests: write
+    steps:
+      - name: Checkout The Source Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          fetch-depth: 0
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@a309ff8b426b58ec0e2a45f0f869d46889d02405 # v6.2.0
+        with:
+          python-version: '3.12'
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+          registry-url: https://npm.pkg.github.com
+          scope: '@pljanicki'
+
+      - name: Validate changed package versions
+        id: validate
+        continue-on-error: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python scripts/workflow_package_versions.py check-range \
+            --base-ref "origin/${{ github.event.pull_request.base.ref }}" \
+            --head-ref "HEAD" \
+            --report-path "${RUNNER_TEMP}/workflow-package-version-report.json"
+
+      - name: Update pull request comment
+        if: always()
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
+        env:
+          REPORT_PATH: ${{ runner.temp }}/workflow-package-version-report.json
+        with:
+          script: |
+            const fs = require('fs');
+            const marker = '<!-- ghwm-package-version-check -->';
+            const newline = '\n';
+            const emptyReport = { checked: [], outdated: [] };
+            const commentTitle = '## Workflow package versions need an update';
+            const commentSummary =
+              'These changed workflow packages are not ahead of the latest published version:';
+            const tableHeader = '| Workflow | Package | Published | Local version |';
+            const tableDivider = '| --- | --- | --- | --- |';
+            const patchReleaseHelp =
+              'If this should be a patch release, run `make setup-precommit` ' +
+              'to install the pre-commit hook locally, then rerun the commit.';
+            const manualBumpHelp =
+              'For a minor or major release, bump `workflows/<name>/package.json` manually before pushing again.';
+            const reportPath = process.env.REPORT_PATH;
+            const report = fs.existsSync(reportPath)
+              ? JSON.parse(fs.readFileSync(reportPath, 'utf8'))
+              : emptyReport;
+            const outdated = report.outdated || [];
+
+            const { owner, repo } = context.repo;
+            const issueNumber = context.issue.number;
+            const repoContext = { owner, repo };
+            const issueCommentContext = { ...repoContext, issue_number: issueNumber };
+            const comments = await github.paginate(github.rest.issues.listComments, {
+              ...issueCommentContext,
+              per_page: 100,
+            });
+
+            const existing = comments.find((comment) => comment.body && comment.body.includes(marker));
+
+            if (outdated.length === 0) {
+              if (existing) {
+                await github.rest.issues.deleteComment({
+                  ...repoContext,
+                  comment_id: existing.id,
+                });
+              }
+              return;
+            }
+
+            const rows = outdated
+              .map(
+                (entry) =>
+                  `| \`${entry.workflow}\` | \`${entry.package_name}\` | ` +
+                  `\`${entry.published_version}\` | \`${entry.local_version}\` |`,
+              )
+              .join(newline);
+
+            const body = [
+              marker,
+              commentTitle,
+              '',
+              commentSummary,
+              '',
+              tableHeader,
+              tableDivider,
+              rows,
+              '',
+              patchReleaseHelp,
+              manualBumpHelp,
+            ].join(newline);
+
+            if (existing) {
+              await github.rest.issues.updateComment({
+                ...repoContext,
+                comment_id: existing.id,
+                body,
+              });
+              return;
+            }
+
+            await github.rest.issues.createComment({
+              ...issueCommentContext,
+              body,
+            });
+
+      - name: Fail when workflow package versions are stale
+        if: steps.validate.outcome == 'failure'
+        run: exit 1
