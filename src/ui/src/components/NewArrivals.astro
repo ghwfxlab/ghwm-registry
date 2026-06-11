@@ -1,0 +1,39 @@
+---
+// Placeholder count for New Arrivals skeleton loaders
+const skeletonCount = Array.from({ length: 5 });
+---
+
+<!-- New Arrivals Section (With high-fidelity skeleton placeholders based on Material Tailwind) -->
+<section class="flex flex-col gap-md">
+  <div class="flex justify-between items-end border-b border-outline-variant pb-sm mb-xs">
+    <h2 class="font-headline-lg text-headline-lg flex items-center gap-sm">
+      <span class="material-symbols-outlined text-primary">new_releases</span>
+      New Arrivals
+    </h2>
+    <span class="font-code-sm text-code-sm text-on-surface-variant">Live registry updates</span>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-gutter">
+    {skeletonCount.map(() => (
+      <div class="card-surface rounded-lg p-md flex flex-col gap-sm animate-pulse border border-outline-variant border-opacity-40">
+        <!-- Icon and Score Skeletons -->
+        <div class="flex justify-between items-start gap-xs">
+          <div class="w-8 h-8 bg-surface-container-highest border border-outline-variant border-opacity-30 rounded shrink-0"></div>
+          <div class="w-10 h-5 bg-surface-container-highest rounded-default shrink-0"></div>
+        </div>
+        
+        <!-- Headline and Subtitle Skeletons -->
+        <div class="mt-xs space-y-2">
+          <div class="h-4 bg-surface-container-highest rounded-default w-3/4"></div>
+          <div class="h-3 bg-surface-container-high rounded-default w-1/2"></div>
+        </div>
+        
+        <!-- Tags Skeletons -->
+        <div class="flex gap-xs mt-auto pt-sm flex-wrap">
+          <div class="h-4 bg-surface-container-high rounded-default w-8"></div>
+          <div class="h-4 bg-surface-container-high rounded-default w-12"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>
