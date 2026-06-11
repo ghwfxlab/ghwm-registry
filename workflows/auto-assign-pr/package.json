@@ -1,0 +1,13 @@
+{
+    "name": "@pljanicki/ghwm-auto-assign-pr",
+    "version": "1.0.0",
+    "description": "Automatically add pull request reviewers and assignees",
+    "files": [
+        "auto-assign-pr.yaml",
+        "config/",
+        "workflow.yml"
+    ],
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    }
+}

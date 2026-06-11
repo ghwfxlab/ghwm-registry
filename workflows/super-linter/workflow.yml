@@ -1,0 +1,21 @@
+---
+name: super-linter
+files:
+  - source: super-linter.yaml
+    target: .github/workflows/super-linter.yaml
+  - source: config/super-linter.env
+    target: .github/super-linter.env
+  - source: config/super-linter-fix.env
+    target: .github/super-linter-fix.env
+  - source: config/linters/.yaml-lint.yml
+    target: .github/linters/.yaml-lint.yml
+  - source: config/linters/.markdown-lint.yml
+    target: .github/linters/.markdown-lint.yml
+  - source: config/linters/actionlint.yml
+    target: .github/linters/actionlint.yml
+  - source: config/linters/.gitleaks.toml
+    target: .github/linters/.gitleaks.toml
+  - source: config/linters/.textlintrc
+    target: .github/linters/.textlintrc
+  - source: config/linters/.textlintignore
+    target: .github/linters/.textlintignore
