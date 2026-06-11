@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-description: Suggest a new feature or improvement for the ghwm-marketplace
+description: Suggest a new workflow, feature, or improvement for the ghwm-marketplace packages
 title: "[Feature]: "
 labels: ["enhancement"]
 body:
@@ -39,12 +39,10 @@ body:
       label: Area
       description: Which part of the project does this relate to?
       options:
-        - Workflow templates
-        - Triggering / permissions
-        - Installation / updates
+        - auto-assign-pr workflow
+        - super-linter workflow
+        - New workflow request
         - Documentation
-        - Release / versioning
-        - Security
         - Other
 
   - type: textarea
