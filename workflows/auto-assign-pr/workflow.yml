@@ -1,0 +1,7 @@
+---
+name: auto-assign-pr
+files:
+  - source: auto-assign-pr.yaml
+    target: .github/workflows/auto-assign-pr.yaml
+  - source: config/auto_assign.yaml
+    target: .github/auto_assign.yaml

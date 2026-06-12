@@ -1,0 +1,7 @@
+{
+    "name": "ghwm-marketplace",
+    "private": true,
+    "workspaces": [
+        "workflows/*"
+    ]
+}

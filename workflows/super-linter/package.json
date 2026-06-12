@@ -1,0 +1,13 @@
+{
+    "name": "@pljanicki/ghwm-super-linter",
+    "version": "1.0.0",
+    "description": "Code linting workflow using Super-Linter",
+    "files": [
+        "super-linter.yaml",
+        "workflow.yml",
+        "config/"
+    ],
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    }
+}

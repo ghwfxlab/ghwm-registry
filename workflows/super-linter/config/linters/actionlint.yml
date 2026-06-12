@@ -1,0 +1,12 @@
+---
+paths:
+  .github/workflows/**/*.lock.yml:
+    # Generated lock files are compiled artifacts and are not maintained by hand.
+    ignore:
+      - '.+'
+  .github/workflows/**/*.{yml,yaml}:
+    ignore:
+      - 'shellcheck reported issue in this script: SC2129:.+'
+      - 'shellcheck reported issue in this script: SC1003:.+'
+      - 'shellcheck reported issue in this script: SC2016:.+'
+      - 'shellcheck reported issue in this script: SC2086:.+'

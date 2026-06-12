@@ -1,0 +1,5 @@
+.git/
+.github/workflows/*.md
+.github/workflows/*.lock.yml
+.venv/
+node_modules/

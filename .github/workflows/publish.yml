@@ -1,0 +1,101 @@
+---
+name: Publish Workflow Packages
+
+on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/publish.yml'
+      - '.npmrc'
+      - 'package.json'
+      - 'workflows/**'
+
+permissions: {}
+
+concurrency:
+  group: publish-workflow-packages
+  cancel-in-progress: false
+
+jobs:
+  discover:
+    name: Discover Packages
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    outputs:
+      has_packages: ${{ steps.discover.outputs.has_packages }}
+      matrix: ${{ steps.discover.outputs.matrix }}
+    steps:
+      - name: Checkout The Source Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Discover Workspaces
+        id: discover
+        run: |
+          python - <<'PY' >> "$GITHUB_OUTPUT"
+          import json
+          from pathlib import Path
+
+          workspaces = [
+              {"path": str(package_json.parent)}
+              for package_json in sorted(Path("workflows").glob("*/package.json"))
+          ]
+
+          print(f"has_packages={'true' if workspaces else 'false'}")
+          print(f"matrix={json.dumps({'include': workspaces})}")
+          PY
+
+  publish:
+    name: Publish Package
+    runs-on: ubuntu-24.04
+    needs: discover
+    if: needs.discover.outputs.has_packages == 'true'
+    permissions:
+      contents: read
+      packages: write
+    strategy:
+      fail-fast: false
+      matrix: ${{ fromJSON(needs.discover.outputs.matrix) }}
+    steps:
+      - name: Checkout The Source Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v6.4.0
+        with:
+          node-version: '22'
+          registry-url: https://npm.pkg.github.com
+          scope: '@pljanicki'
+
+      - name: Read Package Metadata
+        id: metadata
+        run: | # zizmor: ignore[template-injection]
+          package_path='${{ matrix.path }}/package.json'
+          package_name=$(node -p "require('./${package_path}').name")
+          package_version=$(node -p "require('./${package_path}').version")
+          echo "name=${package_name}" >> "$GITHUB_OUTPUT"
+          echo "version=${package_version}" >> "$GITHUB_OUTPUT"
+
+      - name: Check Published Version
+        id: published
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: | # zizmor: ignore[template-injection]
+          if npm view "${{ steps.metadata.outputs.name }}@${{ steps.metadata.outputs.version }}" version \
+            --registry=https://npm.pkg.github.com >/dev/null 2>&1; then
+            echo "should_publish=false" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_publish=true" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish Package
+        if: steps.published.outputs.should_publish == 'true'
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: | # zizmor: ignore[template-injection, use-trusted-publishing]
+          npm publish --workspace '${{ matrix.path }}'
