@@ -1,0 +1,49 @@
+---
+import '../styles/global.css';
+import MenuBar from '../components/MenuBar.astro';
+import Footer from '../components/Footer.astro';
+
+interface Props {
+  title?: string;
+  activeTab?: 'explore' | 'registry' | 'official' | 'docs' | 'cli';
+  searchPlaceholder?: string;
+}
+
+const {
+  title = "GHWM Marketplace - Manage GitHub Workflows",
+  activeTab = 'explore',
+  searchPlaceholder = 'Search workflows...'
+} = Astro.props;
+---
+
+<!DOCTYPE html>
+<html class="dark" lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="viewport" content="width=device-width" />
+    <meta name="generator" content={Astro.generator} />
+    <title>{title}</title>
+
+    <!-- Design System Fonts (Inter & JetBrains Mono) -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Fira+Sans:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&family=Source+Code+Pro:ital,wght@0,200..900;1,200..900&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Material Symbols Outlined for UI Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" rel="stylesheet">
+  </head>
+  <body class="font-body-lg text-body-lg min-h-screen flex flex-col bg-background text-on-background antialiased">
+    <!-- Shared Top Menu Bar Component -->
+    <MenuBar activeTab={activeTab} searchPlaceholder={searchPlaceholder} />
+
+    <!-- Content Slot -->
+    <slot />
+
+    <!-- Shared Footer Component -->
+    <Footer />
+  </body>
+</html>
