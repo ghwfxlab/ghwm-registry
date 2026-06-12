@@ -468,6 +468,79 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
         self.assertEqual(exit_code, 1)
         self.assertIn("boom", stderr.getvalue())
 
+    def test_get_workflow_name_from_path_when_path_belongs_to_workflow(self) -> None:
+        # Arrange
+        path = "workflows/super-linter/package.json"
+
+        # Act
+        name = workflow_package_versions._get_workflow_name_from_path(path)
+
+        # Assert
+        self.assertEqual(name, "super-linter")
+
+    def test_get_workflow_name_from_path_when_path_is_outside_workflows_directory(self) -> None:
+        # Arrange
+        path = "src/ui/package.json"
+
+        # Act
+        name = workflow_package_versions._get_workflow_name_from_path(path)
+
+        # Assert
+        self.assertIsNone(name)
+
+    def test_check_package_version_when_package_is_outdated(self) -> None:
+        # Arrange
+        package_dir = Path("/tmp/workflows") / WORKFLOW_NAME
+        package = workflow_package_versions.WorkflowPackage(
+            workflow_name=WORKFLOW_NAME,
+            package_dir=package_dir,
+            package_json_path=package_dir / "package.json",
+            package_name=WORKFLOW_PACKAGE_NAME,
+            version=INITIAL_VERSION,
+            published_files=PUBLISHED_FILES,
+        )
+
+        with (
+            mock.patch.object(
+                workflow_package_versions,
+                "_read_published_version",
+                return_value=INITIAL_VERSION,
+            ),
+        ):
+            # Act
+            entry = workflow_package_versions._check_package_version(package, TOKEN)
+
+        # Assert
+        self.assertEqual(entry["state"], "outdated")
+        self.assertEqual(entry["published_version"], INITIAL_VERSION)
+
+    def test_check_package_version_when_package_is_new(self) -> None:
+        # Arrange
+        package_dir = Path("/tmp/workflows") / WORKFLOW_NAME
+        package = workflow_package_versions.WorkflowPackage(
+            workflow_name=WORKFLOW_NAME,
+            package_dir=package_dir,
+            package_json_path=package_dir / "package.json",
+            package_name=WORKFLOW_PACKAGE_NAME,
+            version=INITIAL_VERSION,
+            published_files=PUBLISHED_FILES,
+        )
+
+        with (
+            mock.patch.object(
+                workflow_package_versions,
+                "_read_published_version",
+                return_value=None,
+            ),
+        ):
+            # Act
+            entry = workflow_package_versions._check_package_version(package, TOKEN)
+
+        # Assert
+        self.assertEqual(entry["state"], "new")
+        self.assertEqual(entry["published_version"], "")
+
 
 if __name__ == "__main__":
     unittest.main()
+

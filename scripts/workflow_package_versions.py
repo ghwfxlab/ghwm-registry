@@ -125,20 +125,27 @@ def _load_workflow_package(repo_root: Path, workflow_name: str) -> WorkflowPacka
     )
 
 
+def _get_workflow_name_from_path(changed_path: str) -> str | None:
+    path = Path(changed_path)
+    if len(path.parts) >= 3 and path.parts[0] == "workflows":
+        return path.parts[1]
+    return None
+
+
 def _changed_packages_from_paths(repo_root: Path, changed_paths: list[str]) -> list[WorkflowPackage]:
     packages_by_name: dict[str, WorkflowPackage] = {}
     publishable: dict[str, WorkflowPackage] = {}
     for changed_path in changed_paths:
-        path = Path(changed_path)
-        if len(path.parts) < 3 or path.parts[0] != "workflows":
+        workflow_name = _get_workflow_name_from_path(changed_path)
+        if workflow_name is None:
             continue
 
-        workflow_name = path.parts[1]
         package = packages_by_name.get(workflow_name)
         if package is None:
             package = _load_workflow_package(repo_root, workflow_name)
             packages_by_name[workflow_name] = package
 
+        path = Path(changed_path)
         relative_path = Path(*path.parts[2:]).as_posix()
         if package.tracks_path(relative_path):
             publishable[workflow_name] = package
@@ -232,6 +239,13 @@ def _stage_path(repo_root: Path, path: Path) -> None:
         raise RuntimeError(f"git add failed for {path.relative_to(repo_root)}:\n{result.stderr.strip()}")
 
 
+def _patch_package(repo_root: Path, package: WorkflowPackage, published_version: str) -> str:
+    new_version = _next_patch_version(published_version)
+    _write_package_version(package, new_version)
+    _stage_path(repo_root, package.package_json_path)
+    return new_version
+
+
 def _write_report(report_path: Path | None, report: dict[str, object]) -> None:
     if report_path is None:
         return
@@ -266,9 +280,7 @@ def fix_staged(repo_root: Path) -> int:
             )
             continue
 
-        new_version = _next_patch_version(published_version)
-        _write_package_version(package, new_version)
-        _stage_path(repo_root, package.package_json_path)
+        new_version = _patch_package(repo_root, package, published_version)
         patched = True
         print(
             f"Patched {package.package_name} from {package.version} to {new_version} "
@@ -280,6 +292,29 @@ def fix_staged(repo_root: Path) -> int:
         return 1
 
     return 0
+
+
+def _check_package_version(package: WorkflowPackage, token: str) -> dict[str, str]:
+    _parse_release_version(package.version)
+    published_version = _read_published_version(package.package_name, token)
+
+    state = "new"
+    entry = {
+        "workflow": package.workflow_name,
+        "package_name": package.package_name,
+        "local_version": package.version,
+        "published_version": published_version or "",
+        "state": state,
+    }
+
+    if published_version is not None:
+        state = "ok"
+        if _parse_release_version(package.version) <= _parse_release_version(published_version):
+            state = "outdated"
+        entry["published_version"] = published_version
+        entry["state"] = state
+
+    return entry
 
 
 def check_range(repo_root: Path, *, base_ref: str, head_ref: str, report_path: Path | None) -> int:
@@ -302,25 +337,7 @@ def check_range(repo_root: Path, *, base_ref: str, head_ref: str, report_path: P
     outdated: list[dict[str, str]] = []
 
     for package in changed_packages:
-        _parse_release_version(package.version)
-        published_version = _read_published_version(package.package_name, token)
-
-        state = "new"
-        entry = {
-            "workflow": package.workflow_name,
-            "package_name": package.package_name,
-            "local_version": package.version,
-            "published_version": published_version or "",
-            "state": state,
-        }
-
-        if published_version is not None:
-            state = "ok"
-            if _parse_release_version(package.version) <= _parse_release_version(published_version):
-                state = "outdated"
-            entry["published_version"] = published_version
-            entry["state"] = state
-
+        entry = _check_package_version(package, token)
         checked.append(entry)
         if entry["state"] == "outdated":
             outdated.append(entry)
