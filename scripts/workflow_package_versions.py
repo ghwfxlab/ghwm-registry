@@ -317,6 +317,21 @@ def _check_package_version(package: WorkflowPackage, token: str) -> dict[str, st
     return entry
 
 
+def _check_packages(
+    changed_packages: list[WorkflowPackage], token: str
+) -> tuple[list[dict[str, str]], list[dict[str, str]]]:
+    checked: list[dict[str, str]] = []
+    outdated: list[dict[str, str]] = []
+
+    for package in changed_packages:
+        entry = _check_package_version(package, token)
+        checked.append(entry)
+        if entry["state"] == "outdated":
+            outdated.append(entry)
+
+    return checked, outdated
+
+
 def check_range(repo_root: Path, *, base_ref: str, head_ref: str, report_path: Path | None) -> int:
     changed_packages = _changed_packages_from_paths(repo_root, _range_paths(repo_root, base_ref=base_ref, head_ref=head_ref))
     report: dict[str, object] = {"checked": [], "outdated": []}
@@ -333,14 +348,7 @@ def check_range(repo_root: Path, *, base_ref: str, head_ref: str, report_path: P
             "Set GH_TOKEN or GITHUB_TOKEN in CI."
         )
 
-    checked: list[dict[str, str]] = []
-    outdated: list[dict[str, str]] = []
-
-    for package in changed_packages:
-        entry = _check_package_version(package, token)
-        checked.append(entry)
-        if entry["state"] == "outdated":
-            outdated.append(entry)
+    checked, outdated = _check_packages(changed_packages, token)
 
     report["checked"] = checked
     report["outdated"] = outdated

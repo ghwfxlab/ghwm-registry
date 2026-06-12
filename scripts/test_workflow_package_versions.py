@@ -540,7 +540,36 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
         self.assertEqual(entry["state"], "new")
         self.assertEqual(entry["published_version"], "")
 
+    def test_check_packages_when_given_list_of_packages(self) -> None:
+        # Arrange
+        package_dir = Path("/tmp/workflows") / WORKFLOW_NAME
+        package = workflow_package_versions.WorkflowPackage(
+            workflow_name=WORKFLOW_NAME,
+            package_dir=package_dir,
+            package_json_path=package_dir / "package.json",
+            package_name=WORKFLOW_PACKAGE_NAME,
+            version=INITIAL_VERSION,
+            published_files=PUBLISHED_FILES,
+        )
+
+        with (
+            mock.patch.object(
+                workflow_package_versions,
+                "_read_published_version",
+                return_value=INITIAL_VERSION,
+            ),
+        ):
+            # Act
+            checked, outdated = workflow_package_versions._check_packages([package], TOKEN)
+
+        # Assert
+        self.assertEqual(len(checked), 1)
+        self.assertEqual(len(outdated), 1)
+        self.assertEqual(checked[0]["state"], "outdated")
+        self.assertEqual(outdated[0]["state"], "outdated")
+
 
 if __name__ == "__main__":
     unittest.main()
+
 
