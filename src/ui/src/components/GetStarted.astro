@@ -24,29 +24,29 @@ const installCommands = {
       <div class="absolute -top-5 left-2 font-mono uppercase font-bold tracking-wider text-[9px] text-primary select-none px-1.5">
         ★ RECOMMENDED
       </div>
-      
+
       <!-- Button Group (Top) - Parent holds common styles for clean simplicity -->
       <div class="flex items-center w-full border border-outline-variant rounded-default bg-surface [&_button]:flex-1 [&_button]:py-2 [&_button]:font-mono [&_button]:text-xs [&_button]:hover:bg-surface-container [&_button]:transition-all [&_button]:cursor-pointer [&_button]:whitespace-nowrap [&_button]:text-center [&_button]:border-r [&_button]:border-outline-variant [&_button:last-child]:border-r-0 [&_button:first-child]:rounded-l-default [&_button:last-child]:rounded-r-default h-[36px] overflow-hidden" id="method-button-group">
-        <button 
-          data-method="uv-pinned" 
+        <button
+          data-method="uv-pinned"
           class="method-btn bg-surface-container-low text-primary font-bold"
         >
           uv (pinned)
         </button>
-        <button 
-          data-method="uv" 
+        <button
+          data-method="uv"
           class="method-btn text-on-surface-variant"
         >
           uv
         </button>
-        <button 
-          data-method="pipx" 
+        <button
+          data-method="pipx"
           class="method-btn text-on-surface-variant"
         >
           pipx
         </button>
-        <button 
-          data-method="pip" 
+        <button
+          data-method="pip"
           class="method-btn text-on-surface-variant"
         >
           pip
@@ -61,10 +61,10 @@ const installCommands = {
           {installCommands['uv-pinned']}
         </code>
       </div>
-      
-      <button 
-        id="copy-command-btn" 
-        aria-label="Copy install command" 
+
+      <button
+        id="copy-command-btn"
+        aria-label="Copy install command"
         class="text-outline hover:text-on-surface transition-colors cursor-pointer rounded bg-[#010409] flex items-center justify-center h-[32px] w-[56px] shrink-0"
       >
         <span id="copy-icon" class="material-symbols-outlined text-[16px] select-none">content_copy</span>
@@ -107,12 +107,12 @@ const installCommands = {
       const textToCopy = codeDisplay.textContent.trim();
       try {
         await navigator.clipboard.writeText(textToCopy);
-        
+
         // Switch to checkmark state
         copyIcon.textContent = 'check';
         copyIcon.classList.remove('text-outline');
         copyIcon.classList.add('text-secondary');
-        
+
         // Revert icon and style after 2s
         setTimeout(() => {
           copyIcon.textContent = 'content_copy';
