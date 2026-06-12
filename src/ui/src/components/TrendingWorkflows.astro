@@ -1,0 +1,81 @@
+---
+---
+<!-- Trending Workflows Section (10 items, 5 per row max on desktop, 2 per row on mobile) -->
+<section class="flex flex-col gap-md">
+  <div class="flex justify-between items-end border-b border-outline-variant pb-sm mb-xs">
+    <h2 class="font-headline-lg text-headline-lg flex items-center gap-sm">
+      <span class="material-symbols-outlined text-tertiary">local_fire_department</span>
+      Trending Workflows
+    </h2>
+    <a class="font-body-sm text-body-sm text-primary hover:underline" href="#">View all &rarr;</a>
+  </div>
+
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-gutter">
+    <!-- Card 1: Real Content with Lorem Ipsum -->
+    <div class="card-surface rounded-lg p-md flex flex-col gap-sm transition-all group cursor-pointer h-full">
+      <div class="flex justify-between items-start gap-xs">
+        <div class="w-8 h-8 bg-surface-container-high border border-outline-variant rounded flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-primary text-[18px]">fact_check</span>
+        </div>
+        <div class="font-code-sm text-code-sm bg-surface-container-low text-secondary border border-secondary border-opacity-35 px-1.5 py-0.5 rounded flex items-center gap-0.5 shrink-0 scale-90">
+          <span class="material-symbols-outlined text-[10px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+          98
+        </div>
+      </div>
+
+      <div class="mt-xs">
+        <h3 class="font-headline-md text-[14px] leading-[20px] font-semibold group-hover:text-primary transition-colors line-clamp-1">
+          Universal Monorepo Linter
+        </h3>
+        <p class="font-body-sm text-[12px] leading-[16px] text-on-surface-variant line-clamp-1 mt-0.5 mb-1.5">
+          ghwm/core-linter
+        </p>
+        <p class="font-body-sm text-[11px] leading-[15px] text-on-surface-variant mt-1.5 opacity-80 line-clamp-3">
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
+        </p>
+      </div>
+
+      <div class="flex gap-xs mt-auto pt-sm flex-wrap">
+        <span class="font-code-sm text-[10px] leading-[14px] border border-outline-variant px-1.5 py-0.5 rounded text-outline bg-surface-container-lowest">
+          lint
+        </span>
+        <span class="font-code-sm text-[10px] leading-[14px] border border-outline-variant px-1.5 py-0.5 rounded text-outline bg-surface-container-lowest">
+          typescript
+        </span>
+        <span class="font-code-sm text-[10px] leading-[14px] border border-outline-variant px-1.5 py-0.5 rounded text-outline bg-surface-container-lowest">
+          monorepo
+        </span>
+      </div>
+    </div>
+
+    <!-- Cards 2-10: Skeletons -->
+    {Array.from({ length: 9 }).map(() => (
+      <div class="card-surface rounded-lg p-md flex flex-col gap-sm animate-pulse border border-outline-variant border-opacity-40">
+        <!-- Icon and Score Skeletons -->
+        <div class="flex justify-between items-start gap-xs">
+          <div class="w-8 h-8 bg-surface-container-highest border border-outline-variant border-opacity-30 rounded shrink-0"></div>
+          <div class="w-10 h-5 bg-surface-container-highest rounded-default shrink-0"></div>
+        </div>
+
+        <!-- Headline and Subtitle Skeletons -->
+        <div class="mt-xs space-y-2">
+          <div class="h-4 bg-surface-container-highest rounded-default w-3/4"></div>
+          <div class="h-3 bg-surface-container-high rounded-default w-1/2"></div>
+
+          <!-- Paragraph Loader mimicking Lorem Ipsum description lines -->
+          <div class="space-y-1.5 pt-1.5">
+            <div class="h-2 bg-surface-container-high rounded-default w-full"></div>
+            <div class="h-2 bg-surface-container-high rounded-default w-11/12"></div>
+            <div class="h-2 bg-surface-container-high rounded-default w-4/5"></div>
+          </div>
+        </div>
+
+        <!-- Tags Skeletons -->
+        <div class="flex gap-xs mt-auto pt-sm flex-wrap">
+          <div class="h-4 bg-surface-container-high rounded-default w-8"></div>
+          <div class="h-4 bg-surface-container-high rounded-default w-12"></div>
+        </div>
+      </div>
+    ))}
+  </div>
+</section>

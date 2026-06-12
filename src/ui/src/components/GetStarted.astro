@@ -1,0 +1,127 @@
+---
+// Installation commands from pljanicki/ghwm README
+const installCommands = {
+  'uv': 'uv tool install git+https://github.com/pljanicki/ghwm.git',
+  'uv-pinned': 'uv tool install git+https://github.com/pljanicki/ghwm.git@v1.0.0',
+  'pipx': 'pipx install git+https://github.com/pljanicki/ghwm.git',
+  'pip': 'pip install git+https://github.com/pljanicki/ghwm.git'
+};
+---
+
+<!-- Quick Action Buttons & Interactive Clipboard / Selector -->
+<div class="flex flex-col md:flex-row gap-lg items-center justify-center mt-lg w-full px-md md:px-0 mx-auto">
+  <!-- Get Started (Horizontal element 1) -->
+  <button class="btn-primary font-headline-md text-headline-md px-lg py-md rounded-default shadow-sm flex items-center gap-sm transition-transform active:scale-95 cursor-pointer h-[48px] shrink-0 w-[240px] md:w-auto justify-center">
+    Get Started
+    <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
+  </button>
+
+  <!-- Vertical Container (Horizontal element 2) -->
+  <div class="flex flex-col gap-sm w-full max-w-[420px] md:w-[420px] shrink-0">
+    <!-- Button Group Wrapper (Relative to hold badge) -->
+    <div class="relative w-full mt-4">
+      <!-- Small Recommended badge above "uv (pinned)" button -->
+      <div class="absolute -top-5 left-2 font-mono uppercase font-bold tracking-wider text-[9px] text-primary select-none px-1.5">
+        ★ RECOMMENDED
+      </div>
+
+      <!-- Button Group (Top) - Parent holds common styles for clean simplicity -->
+      <div class="flex items-center w-full border border-outline-variant rounded-default bg-surface [&_button]:flex-1 [&_button]:py-2 [&_button]:font-mono [&_button]:text-xs [&_button]:hover:bg-surface-container [&_button]:transition-all [&_button]:cursor-pointer [&_button]:whitespace-nowrap [&_button]:text-center [&_button]:border-r [&_button]:border-outline-variant [&_button:last-child]:border-r-0 [&_button:first-child]:rounded-l-default [&_button:last-child]:rounded-r-default h-[36px] overflow-hidden" id="method-button-group">
+        <button
+          data-method="uv-pinned"
+          class="method-btn bg-surface-container-low text-primary font-bold"
+        >
+          uv (pinned)
+        </button>
+        <button
+          data-method="uv"
+          class="method-btn text-on-surface-variant"
+        >
+          uv
+        </button>
+        <button
+          data-method="pipx"
+          class="method-btn text-on-surface-variant"
+        >
+          pipx
+        </button>
+        <button
+          data-method="pip"
+          class="method-btn text-on-surface-variant"
+        >
+          pip
+        </button>
+      </div>
+    </div>
+
+    <!-- Interactive Clipboard Box (Bottom) - Flex align & Wordwrap to avoid overlap -->
+    <div class="w-full terminal-bg border border-outline-variant rounded-default px-sm py-2 flex items-center justify-between shadow-sm min-h-[42px] gap-sm group">
+      <div class="flex-1 text-left pr-2 flex items-center">
+        <code id="install-command" class="font-code-md text-code-md text-secondary select-all whitespace-normal break-all">
+          {installCommands['uv-pinned']}
+        </code>
+      </div>
+
+      <button
+        id="copy-command-btn"
+        aria-label="Copy install command"
+        class="text-outline hover:text-on-surface transition-colors cursor-pointer rounded bg-[#010409] flex items-center justify-center h-[32px] w-[56px] shrink-0"
+      >
+        <span id="copy-icon" class="material-symbols-outlined text-[16px] select-none">content_copy</span>
+      </button>
+    </div>
+  </div>
+</div>
+
+<script define:vars={{ installCommands }}>
+  // Select selectors
+  const buttons = document.querySelectorAll('.method-btn');
+  const codeDisplay = document.getElementById('install-command');
+
+  buttons.forEach(button => {
+    button.addEventListener('click', () => {
+      const method = button.getAttribute('data-method');
+      if (method && codeDisplay) {
+        // Update code snippet content using the dynamically bound frontmatter variable
+        codeDisplay.textContent = installCommands[method];
+
+        // Revert active states on buttons
+        buttons.forEach(btn => {
+          btn.classList.remove('bg-surface-container-low', 'text-primary', 'font-bold');
+          btn.classList.add('bg-surface', 'text-on-surface-variant');
+        });
+
+        // Apply active state on clicked button
+        button.classList.remove('bg-surface', 'text-on-surface-variant');
+        button.classList.add('bg-surface-container-low', 'text-primary', 'font-bold');
+      }
+    });
+  });
+
+  // Material Tailwind interactive Clipboard logic
+  const copyBtn = document.getElementById('copy-command-btn');
+  const copyIcon = document.getElementById('copy-icon');
+
+  if (copyBtn && copyIcon && codeDisplay) {
+    copyBtn.addEventListener('click', async () => {
+      const textToCopy = codeDisplay.textContent.trim();
+      try {
+        await navigator.clipboard.writeText(textToCopy);
+
+        // Switch to checkmark state
+        copyIcon.textContent = 'check';
+        copyIcon.classList.remove('text-outline');
+        copyIcon.classList.add('text-secondary');
+
+        // Revert icon and style after 2s
+        setTimeout(() => {
+          copyIcon.textContent = 'content_copy';
+          copyIcon.classList.remove('text-secondary');
+          copyIcon.classList.add('text-outline');
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy CLI command: ', err);
+      }
+    });
+  }
+</script>
