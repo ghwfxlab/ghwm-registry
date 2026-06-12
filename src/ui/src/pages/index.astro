@@ -16,7 +16,7 @@ const skeletonCount = Array.from({ length: 5 });
 <Layout title="GHWM Marketplace - Manage GitHub Workflows" activeTab="explore">
   <!-- Main Content Canvas -->
   <main class="flex-grow w-full max-w-7xl mx-auto px-margin md:px-lg py-2xl flex flex-col gap-2xl">
-    
+
     <!-- Hero Section -->
     <section class="flex flex-col items-center text-center py-xl gap-lg w-full">
       <h1 class="font-display-lg text-display-lg max-w-3xl leading-tight">
@@ -30,9 +30,9 @@ const skeletonCount = Array.from({ length: 5 });
       <div class="w-full max-w-4/5 mt-md">
         <div class="flex items-center card-surface rounded-default px-md py-sm shadow-sm input-focus w-full">
           <span class="material-symbols-outlined text-outline mr-sm">search</span>
-          <input 
-            class="bg-transparent border-none outline-none text-body-lg font-body-lg text-on-surface w-full focus:ring-0 p-0 placeholder-outline" 
-            placeholder="Search linter, ci/cd, deployment..." 
+          <input
+            class="bg-transparent border-none outline-none text-body-lg font-body-lg text-on-surface w-full focus:ring-0 p-0 placeholder-outline"
+            placeholder="Search linter, ci/cd, deployment..."
             type="text"
           />
           <button class="ml-auto font-label-caps text-label-caps bg-surface-container-high px-sm py-xs rounded border border-outline-variant text-outline">
@@ -57,29 +57,29 @@ const skeletonCount = Array.from({ length: 5 });
             <div class="absolute -top-5 left-2 font-mono uppercase font-bold tracking-wider text-[9px] text-primary select-none px-1.5">
               ★ RECOMMENDED
             </div>
-            
+
             <!-- Button Group (Top) - Parent holds common styles for clean simplicity -->
             <div class="flex items-center w-full border border-outline-variant rounded-default bg-surface [&_button]:flex-1 [&_button]:py-2 [&_button]:font-mono [&_button]:text-xs [&_button]:hover:bg-surface-container [&_button]:transition-all [&_button]:cursor-pointer [&_button]:whitespace-nowrap [&_button]:text-center [&_button]:border-r [&_button]:border-outline-variant [&_button:last-child]:border-r-0 [&_button:first-child]:rounded-l-default [&_button:last-child]:rounded-r-default h-[36px] overflow-hidden" id="method-button-group">
-              <button 
-                data-method="uv-pinned" 
+              <button
+                data-method="uv-pinned"
                 class="method-btn bg-surface-container-low text-primary font-bold"
               >
                 uv (pinned)
               </button>
-              <button 
-                data-method="uv" 
+              <button
+                data-method="uv"
                 class="method-btn text-on-surface-variant"
               >
                 uv
               </button>
-              <button 
-                data-method="pipx" 
+              <button
+                data-method="pipx"
                 class="method-btn text-on-surface-variant"
               >
                 pipx
               </button>
-              <button 
-                data-method="pip" 
+              <button
+                data-method="pip"
                 class="method-btn text-on-surface-variant"
               >
                 pip
@@ -94,10 +94,10 @@ const skeletonCount = Array.from({ length: 5 });
                 {installCommands['uv-pinned']}
               </code>
             </div>
-            
-            <button 
-              id="copy-command-btn" 
-              aria-label="Copy install command" 
+
+            <button
+              id="copy-command-btn"
+              aria-label="Copy install command"
               class="text-outline hover:text-on-surface transition-colors cursor-pointer rounded bg-[#010409] flex items-center justify-center h-[32px] w-[56px] shrink-0"
             >
               <span id="copy-icon" class="material-symbols-outlined text-[16px] select-none">content_copy</span>
@@ -129,7 +129,7 @@ const skeletonCount = Array.from({ length: 5 });
               98
             </div>
           </div>
-          
+
           <div class="mt-xs">
             <h3 class="font-headline-md text-[14px] leading-[20px] font-semibold group-hover:text-primary transition-colors line-clamp-1">
               Universal Monorepo Linter
@@ -141,7 +141,7 @@ const skeletonCount = Array.from({ length: 5 });
               Lorem ipsum dolor sit amet, consectetur adipiscing elit. Sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam.
             </p>
           </div>
-          
+
           <div class="flex gap-xs mt-auto pt-sm flex-wrap">
             <span class="font-code-sm text-[10px] leading-[14px] border border-outline-variant px-1.5 py-0.5 rounded text-outline bg-surface-container-lowest">
               lint
@@ -163,12 +163,12 @@ const skeletonCount = Array.from({ length: 5 });
               <div class="w-8 h-8 bg-surface-container-highest border border-outline-variant border-opacity-30 rounded shrink-0"></div>
               <div class="w-10 h-5 bg-surface-container-highest rounded-default shrink-0"></div>
             </div>
-            
+
             <!-- Headline and Subtitle Skeletons -->
             <div class="mt-xs space-y-2">
               <div class="h-4 bg-surface-container-highest rounded-default w-3/4"></div>
               <div class="h-3 bg-surface-container-high rounded-default w-1/2"></div>
-              
+
               <!-- Paragraph Loader mimicking Lorem Ipsum description lines -->
               <div class="space-y-1.5 pt-1.5">
                 <div class="h-2 bg-surface-container-high rounded-default w-full"></div>
@@ -176,7 +176,7 @@ const skeletonCount = Array.from({ length: 5 });
                 <div class="h-2 bg-surface-container-high rounded-default w-4/5"></div>
               </div>
             </div>
-            
+
             <!-- Tags Skeletons -->
             <div class="flex gap-xs mt-auto pt-sm flex-wrap">
               <div class="h-4 bg-surface-container-high rounded-default w-8"></div>
@@ -205,13 +205,13 @@ const skeletonCount = Array.from({ length: 5 });
               <div class="w-8 h-8 bg-surface-container-highest border border-outline-variant border-opacity-30 rounded shrink-0"></div>
               <div class="w-10 h-5 bg-surface-container-highest rounded-default shrink-0"></div>
             </div>
-            
+
             <!-- Headline and Subtitle Skeletons -->
             <div class="mt-xs space-y-2">
               <div class="h-4 bg-surface-container-highest rounded-default w-3/4"></div>
               <div class="h-3 bg-surface-container-high rounded-default w-1/2"></div>
             </div>
-            
+
             <!-- Tags Skeletons -->
             <div class="flex gap-xs mt-auto pt-sm flex-wrap">
               <div class="h-4 bg-surface-container-high rounded-default w-8"></div>
@@ -258,12 +258,12 @@ const skeletonCount = Array.from({ length: 5 });
         const textToCopy = codeDisplay.textContent.trim();
         try {
           await navigator.clipboard.writeText(textToCopy);
-          
+
           // Switch to checkmark state
           copyIcon.textContent = 'check';
           copyIcon.classList.remove('text-outline');
           copyIcon.classList.add('text-secondary');
-          
+
           // Revert icon and style after 2s
           setTimeout(() => {
             copyIcon.textContent = 'content_copy';

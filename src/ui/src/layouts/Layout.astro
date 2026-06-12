@@ -9,10 +9,10 @@ interface Props {
   searchPlaceholder?: string;
 }
 
-const { 
-  title = "GHWM Marketplace - Manage GitHub Workflows", 
-  activeTab = 'explore', 
-  searchPlaceholder = 'Search workflows...' 
+const {
+  title = "GHWM Marketplace - Manage GitHub Workflows",
+  activeTab = 'explore',
+  searchPlaceholder = 'Search workflows...'
 } = Astro.props;
 ---
 
@@ -25,7 +25,7 @@ const {
     <meta name="viewport" content="width=device-width" />
     <meta name="generator" content={Astro.generator} />
     <title>{title}</title>
-    
+
     <!-- Design System Fonts (Inter & JetBrains Mono) -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -39,7 +39,7 @@ const {
   <body class="font-body-lg text-body-lg min-h-screen flex flex-col bg-background text-on-background antialiased">
     <!-- Shared Top Menu Bar Component -->
     <MenuBar activeTab={activeTab} searchPlaceholder={searchPlaceholder} />
-    
+
     <!-- Content Slot -->
     <slot />
 
