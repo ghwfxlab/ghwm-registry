@@ -4,7 +4,7 @@ The `auto-assign-pr` workflow automatically adds pull request reviewers and assi
 
 ## Source of Truth
 
-- Marketplace repository: [pljanicki/ghwm-marketplace](https://github.com/pljanicki/ghwm-marketplace)
+- Registry repository: [ghwfxlab/ghwm-registry](https://github.com/ghwfxlab/ghwm-registry)
 - Workflow source: [`workflows/auto-assign-pr/auto-assign-pr.yaml`](./auto-assign-pr.yaml)
 - Example config: [`workflows/auto-assign-pr/config/auto_assign.yaml`](./config/auto_assign.yaml)
 
@@ -41,7 +41,7 @@ These are the permissions declared by the installed workflow:
 Add to `ghwm.yml` in your repository root:
 
 ```yaml
-source: pljanicki/ghwm-marketplace
+source: ghwfxlab/ghwm-registry
 workflows:
   - name: auto-assign-pr
     version: 1.0.0

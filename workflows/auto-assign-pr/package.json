@@ -1,5 +1,5 @@
 {
-    "name": "@pljanicki/ghwm-auto-assign-pr",
+    "name": "@ghwfxlab/ghwm-auto-assign-pr",
     "version": "1.0.0",
     "description": "Automatically add pull request reviewers and assignees",
     "files": [

@@ -1,5 +1,5 @@
 {
-    "name": "@pljanicki/ghwm-super-linter",
+    "name": "@ghwfxlab/ghwm-super-linter",
     "version": "1.0.0",
     "description": "Code linting workflow using Super-Linter",
     "files": [

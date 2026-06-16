@@ -2,7 +2,7 @@
 
 ## Supported Versions
 
-We actively support and patch the latest release of `ghwm-marketplace` packages.
+We actively support and patch the latest release of `ghwm-registry` packages.
 
 | Version | Supported          |
 | ------- | ------------------ |

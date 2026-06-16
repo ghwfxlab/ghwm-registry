@@ -1,6 +1,6 @@
 ---
 name: Feature Request
-description: Suggest a new workflow, feature, or improvement for the ghwm-marketplace packages
+description: Suggest a new workflow, feature, or improvement for the ghwm-registry packages
 title: "[Feature]: "
 labels: ["enhancement"]
 body:

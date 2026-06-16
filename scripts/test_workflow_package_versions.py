@@ -20,7 +20,7 @@ sys.modules[MODULE_SPEC.name] = workflow_package_versions
 MODULE_SPEC.loader.exec_module(workflow_package_versions)
 
 WORKFLOW_NAME = "super-linter"
-WORKFLOW_PACKAGE_NAME = "@pljanicki/ghwm-super-linter"
+WORKFLOW_PACKAGE_NAME = "@ghwfxlab/ghwm-super-linter"
 WORKFLOW_DIR_RELATIVE = Path("workflows") / WORKFLOW_NAME
 WORKFLOW_FILE_NAME = f"{WORKFLOW_NAME}.yml"
 WORKFLOW_FILE_RELATIVE = WORKFLOW_DIR_RELATIVE / WORKFLOW_FILE_NAME
