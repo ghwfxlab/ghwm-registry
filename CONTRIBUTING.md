@@ -1,6 +1,6 @@
-# Contributing to ghwm-marketplace
+# Contributing to ghwm-registry
 
-Thank you for improving the GitHub Workflows Marketplace!
+Thank you for improving the GitHub Workflows Registry!
 
 ## Table of Contents
 
@@ -41,7 +41,7 @@ Thank you for improving the GitHub Workflows Marketplace!
 
     ```json
     {
-      "name": "@pljanicki/ghwm-<name>",
+      "name": "@ghwfxlab/ghwm-<name>",
       "version": "1.0.0",
       "files": ["<name>.yml", "workflow.yml"],
       "publishConfig": { "registry": "https://npm.pkg.github.com" }
