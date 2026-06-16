@@ -40,7 +40,7 @@ jobs:
         with:
           node-version: '22'
           registry-url: https://npm.pkg.github.com
-          scope: '@pljanicki'
+          scope: '@ghwfxlab'
 
       - name: Validate changed package versions
         id: validate
