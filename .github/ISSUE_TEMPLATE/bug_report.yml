@@ -1,6 +1,6 @@
 ---
 name: Bug Report
-description: Report a bug in the ghwm-marketplace packages
+description: Report a bug in the ghwm-registry packages
 title: "[Bug]: "
 labels: ["bug"]
 body:
@@ -51,7 +51,7 @@ body:
     id: version
     attributes:
       label: Package / CLI version
-      description: The ghwm-marketplace package version and/or ghwm CLI version you are running.
+      description: The ghwm-registry package version and/or ghwm CLI version you are running.
       placeholder: "e.g. auto-assign-pr v1.0.0, ghwm CLI v0.1.0"
 
   - type: dropdown
