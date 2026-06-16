@@ -4,7 +4,7 @@ The `super-linter` workflow adds code linting to your repository using [Super-Li
 
 ## Source of Truth
 
-- Marketplace repository: [pljanicki/ghwm-marketplace](https://github.com/pljanicki/ghwm-marketplace)
+- Registry repository: [ghwfxlab/ghwm-registry](https://github.com/ghwfxlab/ghwm-registry)
 - Workflow source: [`workflows/super-linter/super-linter.yaml`](./super-linter.yaml)
 
 ## What gets installed
@@ -67,7 +67,7 @@ The installed workflow requires these repository permissions:
 Add to `ghwm.yml` in your repository root:
 
 ```yaml
-source: pljanicki/ghwm-marketplace
+source: ghwfxlab/ghwm-registry
 workflows:
   - name: super-linter
     version: 1.0.0
