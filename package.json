@@ -1,5 +1,5 @@
 {
-    "name": "ghwm-marketplace",
+    "name": "ghwm-registry",
     "private": true,
     "workspaces": [
         "workflows/*"
