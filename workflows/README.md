@@ -1,7 +1,7 @@
 # Workflows
 
 This directory contains one folder per managed GitHub workflow.
-Source repository: [pljanicki/ghwm-marketplace](https://github.com/pljanicki/ghwm-marketplace).
+Source repository: [ghwfxlab/ghwm-registry](https://github.com/ghwfxlab/ghwm-registry).
 
 For consumer setup, start with the [root readme](../README.md). For maintainer workflow and
 publishing guidance, use [CONTRIBUTING.md](../CONTRIBUTING.md).
