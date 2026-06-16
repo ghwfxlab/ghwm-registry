@@ -1,12 +1,12 @@
-# ghwm-marketplace
+# ghwm-registry
 
-[![Lint Code Base](https://github.com/pljanicki/ghwm-marketplace/actions/workflows/linter.yaml/badge.svg)](https://github.com/pljanicki/ghwm-marketplace/actions/workflows/linter.yaml)
+[![Lint Code Base](https://github.com/ghwfxlab/ghwm-registry/actions/workflows/linter.yaml/badge.svg)](https://github.com/ghwfxlab/ghwm-registry/actions/workflows/linter.yaml)
 
-| ![GitHub Workflows Marketplace](.github/static/readme_header.png) |
+| ![GitHub Workflows Registry](.github/static/readme_header.png) |
 | :---------------------------------------------------------------: |
 
 > Curated GitHub Actions workflows published as npm packages and installed
-> via the [`ghwm` CLI](https://github.com/pljanicki/ghwm).
+> via the [`ghwm` CLI](https://github.com/ghwfxlab/ghwm).
 
 ## Repository Overview
 
@@ -70,19 +70,19 @@ We use a `Makefile` at the root of the repository to manage tasks across differe
 ### 1. Install the CLI
 
 ```sh
-uv tool install git+https://github.com/pljanicki/ghwm.git
+uv tool install git+https://github.com/ghwfxlab/ghwm.git
 ```
 
 Or pin the CLI to a specific tag:
 
 ```sh
-uv tool install git+https://github.com/pljanicki/ghwm.git@vX.Y.Z
+uv tool install git+https://github.com/ghwfxlab/ghwm.git@vX.Y.Z
 ```
 
 ### 2. Create `ghwm.yml` in your repository root
 
 ```yaml
-source: pljanicki/ghwm-marketplace
+source: ghwfxlab/ghwm-registry
 workflows:
   - name: super-linter
     version: 1.0.0
@@ -115,7 +115,7 @@ Commit the generated files:
 - any workflow-specific config files created on first install (for example
   `.github/auto_assign.yaml`)
 
-See the [ghwm readme](https://github.com/pljanicki/ghwm#readme) for full CLI
+See the [ghwm readme](https://github.com/ghwfxlab/ghwm#readme) for full CLI
 usage, authentication, and local development options.
 
 Some workflows install extra repository files or require extra settings. See each workflow readme
@@ -130,7 +130,7 @@ replace the current ones.
 When a new package version is available, bump the version in `ghwm.yml`:
 
 ```diff
- source: pljanicki/ghwm-marketplace
+ source: ghwfxlab/ghwm-registry
  workflows:
    - name: super-linter
 -    version: 1.0.0
@@ -157,7 +157,7 @@ the same command.
 To remove a workflow, delete its entry from `ghwm.yml`:
 
 ```diff
- source: pljanicki/ghwm-marketplace
+ source: ghwfxlab/ghwm-registry
  workflows:
 -  - name: super-linter
 -    version: 1.1.0
@@ -183,7 +183,7 @@ Add this to `renovate.json` in the consumer repository:
 
 ```json
 {
-  "extends": ["github>pljanicki/ghwm-marketplace//renovate/default.json"]
+  "extends": ["github>ghwfxlab/ghwm-registry//renovate/default.json"]
 }
 ```
 
