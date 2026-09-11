@@ -33,9 +33,11 @@ All commands are run from the root of the project, from a terminal:
 | :------------------------ | :----------------------------------------------- |
 | `npm install`             | Installs dependencies                            |
 | `npm run dev`             | Starts local dev server at `localhost:4321`      |
+| `npm run dev:prod-api`    | Starts dev server targeting production API       |
 | `npm run dev:test-api`    | Starts dev server targeting the test API         |
-| `npm run build`           | Build your production site to `./dist/`          |
-| `npm run build:test-api`  | Build site with data from the test API           |
+| `npm run build`           | Build production site with production API data   |
+| `npm run build:prod-api`  | Build site targeting the production API          |
+| `npm run build:test-api`  | Build site targeting the test API                |
 | `npm test`                | Run UI and API client unit tests                 |
 | `npm run preview`         | Preview your build locally, before deploying     |
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
@@ -51,7 +53,13 @@ To configure the API endpoint used for fetching workflow usage statistics, set `
   cp .env.example .env
   ```
 
-- Or pass via environment variable:
+- Default production API endpoint:
+
+  ```sh
+  PUBLIC_API_URL=https://ghwm-deployment-prd.ghwfxlab.workers.dev npm run dev
+  ```
+
+- Test API endpoint:
 
   ```sh
   PUBLIC_API_URL=https://ghwm-deployment-tst.ghwfxlab.workers.dev npm run dev

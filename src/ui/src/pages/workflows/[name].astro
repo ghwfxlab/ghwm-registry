@@ -7,6 +7,7 @@ import {
   formatLastInstalled,
   isOfficialProvider,
 } from '../../lib/usage';
+import { withBase } from '../../lib/paths';
 
 export async function getStaticPaths() {
   return CATALOG_WORKFLOWS.map((workflow) => ({
@@ -41,7 +42,7 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
     <!-- Breadcrumb / Back Link -->
     <div>
       <a
-        href="/"
+        href={withBase('/')}
         class="inline-flex items-center gap-xs font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
       >
         <span class="material-symbols-outlined text-[18px]">arrow_back</span>
@@ -67,7 +68,7 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
             </span>
             {isOfficialProvider(workflow.owner) && (
               <a
-                href="/official"
+                href={withBase('/official')}
                 class="h-[22px] inline-flex items-center gap-1.5 font-code-sm text-[11px] text-on-surface bg-surface-container-high border border-outline-variant px-2 rounded hover:border-outline hover:text-primary transition-colors"
                 title={`Official workflow from @${workflow.owner}`}
               >

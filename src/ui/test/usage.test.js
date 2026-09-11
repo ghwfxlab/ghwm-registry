@@ -13,6 +13,7 @@ import {
   getNewArrivals,
   OFFICIAL_PROVIDERS,
   CATALOG_WORKFLOWS,
+  DEFAULT_PROD_API_URL,
   DEFAULT_TEST_API_URL,
 } from '../src/lib/usage.ts';
 
@@ -416,5 +417,11 @@ test('test_getNewArrivals_should_default_to_5_limit', async () => {
   // Assert
   assert.ok(arrivals.length <= 5);
 });
+
+test('test_constants_should_expose_valid_production_and_test_api_endpoints', () => {
+  assert.strictEqual(DEFAULT_PROD_API_URL, 'https://ghwm-deployment-prd.ghwfxlab.workers.dev');
+  assert.strictEqual(DEFAULT_TEST_API_URL, 'https://ghwm-deployment-tst.ghwfxlab.workers.dev');
+});
+
 
 

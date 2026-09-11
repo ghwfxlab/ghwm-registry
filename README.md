@@ -34,9 +34,11 @@ We use a `Makefile` at the root of the repository to manage tasks across differe
 
   ```bash
   make dev
+  # or explicitly target the live production API:
+  make dev-prod-api
   ```
 
-  To target the test API endpoint (`https://ghwm-deployment-tst.ghwfxlab.workers.dev`) for live workflow usage statistics:
+  To target the test API endpoint (`https://ghwm-deployment-tst.ghwfxlab.workers.dev`) for testing or development:
 
   ```bash
   make dev-test-api
@@ -44,11 +46,13 @@ We use a `Makefile` at the root of the repository to manage tasks across differe
   make dev TARGET_API=test
   ```
 
-- **Production Build**: Build static assets for production deployment.
+- **Production Build**: Build static assets for production deployment targeting the live production API (`https://ghwm-deployment-prd.ghwfxlab.workers.dev`).
 
   ```bash
   make build
-  # or target the test API endpoint for build-time data:
+  # or explicitly target the production API:
+  make build-prod-api
+  # or target the test API endpoint:
   make build-test-api
   # or
   make build TARGET_API=test
