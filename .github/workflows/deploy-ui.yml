@@ -76,18 +76,3 @@ jobs:
           git add -A
           git commit -m "deploy: UI release v${UI_VERSION} from ghwm-registry@${GITHUB_SHA}"
           git push --force "https://x-access-token:${DEPLOY_TOKEN}@github.com/ghwfxlab/ghwm.git" gh-pages
-
-      - name: Create UI Release in ghwm
-        env:
-          GH_TOKEN: ${{ steps.app-token.outputs.token }}
-          UI_VERSION: ${{ steps.version.outputs.version }}
-        run: | # zizmor: ignore[template-injection]
-          gh release create "ui-v${UI_VERSION}" \
-            --repo ghwfxlab/ghwm \
-            --target gh-pages \
-            --title "UI Release v${UI_VERSION}" \
-            --notes "Automated release of the GHWM Registry UI deployed to GitHub Pages (\`gh-pages\`).
-
-          - **Live Site**: https://ghwfxlab.github.io/ghwm/
-          - **Source Commit**: https://github.com/ghwfxlab/ghwm-registry/commit/${GITHUB_SHA}
-          - **API Target**: Production (\`https://ghwm-deployment-prd.ghwfxlab.workers.dev\`)"

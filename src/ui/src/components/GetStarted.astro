@@ -100,23 +100,42 @@ const installCommands = getInstallCommands(latestTag);
   // Client-side fetch to ensure the pinned version is always the latest even if published after build
   (async () => {
     try {
+      const isValidCliTag = (tag) => {
+        if (!tag) return false;
+        const clean = String(tag).trim().replace(/^@+/, '');
+        if (clean.startsWith('ui-') || clean.startsWith('registry-')) return false;
+        return /^v?\d+(\.\d+)*(-[a-zA-Z0-9.]+)?$/.test(clean);
+      };
+
       let freshTag = null;
-      const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+      const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=5`, {
         headers: { Accept: 'application/vnd.github+json' }
       });
       if (res.ok) {
-        const data = await res.json();
-        if (data && typeof data.tag_name === 'string' && data.tag_name.trim()) {
-          freshTag = data.tag_name.trim().replace(/^@+/, '');
+        const releases = await res.json();
+        if (Array.isArray(releases)) {
+          for (const rel of releases) {
+            if (rel && typeof rel.tag_name === 'string' && isValidCliTag(rel.tag_name)) {
+              freshTag = rel.tag_name.trim().replace(/^@+/, '');
+              break;
+            }
+          }
         }
-      } else if (res.status === 404) {
-        const tagsRes = await fetch(`https://api.github.com/repos/${repo}/tags?per_page=1`, {
+      }
+
+      if (!freshTag) {
+        const tagsRes = await fetch(`https://api.github.com/repos/${repo}/tags?per_page=10`, {
           headers: { Accept: 'application/vnd.github+json' }
         });
         if (tagsRes.ok) {
           const tags = await tagsRes.json();
-          if (Array.isArray(tags) && tags.length > 0 && typeof tags[0]?.name === 'string') {
-            freshTag = tags[0].name.trim().replace(/^@+/, '');
+          if (Array.isArray(tags)) {
+            for (const t of tags) {
+              if (t && typeof t.name === 'string' && isValidCliTag(t.name)) {
+                freshTag = t.name.trim().replace(/^@+/, '');
+                break;
+              }
+            }
           }
         }
       }
