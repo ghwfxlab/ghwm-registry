@@ -1,10 +1,11 @@
 ---
 import { CATALOG_WORKFLOWS } from '../lib/usage';
+import { withBase } from '../lib/paths';
 ---
 
 <!-- Prominent Search in Hero -->
 <form
-  action="/registry"
+  action={withBase('/registry')}
   method="GET"
   class="w-full max-w-4/5 mt-md relative"
   id="hero-search-form"
@@ -38,7 +39,7 @@ import { CATALOG_WORKFLOWS } from '../lib/usage';
     </div>
     <div class="px-md py-sm bg-surface-container-low border-t border-outline-variant flex items-center justify-between font-code-sm text-xs text-on-surface-variant">
       <span>Press <kbd class="px-1.5 py-0.5 rounded bg-surface-container-high border border-outline-variant font-mono text-[10px]">Enter</kbd> to search full catalog</span>
-      <a id="hero-search-view-all" href="/registry" class="text-primary hover:underline flex items-center gap-1 font-medium">
+      <a id="hero-search-view-all" href={withBase('/registry')} class="text-primary hover:underline flex items-center gap-1 font-medium">
         <span>View all results</span>
         <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
       </a>
@@ -46,7 +47,7 @@ import { CATALOG_WORKFLOWS } from '../lib/usage';
   </div>
 </form>
 
-<script define:vars={{ catalog: CATALOG_WORKFLOWS }}>
+<script define:vars={{ catalog: CATALOG_WORKFLOWS, baseUrl: (import.meta.env.BASE_URL || '/').replace(/\/+$/, '') }}>
   const form = document.getElementById('hero-search-form');
   const input = document.getElementById('hero-search-input');
   const dropdown = document.getElementById('hero-search-dropdown');
@@ -79,7 +80,7 @@ import { CATALOG_WORKFLOWS } from '../lib/usage';
     });
 
     if (viewAllLink) {
-      viewAllLink.href = `/registry?q=${encodeURIComponent(rawQuery.trim())}`;
+      viewAllLink.href = `${baseUrl}/registry?q=${encodeURIComponent(rawQuery.trim())}`;
     }
 
     if (matches.length === 0) {
@@ -88,7 +89,7 @@ import { CATALOG_WORKFLOWS } from '../lib/usage';
           <div class="px-md py-lg text-center text-body-sm text-on-surface-variant">
             No workflows directly matching "<span class="text-on-surface font-semibold">${escapeHtml(rawQuery.trim())}</span>".
             <div class="mt-1">
-              <a href="/registry?q=${encodeURIComponent(rawQuery.trim())}" class="text-primary hover:underline font-code-sm text-xs">
+              <a href="${baseUrl}/registry?q=${encodeURIComponent(rawQuery.trim())}" class="text-primary hover:underline font-code-sm text-xs">
                 Search full registry &rarr;
               </a>
             </div>
@@ -99,7 +100,7 @@ import { CATALOG_WORKFLOWS } from '../lib/usage';
       if (resultsContainer) {
         resultsContainer.innerHTML = matches.slice(0, 5).map((w) => `
           <a
-            href="/workflows/${encodeURIComponent(w.name)}"
+            href="${baseUrl}/workflows/${encodeURIComponent(w.name)}"
             class="flex items-center justify-between px-md py-sm hover:bg-surface-container transition-colors group cursor-pointer"
           >
             <div class="flex items-center gap-sm min-w-0">

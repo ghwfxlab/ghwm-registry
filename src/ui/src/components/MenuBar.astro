@@ -1,4 +1,6 @@
 ---
+import { withBase } from '../lib/paths';
+
 interface Props {
   activeTab?: 'explore' | 'registry' | 'official' | 'docs';
   searchPlaceholder?: string;
@@ -20,23 +22,23 @@ const getLinkClass = (tab: string) => {
   <div class="flex justify-between items-center px-lg py-md max-w-7xl mx-auto w-full">
     <!-- Brand Logo -->
     <div class="flex items-center gap-lg">
-      <a href="/" class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-sm hover:opacity-90 transition-opacity">
+      <a href={withBase('/')} class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-sm hover:opacity-90 transition-opacity">
         <span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">terminal</span>
         <span>GHWM</span>
       </a>
 
       <!-- Desktop Navigation -->
       <nav class="hidden font-body-lg md:flex gap-md items-center">
-        <a class={getLinkClass('explore')} href="/">Explore</a>
-        <a class={getLinkClass('registry')} href="/registry">Registry</a>
-        <a class={getLinkClass('official')} href="/official">Official</a>
+        <a class={getLinkClass('explore')} href={withBase('/')}>Explore</a>
+        <a class={getLinkClass('registry')} href={withBase('/registry')}>Registry</a>
+        <a class={getLinkClass('official')} href={withBase('/official')}>Official</a>
         <a class={getLinkClass('docs')} href="https://github.com/ghwfxlab/ghwm" target="_blank" rel="noopener noreferrer">Docs</a>
       </nav>
     </div>
 
     <!-- Search Bar & Controls -->
     <div class="flex items-center gap-md">
-      <form action="/registry" method="GET" class="hidden md:flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus">
+      <form action={withBase('/registry')} method="GET" class="hidden md:flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus">
         <span class="material-symbols-outlined text-outline text-[18px] mr-2">search</span>
         <input
           id="menu-search-input"
@@ -61,13 +63,13 @@ const getLinkClass = (tab: string) => {
 
   <!-- Mobile Drawer Menu (Hidden by default, toggled via script below) -->
   <div id="mobile-menu" class="hidden md:hidden w-full border-t border-outline-variant bg-surface px-lg py-md flex flex-col gap-sm">
-    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'explore' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/">Explore</a>
-    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'registry' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/registry">Registry</a>
-    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'official' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/official">Official</a>
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'explore' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href={withBase('/')}>Explore</a>
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'registry' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href={withBase('/registry')}>Registry</a>
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'official' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href={withBase('/official')}>Official</a>
     <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'docs' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="https://github.com/ghwfxlab/ghwm" target="_blank" rel="noopener noreferrer">Docs</a>
 
     <!-- Mobile Search -->
-    <form action="/registry" method="GET" class="flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus mt-xs">
+    <form action={withBase('/registry')} method="GET" class="flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus mt-xs">
       <span class="material-symbols-outlined text-outline text-[18px] mr-2">search</span>
       <input
         id="mobile-search-input"

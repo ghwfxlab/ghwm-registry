@@ -7,8 +7,10 @@
     },
     "scripts": {
         "dev": "astro dev",
+        "dev:prod-api": "PUBLIC_API_URL=https://ghwm-deployment-prd.ghwfxlab.workers.dev astro dev",
         "dev:test-api": "PUBLIC_API_URL=https://ghwm-deployment-tst.ghwfxlab.workers.dev astro dev",
-        "build": "astro build",
+        "build": "PUBLIC_API_URL=https://ghwm-deployment-prd.ghwfxlab.workers.dev astro build",
+        "build:prod-api": "PUBLIC_API_URL=https://ghwm-deployment-prd.ghwfxlab.workers.dev astro build",
         "build:test-api": "PUBLIC_API_URL=https://ghwm-deployment-tst.ghwfxlab.workers.dev astro build",
         "preview": "astro preview",
         "astro": "astro",

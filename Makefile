@@ -6,19 +6,22 @@ TEXTLINT_CONFIG ?= .github/linters/.textlintrc
 TEXTLINT_IGNORE ?= .github/linters/.textlintignore
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
+PROD_API_URL ?= https://ghwm-deployment-prd.ghwfxlab.workers.dev
 TEST_API_URL ?= https://ghwm-deployment-tst.ghwfxlab.workers.dev
-TARGET_API ?=
+TARGET_API ?= prod
 
-.PHONY: help setup dev dev-test-api build build-test-api preview clean lang lang-fix script-tests ui-tests setup-precommit precommit super-linter super-linter-fix
+.PHONY: help setup dev dev-prod-api dev-test-api build build-prod-api build-test-api preview clean lang lang-fix script-tests ui-tests setup-precommit precommit super-linter super-linter-fix
 
 help:
 	@echo "Available commands:"
 	@echo ""
 	@echo "development targets:"
 	@echo "  setup            - Install dependencies for the Astro UI in $(UI_DIR)"
-	@echo "  dev              - Start the Astro UI development server (supports TARGET_API=test)"
+	@echo "  dev              - Start the Astro UI development server (supports TARGET_API=prod|test)"
+	@echo "  dev-prod-api     - Start the Astro UI development server targeting prod API ($(PROD_API_URL))"
 	@echo "  dev-test-api     - Start the Astro UI development server targeting test API ($(TEST_API_URL))"
-	@echo "  build            - Build the Astro UI for production (supports TARGET_API=test)"
+	@echo "  build            - Build the Astro UI for production (supports TARGET_API=prod|test)"
+	@echo "  build-prod-api   - Build the Astro UI for production targeting prod API ($(PROD_API_URL))"
 	@echo "  build-test-api   - Build the Astro UI for production targeting test API ($(TEST_API_URL))"
 	@echo "  preview          - Preview the production build locally"
 	@echo "  clean            - Clean build outputs and temporary files"
@@ -41,6 +44,9 @@ dev:
 	@if [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "test" ]; then \
 		echo "Targeting test API ($(TEST_API_URL))..."; \
 		PUBLIC_API_URL="$(TEST_API_URL)" npm run dev --prefix $(UI_DIR); \
+	elif [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "prod" ]; then \
+		echo "Targeting production API ($(PROD_API_URL))..."; \
+		PUBLIC_API_URL="$(PROD_API_URL)" npm run dev --prefix $(UI_DIR); \
 	elif [ -n "$${API_URL:-}" ]; then \
 		echo "Targeting custom API ($$API_URL)..."; \
 		PUBLIC_API_URL="$$API_URL" npm run dev --prefix $(UI_DIR); \
@@ -48,9 +54,13 @@ dev:
 		echo "Targeting API ($$PUBLIC_API_URL)..."; \
 		PUBLIC_API_URL="$$PUBLIC_API_URL" npm run dev --prefix $(UI_DIR); \
 	else \
-		echo "Starting development server..."; \
-		npm run dev --prefix $(UI_DIR); \
+		echo "Starting development server targeting production API ($(PROD_API_URL))..."; \
+		PUBLIC_API_URL="$(PROD_API_URL)" npm run dev --prefix $(UI_DIR); \
 	fi
+
+dev-prod-api:
+	@echo "Targeting production API ($(PROD_API_URL))..."
+	PUBLIC_API_URL="$(PROD_API_URL)" npm run dev --prefix $(UI_DIR)
 
 dev-test-api:
 	@echo "Targeting test API ($(TEST_API_URL))..."
@@ -60,6 +70,9 @@ build:
 	@if [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "test" ]; then \
 		echo "Targeting test API ($(TEST_API_URL))..."; \
 		PUBLIC_API_URL="$(TEST_API_URL)" npm run build --prefix $(UI_DIR); \
+	elif [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "prod" ]; then \
+		echo "Targeting production API ($(PROD_API_URL))..."; \
+		PUBLIC_API_URL="$(PROD_API_URL)" npm run build --prefix $(UI_DIR); \
 	elif [ -n "$${API_URL:-}" ]; then \
 		echo "Targeting custom API ($$API_URL)..."; \
 		PUBLIC_API_URL="$$API_URL" npm run build --prefix $(UI_DIR); \
@@ -67,9 +80,13 @@ build:
 		echo "Targeting API ($$PUBLIC_API_URL)..."; \
 		PUBLIC_API_URL="$$PUBLIC_API_URL" npm run build --prefix $(UI_DIR); \
 	else \
-		echo "Building Astro UI for production..."; \
-		npm run build --prefix $(UI_DIR); \
+		echo "Building Astro UI for production targeting production API ($(PROD_API_URL))..."; \
+		PUBLIC_API_URL="$(PROD_API_URL)" npm run build --prefix $(UI_DIR); \
 	fi
+
+build-prod-api:
+	@echo "Building Astro UI for production targeting production API ($(PROD_API_URL))..."
+	PUBLIC_API_URL="$(PROD_API_URL)" npm run build --prefix $(UI_DIR)
 
 build-test-api:
 	@echo "Building Astro UI for production targeting test API ($(TEST_API_URL))..."

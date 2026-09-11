@@ -5,6 +5,7 @@ import {
   getApiEndpoint,
   formatLastInstalled,
 } from '../lib/usage';
+import { withBase } from '../lib/paths';
 
 const apiEndpoint = getApiEndpoint();
 const activeProvider = 'ghwfxlab';
@@ -17,7 +18,7 @@ const { workflows, totalInstallations, isConnected } = await getOfficialWorkflow
     <!-- Header & Breadcrumb -->
     <div class="flex flex-col gap-sm">
       <div class="flex items-center gap-xs text-on-surface-variant font-body-sm text-body-sm">
-        <a href="/" class="hover:text-primary transition-colors flex items-center gap-1">
+        <a href={withBase('/')} class="hover:text-primary transition-colors flex items-center gap-1">
           <span class="material-symbols-outlined text-[16px]">arrow_back</span>
           Home
         </a>
@@ -113,7 +114,7 @@ const { workflows, totalInstallations, isConnected } = await getOfficialWorkflow
                   <div>
                     <div class="flex items-center gap-sm flex-wrap">
                       <a
-                        href={`/workflows/${workflow.name}`}
+                        href={withBase(`/workflows/${workflow.name}`)}
                         class="font-headline-md text-headline-md font-bold text-on-surface hover:text-primary transition-colors"
                       >
                         {workflow.title}
@@ -177,7 +178,7 @@ const { workflows, totalInstallations, isConnected } = await getOfficialWorkflow
 
               <!-- Action Link -->
               <a
-                href={`/workflows/${workflow.name}`}
+                href={withBase(`/workflows/${workflow.name}`)}
                 class="font-body-sm text-body-sm font-semibold text-primary hover:underline flex items-center gap-1 self-end sm:self-auto"
               >
                 <span>View Details</span>

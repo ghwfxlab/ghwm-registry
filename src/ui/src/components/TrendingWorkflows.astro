@@ -1,10 +1,12 @@
 ---
 import { getTrendingWorkflows, getApiEndpoint, formatLastInstalled } from '../lib/usage';
+import { withBase } from '../lib/paths';
 
 const apiEndpoint = getApiEndpoint();
 const { workflows, totalInstallations, isConnected } = await getTrendingWorkflows(apiEndpoint);
 // Top up to 10 trending workflows
 const trendingWorkflows = workflows.slice(0, 10);
+const isProdApi = Boolean(apiEndpoint && (apiEndpoint.includes('-prd') || !apiEndpoint.includes('-tst')));
 ---
 <!-- Trending Workflows Section (10 items, 5 per row max on desktop, 2 per row on mobile) -->
 <section class="flex flex-col gap-md">
@@ -20,10 +22,10 @@ const trendingWorkflows = workflows.slice(0, 10);
           title={`Target API: ${apiEndpoint}`}
         >
           <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-          <span>test API ({totalInstallations} installs)</span>
+          <span>{isProdApi ? 'live API' : 'test API'} ({totalInstallations} installs)</span>
         </span>
       )}
-      <a class="font-body-sm text-body-sm text-primary hover:underline" href="/registry?sort=installs_desc">View all &rarr;</a>
+      <a class="font-body-sm text-body-sm text-primary hover:underline" href={withBase('/registry?sort=installs_desc')}>View all &rarr;</a>
     </div>
   </div>
 
@@ -32,7 +34,7 @@ const trendingWorkflows = workflows.slice(0, 10);
       const lastActive = formatLastInstalled(workflow.lastInstalledAt);
       return (
         <a
-          href={`/workflows/${workflow.name}`}
+          href={withBase(`/workflows/${workflow.name}`)}
           class="card-surface rounded-lg p-md flex flex-col gap-sm transition-all group cursor-pointer h-full hover:border-primary block"
           data-workflow-name={workflow.name}
         >

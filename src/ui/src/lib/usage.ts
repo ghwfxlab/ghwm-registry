@@ -42,6 +42,7 @@ export interface TrendingWorkflowsResult {
   apiEndpoint: string | null;
 }
 
+export const DEFAULT_PROD_API_URL = 'https://ghwm-deployment-prd.ghwfxlab.workers.dev';
 export const DEFAULT_TEST_API_URL = 'https://ghwm-deployment-tst.ghwfxlab.workers.dev';
 
 export const OFFICIAL_PROVIDERS = ['ghwfxlab'] as const;

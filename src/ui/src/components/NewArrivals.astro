@@ -1,5 +1,6 @@
 ---
 import { getNewArrivals, getApiEndpoint, formatLastInstalled } from '../lib/usage';
+import { withBase } from '../lib/paths';
 
 const apiEndpoint = getApiEndpoint();
 // Latest up to 5 added workflows
@@ -15,7 +16,7 @@ const newArrivals = await getNewArrivals(apiEndpoint, 5);
     </h2>
     <div class="flex items-center gap-md">
       <span class="font-code-sm text-code-sm text-on-surface-variant">Latest published workflows</span>
-      <a class="font-body-sm text-body-sm text-primary hover:underline" href="/registry?sort=added_desc">View all &rarr;</a>
+      <a class="font-body-sm text-body-sm text-primary hover:underline" href={withBase('/registry?sort=added_desc')}>View all &rarr;</a>
     </div>
   </div>
 
@@ -24,7 +25,7 @@ const newArrivals = await getNewArrivals(apiEndpoint, 5);
       const dateStr = formatLastInstalled(workflow.createdAt || workflow.lastInstalledAt);
       return (
         <a
-          href={`/workflows/${workflow.name}`}
+          href={withBase(`/workflows/${workflow.name}`)}
           class="card-surface rounded-lg p-md flex flex-col gap-sm transition-all group cursor-pointer h-full hover:border-primary block"
           data-workflow-name={workflow.name}
         >
