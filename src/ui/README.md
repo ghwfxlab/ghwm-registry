@@ -46,10 +46,13 @@ All commands are run from the root of the project, from a terminal:
 To configure the API endpoint used for fetching workflow usage statistics, set `PUBLIC_API_URL`:
 
 - Copy `.env.example` to `.env`:
+
   ```sh
   cp .env.example .env
   ```
+
 - Or pass via environment variable:
+
   ```sh
   PUBLIC_API_URL=https://ghwm-deployment-tst.ghwfxlab.workers.dev npm run dev
   ```
