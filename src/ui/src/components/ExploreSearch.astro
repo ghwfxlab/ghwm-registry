@@ -1,16 +1,157 @@
 ---
+import { CATALOG_WORKFLOWS } from '../lib/usage';
 ---
+
 <!-- Prominent Search in Hero -->
-<div class="w-full max-w-4/5 mt-md">
-  <div class="flex items-center card-surface rounded-default px-md py-sm shadow-sm input-focus w-full">
-    <span class="material-symbols-outlined text-outline mr-sm">search</span>
+<form
+  action="/registry"
+  method="GET"
+  class="w-full max-w-4/5 mt-md relative"
+  id="hero-search-form"
+>
+  <div class="flex items-center card-surface rounded-default px-md py-sm shadow-sm border border-outline-variant focus-within:border-primary transition-colors w-full">
+    <span class="material-symbols-outlined text-outline mr-sm select-none">search</span>
     <input
+      id="hero-search-input"
+      name="q"
       class="bg-transparent border-none outline-none text-body-lg font-body-lg text-on-surface w-full focus:ring-0 p-0 placeholder-outline"
       placeholder="Search linter, ci/cd, deployment..."
       type="text"
+      autocomplete="off"
     />
-    <button class="ml-auto font-label-caps text-label-caps bg-surface-container-high px-sm py-xs rounded border border-outline-variant text-outline">
+    <button
+      type="submit"
+      class="ml-auto font-label-caps text-label-caps bg-surface-container-high px-sm py-xs rounded border border-outline-variant text-outline hover:text-on-surface hover:border-outline transition-colors cursor-pointer shrink-0"
+      title="Search catalog"
+    >
       ↵ ENTER
     </button>
   </div>
-</div>
+
+  <!-- Live Dropdown Suggestions (Client-Side) -->
+  <div
+    id="hero-search-dropdown"
+    class="absolute left-0 right-0 top-full mt-1.5 card-surface border border-outline-variant rounded-default shadow-xl overflow-hidden hidden z-50 text-left"
+  >
+    <div id="hero-search-results" class="py-1 divide-y divide-outline-variant divide-opacity-30 max-h-72 overflow-y-auto">
+      <!-- Suggestions rendered dynamically via script -->
+    </div>
+    <div class="px-md py-sm bg-surface-container-low border-t border-outline-variant flex items-center justify-between font-code-sm text-xs text-on-surface-variant">
+      <span>Press <kbd class="px-1.5 py-0.5 rounded bg-surface-container-high border border-outline-variant font-mono text-[10px]">Enter</kbd> to search full catalog</span>
+      <a id="hero-search-view-all" href="/registry" class="text-primary hover:underline flex items-center gap-1 font-medium">
+        <span>View all results</span>
+        <span class="material-symbols-outlined text-[14px]">arrow_forward</span>
+      </a>
+    </div>
+  </div>
+</form>
+
+<script define:vars={{ catalog: CATALOG_WORKFLOWS }}>
+  const form = document.getElementById('hero-search-form');
+  const input = document.getElementById('hero-search-input');
+  const dropdown = document.getElementById('hero-search-dropdown');
+  const resultsContainer = document.getElementById('hero-search-results');
+  const viewAllLink = document.getElementById('hero-search-view-all');
+
+  function escapeHtml(str) {
+    return String(str)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;')
+      .replace(/'/g, '&#039;');
+  }
+
+  function renderSuggestions(rawQuery) {
+    const query = rawQuery.trim().toLowerCase();
+    if (!query) {
+      dropdown?.classList.add('hidden');
+      return;
+    }
+
+    const matches = (catalog || []).filter((w) => {
+      const nameMatch = w.name && w.name.toLowerCase().includes(query);
+      const titleMatch = w.title && w.title.toLowerCase().includes(query);
+      const pkgMatch = w.packageName && w.packageName.toLowerCase().includes(query);
+      const descMatch = w.description && w.description.toLowerCase().includes(query);
+      const tagMatch = Array.isArray(w.tags) && w.tags.some((t) => t.toLowerCase().includes(query));
+      return nameMatch || titleMatch || pkgMatch || descMatch || tagMatch;
+    });
+
+    if (viewAllLink) {
+      viewAllLink.href = `/registry?q=${encodeURIComponent(rawQuery.trim())}`;
+    }
+
+    if (matches.length === 0) {
+      if (resultsContainer) {
+        resultsContainer.innerHTML = `
+          <div class="px-md py-lg text-center text-body-sm text-on-surface-variant">
+            No workflows directly matching "<span class="text-on-surface font-semibold">${escapeHtml(rawQuery.trim())}</span>".
+            <div class="mt-1">
+              <a href="/registry?q=${encodeURIComponent(rawQuery.trim())}" class="text-primary hover:underline font-code-sm text-xs">
+                Search full registry &rarr;
+              </a>
+            </div>
+          </div>
+        `;
+      }
+    } else {
+      if (resultsContainer) {
+        resultsContainer.innerHTML = matches.slice(0, 5).map((w) => `
+          <a
+            href="/workflows/${encodeURIComponent(w.name)}"
+            class="flex items-center justify-between px-md py-sm hover:bg-surface-container transition-colors group cursor-pointer"
+          >
+            <div class="flex items-center gap-sm min-w-0">
+              <div class="w-8 h-8 rounded bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 group-hover:border-primary transition-colors">
+                <span class="material-symbols-outlined text-primary text-[18px]">${escapeHtml(w.icon || 'terminal')}</span>
+              </div>
+              <div class="flex flex-col min-w-0">
+                <div class="flex items-center gap-2">
+                  <span class="font-headline-md text-[13px] font-semibold text-on-surface group-hover:text-primary transition-colors truncate">
+                    ${escapeHtml(w.title)}
+                  </span>
+                  <span class="font-code-sm text-[10px] text-secondary font-mono bg-surface-container-high border border-outline-variant px-1.5 rounded shrink-0">
+                    v${escapeHtml(w.version)}
+                  </span>
+                </div>
+                <span class="font-body-sm text-[11px] text-on-surface-variant truncate">
+                  ${escapeHtml(w.description)}
+                </span>
+              </div>
+            </div>
+            <span class="material-symbols-outlined text-outline group-hover:text-primary text-[16px] transition-colors shrink-0 ml-sm">
+              arrow_forward
+            </span>
+          </a>
+        `).join('');
+      }
+    }
+
+    dropdown?.classList.remove('hidden');
+  }
+
+  if (input) {
+    input.addEventListener('input', (e) => {
+      renderSuggestions(e.target.value);
+    });
+
+    input.addEventListener('focus', (e) => {
+      if (e.target.value.trim()) {
+        renderSuggestions(e.target.value);
+      }
+    });
+
+    input.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') {
+        dropdown?.classList.add('hidden');
+      }
+    });
+
+    document.addEventListener('click', (e) => {
+      if (!e.target.closest('#hero-search-form')) {
+        dropdown?.classList.add('hidden');
+      }
+    });
+  }
+</script>

@@ -7,9 +7,12 @@
     },
     "scripts": {
         "dev": "astro dev",
+        "dev:test-api": "PUBLIC_API_URL=https://ghwm-deployment-tst.ghwfxlab.workers.dev astro dev",
         "build": "astro build",
+        "build:test-api": "PUBLIC_API_URL=https://ghwm-deployment-tst.ghwfxlab.workers.dev astro build",
         "preview": "astro preview",
-        "astro": "astro"
+        "astro": "astro",
+        "test": "node --test test/**/*.test.js"
     },
     "dependencies": {
         "@tailwindcss/vite": "4.3.0",

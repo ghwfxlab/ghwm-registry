@@ -1,39 +1,83 @@
 ---
-// Placeholder count for New Arrivals skeleton loaders
-const skeletonCount = Array.from({ length: 5 });
+import { getNewArrivals, getApiEndpoint, formatLastInstalled } from '../lib/usage';
+
+const apiEndpoint = getApiEndpoint();
+// Latest up to 5 added workflows
+const newArrivals = await getNewArrivals(apiEndpoint, 5);
 ---
 
-<!-- New Arrivals Section (With high-fidelity skeleton placeholders based on Material Tailwind) -->
+<!-- New Arrivals Section -->
 <section class="flex flex-col gap-md">
   <div class="flex justify-between items-end border-b border-outline-variant pb-sm mb-xs">
     <h2 class="font-headline-lg text-headline-lg flex items-center gap-sm">
       <span class="material-symbols-outlined text-primary">new_releases</span>
       New Arrivals
     </h2>
-    <span class="font-code-sm text-code-sm text-on-surface-variant">Live registry updates</span>
+    <div class="flex items-center gap-md">
+      <span class="font-code-sm text-code-sm text-on-surface-variant">Latest published workflows</span>
+      <a class="font-body-sm text-body-sm text-primary hover:underline" href="/registry?sort=added_desc">View all &rarr;</a>
+    </div>
   </div>
 
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-gutter">
-    {skeletonCount.map(() => (
-      <div class="card-surface rounded-lg p-md flex flex-col gap-sm animate-pulse border border-outline-variant border-opacity-40">
-        <!-- Icon and Score Skeletons -->
-        <div class="flex justify-between items-start gap-xs">
-          <div class="w-8 h-8 bg-surface-container-highest border border-outline-variant border-opacity-30 rounded shrink-0"></div>
-          <div class="w-10 h-5 bg-surface-container-highest rounded-default shrink-0"></div>
-        </div>
+  <div class="grid grid-cols-2 md:grid-cols-5 gap-gutter" id="new-arrivals-grid">
+    {newArrivals.map((workflow) => {
+      const dateStr = formatLastInstalled(workflow.createdAt || workflow.lastInstalledAt);
+      return (
+        <a
+          href={`/workflows/${workflow.name}`}
+          class="card-surface rounded-lg p-md flex flex-col gap-sm transition-all group cursor-pointer h-full hover:border-primary block"
+          data-workflow-name={workflow.name}
+        >
+          <div class="flex justify-between items-start gap-xs">
+            <div class="w-8 h-8 bg-surface-container-high border border-outline-variant rounded flex items-center justify-center shrink-0 group-hover:border-primary transition-colors">
+              <span class="material-symbols-outlined text-primary text-[18px]">{workflow.icon}</span>
+            </div>
+            <div
+              class="font-code-sm text-[10px] font-semibold bg-surface-container-low text-primary border border-primary border-opacity-35 px-1.5 py-0.5 rounded flex items-center gap-1 shrink-0 uppercase tracking-wider"
+              title={`Published version ${workflow.version}`}
+            >
+              <span class="w-1.5 h-1.5 rounded-full bg-primary animate-pulse"></span>
+              <span>NEW</span>
+            </div>
+          </div>
 
-        <!-- Headline and Subtitle Skeletons -->
-        <div class="mt-xs space-y-2">
-          <div class="h-4 bg-surface-container-highest rounded-default w-3/4"></div>
-          <div class="h-3 bg-surface-container-high rounded-default w-1/2"></div>
-        </div>
+          <div class="mt-xs">
+            <h3 class="font-headline-md text-[14px] leading-[20px] font-semibold group-hover:text-primary transition-colors line-clamp-1">
+              {workflow.title}
+            </h3>
+            <p class="font-body-sm text-[12px] leading-[16px] text-on-surface-variant line-clamp-1 mt-0.5 mb-1">
+              {workflow.packageName}
+            </p>
+            {dateStr && (
+              <p class="font-code-sm text-[10px] text-on-surface-variant opacity-60 mb-1">
+                Added {dateStr}
+              </p>
+            )}
+            <p class="font-body-sm text-[11px] leading-[15px] text-on-surface-variant mt-1 opacity-80 line-clamp-3">
+              {workflow.description}
+            </p>
+          </div>
 
-        <!-- Tags Skeletons -->
-        <div class="flex gap-xs mt-auto pt-sm flex-wrap">
-          <div class="h-4 bg-surface-container-high rounded-default w-8"></div>
-          <div class="h-4 bg-surface-container-high rounded-default w-12"></div>
-        </div>
+          <div class="flex gap-xs mt-auto pt-sm flex-wrap items-center justify-between">
+            <div class="flex gap-xs flex-wrap">
+              {workflow.tags.map((tag) => (
+                <span class="font-code-sm text-[10px] leading-[14px] border border-outline-variant px-1.5 py-0.5 rounded text-outline bg-surface-container-lowest">
+                  {tag}
+                </span>
+              ))}
+            </div>
+            <span class="font-code-sm text-[10px] text-primary opacity-0 group-hover:opacity-100 transition-opacity">
+              &rarr;
+            </span>
+          </div>
+        </a>
+      );
+    })}
+
+    {newArrivals.length === 0 && (
+      <div class="col-span-2 md:col-span-5 card-surface rounded-lg p-xl border border-outline-variant text-center">
+        <p class="font-body-sm text-body-sm text-on-surface-variant">No new arrivals found.</p>
       </div>
-    ))}
+    )}
   </div>
 </section>

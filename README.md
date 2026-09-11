@@ -36,16 +36,34 @@ We use a `Makefile` at the root of the repository to manage tasks across differe
   make dev
   ```
 
+  To target the test API endpoint (`https://ghwm-deployment-tst.ghwfxlab.workers.dev`) for live workflow usage statistics:
+
+  ```bash
+  make dev-test-api
+  # or
+  make dev TARGET_API=test
+  ```
+
 - **Production Build**: Build static assets for production deployment.
 
   ```bash
   make build
+  # or target the test API endpoint for build-time data:
+  make build-test-api
+  # or
+  make build TARGET_API=test
   ```
 
 - **Preview Build**: Preview the built production assets locally.
 
   ```bash
   make preview
+  ```
+
+- **Run UI Tests**: Run unit tests for the UI usage and API integration.
+
+  ```bash
+  make ui-tests
   ```
 
 - **Clean Project**: Clean up dependencies and build artifacts.

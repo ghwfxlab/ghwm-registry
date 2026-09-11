@@ -1,0 +1,351 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import {
+  CATALOG_WORKFLOWS,
+  getApiEndpoint,
+  getWorkflowDetails,
+  formatLastInstalled,
+  isOfficialProvider,
+} from '../../lib/usage';
+
+export async function getStaticPaths() {
+  return CATALOG_WORKFLOWS.map((workflow) => ({
+    params: { name: workflow.name },
+    props: { baseWorkflow: workflow },
+  }));
+}
+
+const { name } = Astro.params;
+const { baseWorkflow } = Astro.props;
+
+const apiEndpoint = getApiEndpoint();
+const workflow = (await getWorkflowDetails(name ?? '', apiEndpoint)) ?? baseWorkflow;
+const lastActive = formatLastInstalled(workflow.lastInstalledAt);
+const isConnected = !!apiEndpoint;
+
+// Example manifest configuration for this workflow
+const ghwmManifestSnippet = `source: ghwfxlab/ghwm-registry
+workflows:
+  - name: ${workflow.name}
+    version: ${workflow.version}
+    update-config-files: true`;
+
+const installCliCommand = 'ghwm install';
+const badgeUrl = `${apiEndpoint || 'https://ghwm-deployment-tst.ghwfxlab.workers.dev'}/v1/badges/${workflow.name}/installs`;
+const badgeMarkdown = `![Installs](${badgeUrl})`;
+---
+
+<Layout title={`${workflow.title} - GHWM Registry`} activeTab="registry">
+  <main class="flex-grow w-full max-w-7xl mx-auto px-margin md:px-lg py-xl flex flex-col gap-xl">
+
+    <!-- Breadcrumb / Back Link -->
+    <div>
+      <a
+        href="/"
+        class="inline-flex items-center gap-xs font-body-sm text-body-sm text-on-surface-variant hover:text-primary transition-colors cursor-pointer"
+      >
+        <span class="material-symbols-outlined text-[18px]">arrow_back</span>
+        Back to Marketplace
+      </a>
+    </div>
+
+    <!-- Package Header Card -->
+    <section class="card-surface rounded-lg p-lg md:p-xl flex flex-col md:flex-row justify-between items-start md:items-center gap-lg">
+      <div class="flex items-start gap-md">
+        <!-- Large Workflow Icon -->
+        <div class="w-14 h-14 bg-surface-container-high border border-outline-variant rounded-lg flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-primary text-[38px]">{workflow.icon}</span>
+        </div>
+
+        <div class="flex flex-col gap-xs">
+          <div class="flex items-center gap-sm flex-wrap">
+            <h1 class="font-headline-lg text-headline-lg font-bold text-on-surface">
+              {workflow.title}
+            </h1>
+            <span class="h-[22px] inline-flex items-center font-code-sm text-code-sm bg-surface-container-high border border-outline-variant px-2 rounded text-secondary font-mono">
+              v{workflow.version}
+            </span>
+            {isOfficialProvider(workflow.owner) && (
+              <a
+                href="/official"
+                class="h-[22px] inline-flex items-center gap-1.5 font-code-sm text-[11px] text-on-surface bg-surface-container-high border border-outline-variant px-2 rounded hover:border-outline hover:text-primary transition-colors"
+                title={`Official workflow from @${workflow.owner}`}
+              >
+                <svg class="w-3.5 h-3.5 text-secondary shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                  <path fill-rule="evenodd" d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z" clip-rule="evenodd" />
+                </svg>
+                <span>Official: @{workflow.owner}</span>
+              </a>
+            )}
+            {isConnected && (
+              <span
+                class="h-[22px] inline-flex items-center gap-1.5 font-code-sm text-[11px] text-secondary bg-surface-container-low border border-secondary border-opacity-35 px-2 rounded"
+                title={`Live telemetry from: ${apiEndpoint}`}
+              >
+                <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
+                <span>test API</span>
+              </span>
+            )}
+          </div>
+
+          <p class="font-code-sm text-code-sm text-on-surface-variant">
+            {workflow.packageName}
+          </p>
+
+          <div class="flex gap-xs mt-xs flex-wrap items-center">
+            {workflow.tags.map((tag) => (
+              <span class="font-code-sm text-[11px] leading-[15px] border border-outline-variant px-2 py-0.5 rounded text-outline bg-surface-container-lowest">
+                {tag}
+              </span>
+            ))}
+            <span class="font-code-sm text-[11px] text-outline ml-sm">
+              License: MIT
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Quick Metrics Header Pill -->
+      <div class="flex items-center gap-sm shrink-0 flex-wrap">
+        <div class="card-surface rounded-default px-md py-sm flex flex-col items-center min-w-[90px] border border-outline-variant">
+          <span class="font-headline-md text-headline-md font-bold text-secondary font-mono">
+            {workflow.installs}
+          </span>
+          <span class="font-code-sm text-[11px] text-on-surface-variant flex items-center gap-0.5">
+            <span class="material-symbols-outlined text-[12px]">download</span>
+            installs
+          </span>
+        </div>
+
+        <div class="card-surface rounded-default px-md py-sm flex flex-col items-center min-w-[90px] border border-outline-variant">
+          <span class="font-headline-md text-headline-md font-bold text-on-surface font-mono">
+            {workflow.updates}
+          </span>
+          <span class="font-code-sm text-[11px] text-on-surface-variant flex items-center gap-0.5">
+            <span class="material-symbols-outlined text-[12px]">update</span>
+            updates
+          </span>
+        </div>
+
+        <a
+          href={`https://github.com/ghwfxlab/ghwm-registry/tree/main/workflows/${workflow.name}`}
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-secondary font-body-sm text-body-sm px-md py-sm rounded-default flex items-center gap-xs hover:border-primary transition-colors h-[54px]"
+        >
+          <span class="material-symbols-outlined text-[18px]">code</span>
+          View Source
+        </a>
+      </div>
+    </section>
+
+    <!-- Main Content & Sidebar Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-gutter">
+
+      <!-- Left Column: Detailed Documentation -->
+      <div class="lg:col-span-2 flex flex-col gap-lg">
+
+        <!-- Overview Section -->
+        <section class="card-surface rounded-lg p-lg flex flex-col gap-md">
+          <h2 class="font-headline-md text-headline-md font-semibold text-on-surface flex items-center gap-sm">
+            <span class="material-symbols-outlined text-primary text-[20px]">info</span>
+            Overview
+          </h2>
+          <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+            {workflow.description}
+          </p>
+        </section>
+
+        <!-- What Gets Installed Section -->
+        <section class="card-surface rounded-lg p-lg flex flex-col gap-md">
+          <h2 class="font-headline-md text-headline-md font-semibold text-on-surface flex items-center gap-sm">
+            <span class="material-symbols-outlined text-secondary text-[20px]">folder_open</span>
+            What Gets Installed
+          </h2>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">
+            When you run <code class="font-mono text-secondary bg-surface-container-low px-1 py-0.5 rounded">ghwm install</code>, the following files are synchronized into your repository:
+          </p>
+          <ul class="font-code-sm text-code-sm flex flex-col gap-xs text-on-surface-variant list-disc list-inside">
+            <li><code class="text-on-surface font-mono">.github/workflows/{workflow.name}.yaml</code> — The workflow pipeline definition</li>
+            <li><code class="text-on-surface font-mono">ghwm.lock</code> — Immutable lockfile tracking installed package versions</li>
+            {workflow.name === 'super-linter' && (
+              <>
+                <li><code class="text-on-surface font-mono">.github/super-linter.env</code> — Linter activation environment variables</li>
+                <li><code class="text-on-surface font-mono">.github/super-linter-fix.env</code> — Auto-fix configuration settings</li>
+                <li><code class="text-on-surface font-mono">.github/linters/</code> — Linter rules (yaml, markdown, actionlint, textlint)</li>
+              </>
+            )}
+            {workflow.name === 'auto-assign-pr' && (
+              <>
+                <li><code class="text-on-surface font-mono">.github/auto_assign.yaml</code> — Reviewer and assignee triage rules</li>
+              </>
+            )}
+          </ul>
+        </section>
+
+        <!-- How It Works & Permissions -->
+        <section class="card-surface rounded-lg p-lg flex flex-col gap-md">
+          <h2 class="font-headline-md text-headline-md font-semibold text-on-surface flex items-center gap-sm">
+            <span class="material-symbols-outlined text-primary text-[20px]">settings</span>
+            Permissions & Triggers
+          </h2>
+          <div class="overflow-x-auto">
+            <table class="w-full font-body-sm text-body-sm text-left border-collapse">
+              <thead>
+                <tr class="border-b border-outline-variant text-on-surface font-semibold">
+                  <th class="py-sm pr-md">Scope</th>
+                  <th class="py-sm pr-md">Access</th>
+                  <th class="py-sm">Description</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-outline-variant text-on-surface-variant font-code-sm text-[12px]">
+                <tr>
+                  <td class="py-sm pr-md text-on-surface font-mono">contents</td>
+                  <td class="py-sm pr-md text-secondary font-mono">write</td>
+                  <td class="py-sm">Allows workflow to write fixes or trigger downstream actions</td>
+                </tr>
+                <tr>
+                  <td class="py-sm pr-md text-on-surface font-mono">pull-requests</td>
+                  <td class="py-sm pr-md text-secondary font-mono">write</td>
+                  <td class="py-sm">Assigns reviewers, PR triage comments, and metadata</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </section>
+
+        <!-- Endpoint Badge Integration -->
+        <section class="card-surface rounded-lg p-lg flex flex-col gap-md">
+          <h2 class="font-headline-md text-headline-md font-semibold text-on-surface flex items-center gap-sm">
+            <span class="material-symbols-outlined text-secondary text-[20px]">verified</span>
+            Endpoint Badge
+          </h2>
+          <p class="font-body-sm text-body-sm text-on-surface-variant">
+            Embed live installation count in your repository's README via Cloudflare Worker badge API:
+          </p>
+          <div class="terminal-bg border border-outline-variant rounded-default p-sm flex items-center justify-between gap-sm">
+            <code id="badge-code" class="font-code-sm text-code-sm text-secondary select-all break-all">
+              {badgeMarkdown}
+            </code>
+            <button
+              id="copy-badge-btn"
+              class="btn-secondary px-sm py-1 rounded text-outline hover:text-on-surface text-xs shrink-0 cursor-pointer"
+            >
+              Copy
+            </button>
+          </div>
+        </section>
+
+      </div>
+
+      <!-- Right Column: Installation & Package Metadata (Sidebar) -->
+      <div class="flex flex-col gap-lg">
+
+        <!-- Quick Install Widget -->
+        <section class="card-surface rounded-lg p-lg flex flex-col gap-md sticky top-24">
+          <h3 class="font-headline-md text-headline-md font-semibold text-on-surface flex items-center gap-xs">
+            <span class="material-symbols-outlined text-secondary text-[20px]">terminal</span>
+            Quick Install
+          </h3>
+
+          <p class="font-body-sm text-body-sm text-on-surface-variant">
+            1. Add to <code class="font-mono text-secondary">ghwm.yml</code> in your repository:
+          </p>
+          <div class="terminal-bg border border-outline-variant rounded-default p-sm">
+            <pre class="font-code-sm text-code-sm text-secondary select-all whitespace-pre overflow-x-auto"><code>{ghwmManifestSnippet}</code></pre>
+          </div>
+
+          <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">
+            2. Run CLI command:
+          </p>
+          <div class="terminal-bg border border-outline-variant rounded-default px-sm py-2 flex items-center justify-between shadow-sm">
+            <code class="font-code-md text-code-md text-secondary select-all font-mono">
+              {installCliCommand}
+            </code>
+            <button
+              id="copy-cli-btn"
+              aria-label="Copy install command"
+              class="text-outline hover:text-on-surface transition-colors cursor-pointer rounded bg-[#010409] flex items-center justify-center h-[28px] w-[36px] shrink-0"
+            >
+              <span id="copy-cli-icon" class="material-symbols-outlined text-[16px] select-none">content_copy</span>
+            </button>
+          </div>
+
+          <!-- Package Metadata Table -->
+          <div class="border-t border-outline-variant pt-md mt-xs flex flex-col gap-sm font-body-sm text-body-sm text-on-surface-variant">
+            <div class="flex justify-between py-0.5">
+              <span>Registry Source</span>
+              <span class="font-mono text-on-surface text-xs">ghwfxlab/ghwm-registry</span>
+            </div>
+            <div class="flex justify-between py-0.5">
+              <span>Package</span>
+              <span class="font-mono text-on-surface text-xs">{workflow.packageName}</span>
+            </div>
+            <div class="flex justify-between py-0.5">
+              <span>Version</span>
+              <span class="font-mono text-on-surface text-xs">{workflow.version}</span>
+            </div>
+            <div class="flex justify-between py-0.5">
+              <span>Total Installs</span>
+              <span class="font-mono text-secondary text-xs">{workflow.installs}</span>
+            </div>
+            <div class="flex justify-between py-0.5">
+              <span>Total Updates</span>
+              <span class="font-mono text-on-surface text-xs">{workflow.updates}</span>
+            </div>
+            {lastActive && (
+              <div class="flex justify-between py-0.5">
+                <span>Last Active</span>
+                <span class="font-mono text-on-surface text-xs">{lastActive}</span>
+              </div>
+            )}
+            <div class="flex justify-between py-0.5">
+              <span>License</span>
+              <span class="font-mono text-on-surface text-xs">MIT</span>
+            </div>
+          </div>
+        </section>
+
+      </div>
+
+    </div>
+
+  </main>
+</Layout>
+
+<script>
+  // Clipboard copy interaction for CLI command
+  const copyCliBtn = document.getElementById('copy-cli-btn');
+  const copyCliIcon = document.getElementById('copy-cli-icon');
+  if (copyCliBtn && copyCliIcon) {
+    copyCliBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText('ghwm install');
+        copyCliIcon.textContent = 'check';
+        setTimeout(() => {
+          copyCliIcon.textContent = 'content_copy';
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy: ', err);
+      }
+    });
+  }
+
+  // Clipboard copy interaction for Badge Markdown
+  const copyBadgeBtn = document.getElementById('copy-badge-btn');
+  const badgeCode = document.getElementById('badge-code');
+  if (copyBadgeBtn && badgeCode) {
+    copyBadgeBtn.addEventListener('click', async () => {
+      try {
+        await navigator.clipboard.writeText(badgeCode.textContent?.trim() || '');
+        const prevText = copyBadgeBtn.textContent;
+        copyBadgeBtn.textContent = 'Copied!';
+        setTimeout(() => {
+          copyBadgeBtn.textContent = prevText;
+        }, 2000);
+      } catch (err) {
+        console.error('Failed to copy badge: ', err);
+      }
+    });
+  }
+</script>

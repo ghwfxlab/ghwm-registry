@@ -9,6 +9,13 @@ repos:
         pass_filenames: false
         always_run: true
         require_serial: true
+      - id: ui-tests
+        name: Run UI unit tests
+        entry: make ui-tests
+        language: system
+        pass_filenames: false
+        always_run: true
+        require_serial: true
       - id: workflow-package-version-sync
         name: Patch changed workflow package versions
         entry: python3 scripts/workflow_package_versions.py fix-staged

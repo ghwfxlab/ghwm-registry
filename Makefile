@@ -6,16 +6,20 @@ TEXTLINT_CONFIG ?= .github/linters/.textlintrc
 TEXTLINT_IGNORE ?= .github/linters/.textlintignore
 SHELL := /usr/bin/env bash
 .SHELLFLAGS := -eu -o pipefail -c
+TEST_API_URL ?= https://ghwm-deployment-tst.ghwfxlab.workers.dev
+TARGET_API ?=
 
-.PHONY: help setup dev build preview clean lang lang-fix script-tests setup-precommit precommit super-linter super-linter-fix
+.PHONY: help setup dev dev-test-api build build-test-api preview clean lang lang-fix script-tests ui-tests setup-precommit precommit super-linter super-linter-fix
 
 help:
 	@echo "Available commands:"
 	@echo ""
 	@echo "development targets:"
 	@echo "  setup            - Install dependencies for the Astro UI in $(UI_DIR)"
-	@echo "  dev              - Start the Astro UI development server"
-	@echo "  build            - Build the Astro UI for production"
+	@echo "  dev              - Start the Astro UI development server (supports TARGET_API=test)"
+	@echo "  dev-test-api     - Start the Astro UI development server targeting test API ($(TEST_API_URL))"
+	@echo "  build            - Build the Astro UI for production (supports TARGET_API=test)"
+	@echo "  build-test-api   - Build the Astro UI for production targeting test API ($(TEST_API_URL))"
 	@echo "  preview          - Preview the production build locally"
 	@echo "  clean            - Clean build outputs and temporary files"
 	@echo ""
@@ -23,6 +27,7 @@ help:
 	@echo "  lang             - Run textlint on prose"
 	@echo "  lang-fix         - Run textlint with --fix"
 	@echo "  script-tests     - Run tests for repository helper scripts"
+	@echo "  ui-tests         - Run UI unit tests"
 	@echo "  setup-precommit  - Install pre-commit hooks"
 	@echo "  precommit        - Run pre-commit on all files"
 	@echo "  super-linter     - Run super-linter via Docker"
@@ -33,12 +38,42 @@ setup:
 	npm install --prefix $(UI_DIR)
 
 dev:
-	@echo "Starting development server..."
-	npm run dev --prefix $(UI_DIR)
+	@if [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "test" ]; then \
+		echo "Targeting test API ($(TEST_API_URL))..."; \
+		PUBLIC_API_URL="$(TEST_API_URL)" npm run dev --prefix $(UI_DIR); \
+	elif [ -n "$${API_URL:-}" ]; then \
+		echo "Targeting custom API ($$API_URL)..."; \
+		PUBLIC_API_URL="$$API_URL" npm run dev --prefix $(UI_DIR); \
+	elif [ -n "$${PUBLIC_API_URL:-}" ]; then \
+		echo "Targeting API ($$PUBLIC_API_URL)..."; \
+		PUBLIC_API_URL="$$PUBLIC_API_URL" npm run dev --prefix $(UI_DIR); \
+	else \
+		echo "Starting development server..."; \
+		npm run dev --prefix $(UI_DIR); \
+	fi
+
+dev-test-api:
+	@echo "Targeting test API ($(TEST_API_URL))..."
+	PUBLIC_API_URL="$(TEST_API_URL)" npm run dev --prefix $(UI_DIR)
 
 build:
-	@echo "Building Astro UI for production..."
-	npm run build --prefix $(UI_DIR)
+	@if [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "test" ]; then \
+		echo "Targeting test API ($(TEST_API_URL))..."; \
+		PUBLIC_API_URL="$(TEST_API_URL)" npm run build --prefix $(UI_DIR); \
+	elif [ -n "$${API_URL:-}" ]; then \
+		echo "Targeting custom API ($$API_URL)..."; \
+		PUBLIC_API_URL="$$API_URL" npm run build --prefix $(UI_DIR); \
+	elif [ -n "$${PUBLIC_API_URL:-}" ]; then \
+		echo "Targeting API ($$PUBLIC_API_URL)..."; \
+		PUBLIC_API_URL="$$PUBLIC_API_URL" npm run build --prefix $(UI_DIR); \
+	else \
+		echo "Building Astro UI for production..."; \
+		npm run build --prefix $(UI_DIR); \
+	fi
+
+build-test-api:
+	@echo "Building Astro UI for production targeting test API ($(TEST_API_URL))..."
+	PUBLIC_API_URL="$(TEST_API_URL)" npm run build --prefix $(UI_DIR)
 
 preview:
 	@echo "Previewing production build..."
@@ -68,6 +103,10 @@ lang-fix: check-lang-env
 script-tests:
 	@echo "[script-tests] Running helper script tests..."
 	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_workflow_package_versions.py -v
+
+ui-tests:
+	@echo "[ui-tests] Running UI unit tests..."
+	@npm test --prefix $(UI_DIR)
 
 setup-precommit:
 	@echo "[setup-precommit] Installing pre-commit hooks..."

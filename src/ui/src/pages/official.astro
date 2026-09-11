@@ -1,0 +1,255 @@
+---
+import Layout from '../layouts/Layout.astro';
+import {
+  getOfficialWorkflows,
+  getApiEndpoint,
+  formatLastInstalled,
+} from '../lib/usage';
+
+const apiEndpoint = getApiEndpoint();
+const activeProvider = 'ghwfxlab';
+const { workflows, totalInstallations, isConnected } = await getOfficialWorkflows(apiEndpoint, activeProvider);
+---
+
+<Layout title="Official Workflows - GHWM Registry" activeTab="official">
+  <main class="flex-grow w-full max-w-7xl mx-auto px-margin md:px-lg py-xl flex flex-col gap-xl">
+
+    <!-- Header & Breadcrumb -->
+    <div class="flex flex-col gap-sm">
+      <div class="flex items-center gap-xs text-on-surface-variant font-body-sm text-body-sm">
+        <a href="/" class="hover:text-primary transition-colors flex items-center gap-1">
+          <span class="material-symbols-outlined text-[16px]">arrow_back</span>
+          Home
+        </a>
+        <span>/</span>
+        <span class="text-on-surface">Official</span>
+      </div>
+
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-md border-b border-outline-variant pb-md mt-xs">
+        <div>
+          <h1 class="font-headline-lg text-headline-lg font-bold text-on-surface flex items-center gap-sm">
+            <span class="material-symbols-outlined text-primary text-[32px]" style="font-variation-settings: 'FILL' 1;">
+              verified
+            </span>
+            Official Workflows
+          </h1>
+          <p class="font-body-md text-body-md text-on-surface-variant mt-1">
+            Workflows curated, officially maintained, and verified by trusted providers, starting with <span class="text-primary font-mono font-semibold">@{activeProvider}</span>.
+          </p>
+        </div>
+
+        {isConnected && (
+          <div class="flex items-center gap-sm shrink-0">
+            <span
+              class="font-code-sm text-[12px] text-secondary bg-surface-container-low border border-secondary border-opacity-35 px-3 py-1 rounded flex items-center gap-2"
+              title={`Target API: ${apiEndpoint}`}
+            >
+              <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
+              <span>test API connected ({totalInstallations} total installs)</span>
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+
+    <!-- Official Provider Highlight Banner -->
+    <div class="card-surface rounded-lg p-md md:p-lg border border-outline-variant flex flex-col md:flex-row items-start md:items-center justify-between gap-md">
+      <div class="flex items-center gap-md">
+        <div class="w-12 h-12 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0">
+          <span class="material-symbols-outlined text-primary text-[34px]" style="font-variation-settings: 'FILL' 1;">
+            verified_user
+          </span>
+        </div>
+        <div>
+          <div class="flex items-center gap-sm flex-wrap">
+            <span class="font-headline-sm text-headline-sm font-bold text-on-surface">@{activeProvider}</span>
+            <span class="h-[22px] inline-flex items-center gap-1.5 font-code-sm text-[11px] text-on-surface bg-surface-container-high border border-outline-variant px-2 rounded font-medium">
+              <svg class="w-3.5 h-3.5 text-secondary shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z" clip-rule="evenodd" />
+              </svg>
+              First Official Provider
+            </span>
+            <span class="h-[22px] inline-flex items-center font-code-sm text-[11px] text-on-surface-variant bg-surface-container-high border border-outline-variant px-2 rounded">
+              Core Maintainer
+            </span>
+          </div>
+          <p class="font-body-sm text-body-sm text-on-surface-variant mt-1">
+            Official GitHub Actions workflows developed and audited by the GHWM core team.
+          </p>
+        </div>
+      </div>
+
+      <div class="flex items-center gap-sm w-full md:w-auto justify-between md:justify-end">
+        <div class="font-code-sm text-[12px] text-on-surface-variant">
+          Showing <span class="text-primary font-bold">{workflows.length}</span> official {workflows.length === 1 ? 'workflow' : 'workflows'}
+        </div>
+        <a
+          href="https://github.com/ghwfxlab"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-body-sm text-body-sm text-on-surface hover:text-primary transition-colors flex items-center gap-1 border border-outline-variant px-3 py-1.5 rounded-default hover:bg-surface-container shrink-0"
+        >
+          <span>Organization Profile</span>
+          <span class="material-symbols-outlined text-[16px]">open_in_new</span>
+        </a>
+      </div>
+    </div>
+
+    <!-- Official Workflows Cards Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 gap-lg">
+      {workflows.map((workflow) => {
+        const lastActive = formatLastInstalled(workflow.lastInstalledAt);
+        return (
+          <div class="card-surface rounded-lg p-lg border border-outline-variant flex flex-col justify-between hover:border-primary transition-colors group">
+            <div class="flex flex-col gap-md">
+              <!-- Card Top: Icon, Title, Official Badge & Version -->
+              <div class="flex items-start justify-between gap-sm">
+                <div class="flex items-center gap-md">
+                  <div class="w-12 h-12 bg-surface-container-high border border-outline-variant rounded-lg flex items-center justify-center shrink-0 group-hover:border-primary transition-colors">
+                    <span class="material-symbols-outlined text-primary text-[32px]">
+                      {workflow.icon}
+                    </span>
+                  </div>
+                  <div>
+                    <div class="flex items-center gap-sm flex-wrap">
+                      <a
+                        href={`/workflows/${workflow.name}`}
+                        class="font-headline-md text-headline-md font-bold text-on-surface hover:text-primary transition-colors"
+                      >
+                        {workflow.title}
+                      </a>
+                      <span class="h-[22px] inline-flex items-center font-code-sm text-[11px] bg-surface-container-high border border-outline-variant px-2 rounded text-secondary font-mono">
+                        v{workflow.version}
+                      </span>
+                    </div>
+                    <span class="font-code-sm text-[12px] text-on-surface-variant font-mono block mt-0.5">
+                      {workflow.packageName}
+                    </span>
+                  </div>
+                </div>
+
+                <!-- Verified Pill -->
+                <span
+                  class="h-[22px] inline-flex items-center gap-1.5 font-code-sm text-[11px] text-on-surface bg-surface-container-high border border-outline-variant px-2 rounded shrink-0 font-medium"
+                  title="Verified official workflow from @ghwfxlab"
+                >
+                  <svg class="w-3.5 h-3.5 text-secondary shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                    <path fill-rule="evenodd" d="M8 16A8 8 0 1 0 8 0a8 8 0 0 0 0 16Zm3.78-9.72a.75.75 0 0 0-1.06-1.06L6.75 9.19 5.28 7.72a.75.75 0 0 0-1.06 1.06l2 2a.75.75 0 0 0 1.06 0l4.5-4.5Z" clip-rule="evenodd" />
+                  </svg>
+                  Official
+                </span>
+              </div>
+
+              <!-- Description -->
+              <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+                {workflow.description}
+              </p>
+
+              <!-- Tags -->
+              <div class="flex flex-wrap gap-xs">
+                {workflow.tags.map((tag) => (
+                  <span class="font-code-sm text-[11px] bg-surface-container-low border border-outline-variant px-2 py-0.5 rounded text-on-surface-variant">
+                    #{tag}
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            <!-- Card Bottom: Telemetry & Actions -->
+            <div class="mt-lg pt-md border-t border-outline-variant flex flex-col sm:flex-row sm:items-center justify-between gap-md">
+              <!-- Live Metrics -->
+              <div class="flex items-center gap-md font-code-sm text-[12px] text-on-surface-variant">
+                <div class="flex items-center gap-1" title="Installations">
+                  <span class="material-symbols-outlined text-[16px] text-primary">download</span>
+                  <span class="font-semibold text-on-surface">{workflow.installs}</span> installs
+                </div>
+                <div class="flex items-center gap-1" title="Updates">
+                  <span class="material-symbols-outlined text-[16px] text-secondary">sync</span>
+                  <span class="font-semibold text-on-surface">{workflow.updates}</span> updates
+                </div>
+                {lastActive && (
+                  <div class="hidden sm:flex items-center gap-1" title="Last Active">
+                    <span class="material-symbols-outlined text-[16px] text-outline">schedule</span>
+                    <span>{lastActive}</span>
+                  </div>
+                )}
+              </div>
+
+              <!-- Action Link -->
+              <a
+                href={`/workflows/${workflow.name}`}
+                class="font-body-sm text-body-sm font-semibold text-primary hover:underline flex items-center gap-1 self-end sm:self-auto"
+              >
+                <span>View Details</span>
+                <span class="material-symbols-outlined text-[16px]">arrow_forward</span>
+              </a>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+
+    <!-- Call to Action Banner: Become an Official Provider -->
+    <section class="card-surface rounded-lg p-lg md:p-xl border border-outline-variant bg-surface-container-low flex flex-col lg:flex-row items-start lg:items-center justify-between gap-lg w-full mt-sm">
+      <div class="flex items-start gap-md flex-1 w-full">
+        <div class="w-14 h-14 rounded-lg bg-surface-container-high border border-outline-variant flex items-center justify-center shrink-0 mt-1">
+          <span class="material-symbols-outlined text-secondary text-[42px]">
+            workspace_premium
+          </span>
+        </div>
+        <div class="flex flex-col gap-xs flex-1 w-full">
+          <h2 class="font-headline-md text-headline-md font-bold text-on-surface">
+            Become an Official Workflow Provider
+          </h2>
+          <p class="font-body-sm text-body-sm text-on-surface-variant leading-relaxed">
+            Are you maintaining reusable, production-ready GitHub Actions workflows for your organization or open-source community?
+            Apply to become a recognized official provider on the GHWM registry to help developers standardize their CI/CD pipelines safely.
+          </p>
+          <div class="flex flex-wrap items-center gap-x-md gap-y-1 font-code-sm text-[12px] text-on-surface-variant mt-2">
+            <span class="flex items-center gap-1.5 text-on-surface">
+              <svg class="w-4 h-4 text-secondary shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+              </svg>
+              Verified Provider Badge
+            </span>
+            <span class="flex items-center gap-1.5 text-on-surface">
+              <svg class="w-4 h-4 text-secondary shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+              </svg>
+              Official Directory Listing
+            </span>
+            <span class="flex items-center gap-1.5 text-on-surface">
+              <svg class="w-4 h-4 text-secondary shrink-0" viewBox="0 0 16 16" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z" clip-rule="evenodd" />
+              </svg>
+              Live Telemetry Badges
+            </span>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-col sm:flex-row lg:flex-col gap-sm shrink-0 w-full lg:w-auto">
+        <a
+          href="https://github.com/ghwfxlab/ghwm/issues/new?title=%5BOfficial+Provider+Application%5D+%3CProvider+Name%3E&body=%23%23+Official+Workflow+Provider+Application%0A%0A-%20**Organization%2FMaintainer%20Name**%3A%20%0A-%20**GitHub%20Repository%20or%20Org**%3A%20%0A-%20**Proposed%20Workflows**%3A%20%0A-%20**Maintenance%20%26%20Security%20Commitment**%3A%20%0A"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="btn-primary font-body-sm text-body-sm px-lg py-md rounded-default flex items-center justify-center gap-sm shadow-sm transition-transform active:scale-95"
+        >
+          <span>Apply on GitHub</span>
+          <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+        </a>
+
+        <a
+          href="https://github.com/ghwfxlab/ghwm"
+          target="_blank"
+          rel="noopener noreferrer"
+          class="font-body-sm text-body-sm text-on-surface hover:text-primary transition-colors border border-outline-variant px-lg py-md rounded-default hover:bg-surface-container flex items-center justify-center gap-sm text-center"
+        >
+          <span>View GitHub Repo</span>
+          <span class="material-symbols-outlined text-[18px]">open_in_new</span>
+        </a>
+      </div>
+    </section>
+
+  </main>
+</Layout>

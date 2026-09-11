@@ -1,11 +1,9 @@
 ---
-// Installation commands from ghwfxlab/ghwm README
-const installCommands = {
-  'uv': 'uv tool install git+https://github.com/ghwfxlab/ghwm.git',
-  'uv-pinned': 'uv tool install git+https://github.com/ghwfxlab/ghwm.git@v1.0.0',
-  'pipx': 'pipx install git+https://github.com/ghwfxlab/ghwm.git',
-  'pip': 'pip install git+https://github.com/ghwfxlab/ghwm.git'
-};
+import { fetchLatestGhwmTag, getInstallCommands, DEFAULT_GHWM_REPO } from '../lib/github';
+
+// Fetch the latest tag directly from GitHub at build time (with graceful fallback)
+const latestTag = await fetchLatestGhwmTag();
+const installCommands = getInstallCommands(latestTag);
 ---
 
 <!-- Quick Action Buttons & Interactive Clipboard / Selector -->
@@ -30,6 +28,7 @@ const installCommands = {
         <button
           data-method="uv-pinned"
           class="method-btn bg-surface-container-low text-primary font-bold"
+          title={`Install latest tagged release (${latestTag})`}
         >
           uv (pinned)
         </button>
@@ -73,7 +72,7 @@ const installCommands = {
   </div>
 </div>
 
-<script define:vars={{ installCommands }}>
+<script define:vars={{ installCommands, repo: DEFAULT_GHWM_REPO }}>
   // Select selectors
   const buttons = document.querySelectorAll('.method-btn');
   const codeDisplay = document.getElementById('install-command');
@@ -97,6 +96,48 @@ const installCommands = {
       }
     });
   });
+
+  // Client-side fetch to ensure the pinned version is always the latest even if published after build
+  (async () => {
+    try {
+      let freshTag = null;
+      const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+        headers: { Accept: 'application/vnd.github+json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data && typeof data.tag_name === 'string' && data.tag_name.trim()) {
+          freshTag = data.tag_name.trim().replace(/^@+/, '');
+        }
+      } else if (res.status === 404) {
+        const tagsRes = await fetch(`https://api.github.com/repos/${repo}/tags?per_page=1`, {
+          headers: { Accept: 'application/vnd.github+json' }
+        });
+        if (tagsRes.ok) {
+          const tags = await tagsRes.json();
+          if (Array.isArray(tags) && tags.length > 0 && typeof tags[0]?.name === 'string') {
+            freshTag = tags[0].name.trim().replace(/^@+/, '');
+          }
+        }
+      }
+
+      if (freshTag) {
+        const freshCommand = `uv tool install git+https://github.com/${repo}.git@${freshTag}`;
+        installCommands['uv-pinned'] = freshCommand;
+
+        // If uv-pinned is currently active, update the code display immediately
+        const pinnedBtn = document.querySelector('.method-btn[data-method="uv-pinned"]');
+        if (pinnedBtn && pinnedBtn.classList.contains('font-bold') && codeDisplay) {
+          codeDisplay.textContent = freshCommand;
+        }
+        if (pinnedBtn) {
+          pinnedBtn.setAttribute('title', `Install latest tagged release (${freshTag})`);
+        }
+      }
+    } catch {
+      // Offline or rate-limited: graceful fallback to build-time tag
+    }
+  })();
 
   // Material Tailwind interactive Clipboard logic
   const copyBtn = document.getElementById('copy-command-btn');
