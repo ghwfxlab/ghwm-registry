@@ -17,13 +17,11 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  build:
-    name: Build UI
+  deploy:
+    name: Build & Deploy UI
     runs-on: ubuntu-24.04
     permissions:
       contents: read
-    outputs:
-      version: ${{ steps.version.outputs.version }}
     steps:
       - name: Checkout The Source Code
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -56,20 +54,6 @@ jobs:
           npm run build --prefix src/ui
           touch src/ui/dist/.nojekyll
 
-      - name: Upload dist artifact
-        uses: actions/upload-artifact@4cec3d8aa04e39d1a68397de0c4cd6fb9926d141 # v4.6.1
-        with:
-          name: ui-dist
-          path: src/ui/dist/
-          retention-days: 7
-
-  deploy:
-    name: Deploy to GHWM GitHub Pages & Release
-    runs-on: ubuntu-24.04
-    needs: build
-    permissions:
-      contents: read
-    steps:
       - name: Generate GH App token
         id: app-token
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
@@ -78,19 +62,14 @@ jobs:
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }} # zizmor: ignore[secrets-outside-env]
           owner: ghwfxlab
           repositories: ghwm
-
-      - name: Download UI dist artifact
-        uses: actions/download-artifact@cc203385981b70ca67e1cc392babf9cc229d5806 # v4.1.9
-        with:
-          name: ui-dist
-          path: dist
+          permission-contents: write
 
       - name: Deploy to gh-pages branch in ghwm
         env:
           DEPLOY_TOKEN: ${{ steps.app-token.outputs.token }}
-          UI_VERSION: ${{ needs.build.outputs.version }}
-        run: |
-          cd dist
+          UI_VERSION: ${{ steps.version.outputs.version }}
+        run: | # zizmor: ignore[template-injection]
+          cd src/ui/dist
           git init -b gh-pages
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
@@ -99,18 +78,16 @@ jobs:
           git push --force "https://x-access-token:${DEPLOY_TOKEN}@github.com/ghwfxlab/ghwm.git" gh-pages
 
       - name: Create UI Release in ghwm
-        uses: softprops/action-gh-release@3d0d9888cb7fd7b750713d6e236d1fcb99157228 # v3.0.2
-        with:
-          token: ${{ steps.app-token.outputs.token }}
-          repository: ghwfxlab/ghwm
-          target_commitish: gh-pages
-          tag_name: ui-v${{ needs.build.outputs.version }}
-          name: UI Release v${{ needs.build.outputs.version }}
-          body: |
-            Automated release of the GHWM Registry UI deployed to GitHub Pages (`gh-pages`).
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          UI_VERSION: ${{ steps.version.outputs.version }}
+        run: | # zizmor: ignore[template-injection]
+          gh release create "ui-v${UI_VERSION}" \
+            --repo ghwfxlab/ghwm \
+            --target gh-pages \
+            --title "UI Release v${UI_VERSION}" \
+            --notes "Automated release of the GHWM Registry UI deployed to GitHub Pages (\`gh-pages\`).
 
-            - **Live Site**: https://ghwfxlab.github.io/ghwm/
-            - **Source Commit**: https://github.com/ghwfxlab/ghwm-registry/commit/${{ github.sha }}
-            - **API Target**: Production (`https://ghwm-deployment-prd.ghwfxlab.workers.dev`)
-          generate_release_notes: false
-          prerelease: false
+          - **Live Site**: https://ghwfxlab.github.io/ghwm/
+          - **Source Commit**: https://github.com/ghwfxlab/ghwm-registry/commit/${GITHUB_SHA}
+          - **API Target**: Production (\`https://ghwm-deployment-prd.ghwfxlab.workers.dev\`)"
