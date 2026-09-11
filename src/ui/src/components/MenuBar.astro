@@ -1,6 +1,6 @@
 ---
 interface Props {
-  activeTab?: 'explore' | 'registry' | 'official' | 'docs' | 'cli';
+  activeTab?: 'explore' | 'registry' | 'official' | 'docs';
   searchPlaceholder?: string;
 }
 
@@ -30,21 +30,23 @@ const getLinkClass = (tab: string) => {
         <a class={getLinkClass('explore')} href="/">Explore</a>
         <a class={getLinkClass('registry')} href="/registry">Registry</a>
         <a class={getLinkClass('official')} href="/official">Official</a>
-        <a class={getLinkClass('docs')} href="/docs">Docs</a>
-        <a class={getLinkClass('cli')} href="/cli">CLI</a>
+        <a class={getLinkClass('docs')} href="https://github.com/ghwfxlab/ghwm" target="_blank" rel="noopener noreferrer">Docs</a>
       </nav>
     </div>
 
     <!-- Search Bar & Controls -->
     <div class="flex items-center gap-md">
-      <div class="hidden md:flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus">
+      <form action="/registry" method="GET" class="hidden md:flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus">
         <span class="material-symbols-outlined text-outline text-[18px] mr-2">search</span>
         <input
+          id="menu-search-input"
+          name="q"
           type="text"
-          class="bg-transparent border-none outline-none text-body-sm font-body-sm text-on-surface w-48 focus:ring-0 p-0 placeholder-outline"
+          class="menu-search-input bg-transparent border-none outline-none text-body-sm font-body-sm text-on-surface w-48 focus:ring-0 p-0 placeholder-outline"
           placeholder={searchPlaceholder}
+          autocomplete="off"
         />
-      </div>
+      </form>
 
       <!-- Mobile Menu Toggle Button (For high-fidelity responsiveness) -->
       <button
@@ -62,22 +64,37 @@ const getLinkClass = (tab: string) => {
     <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'explore' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/">Explore</a>
     <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'registry' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/registry">Registry</a>
     <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'official' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/official">Official</a>
-    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'docs' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/docs">Docs</a>
-    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'cli' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="/cli">CLI</a>
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'docs' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="https://github.com/ghwfxlab/ghwm" target="_blank" rel="noopener noreferrer">Docs</a>
 
     <!-- Mobile Search -->
-    <div class="flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus mt-xs">
+    <form action="/registry" method="GET" class="flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus mt-xs">
       <span class="material-symbols-outlined text-outline text-[18px] mr-2">search</span>
       <input
+        id="mobile-search-input"
+        name="q"
         type="text"
-        class="bg-transparent border-none outline-none text-body-sm font-body-sm text-on-surface w-full focus:ring-0 p-0 placeholder-outline"
+        class="menu-search-input bg-transparent border-none outline-none text-body-sm font-body-sm text-on-surface w-full focus:ring-0 p-0 placeholder-outline"
         placeholder={searchPlaceholder}
+        autocomplete="off"
       />
-    </div>
+    </form>
   </div>
 </header>
 
 <script>
+  // Initialize search inputs from URL query if present
+  try {
+    const urlParams = new URLSearchParams(window.location.search);
+    const q = urlParams.get('q');
+    if (q) {
+      document.querySelectorAll<HTMLInputElement>('.menu-search-input').forEach((input) => {
+        input.value = q;
+      });
+    }
+  } catch {
+    // Ignore in non-browser context
+  }
+
   // Simple, high-performance vanilla JS to toggle the mobile menu drawer
   const toggleBtn = document.getElementById('mobile-menu-toggle');
   const mobileMenu = document.getElementById('mobile-menu');

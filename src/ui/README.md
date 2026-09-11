@@ -33,10 +33,29 @@ All commands are run from the root of the project, from a terminal:
 | :------------------------ | :----------------------------------------------- |
 | `npm install`             | Installs dependencies                            |
 | `npm run dev`             | Starts local dev server at `localhost:4321`      |
+| `npm run dev:test-api`    | Starts dev server targeting the test API         |
 | `npm run build`           | Build your production site to `./dist/`          |
+| `npm run build:test-api`  | Build site with data from the test API           |
+| `npm test`                | Run UI and API client unit tests                 |
 | `npm run preview`         | Preview your build locally, before deploying     |
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
+
+## ⚙️ Environment Configuration
+
+To configure the API endpoint used for fetching workflow usage statistics, set `PUBLIC_API_URL`:
+
+- Copy `.env.example` to `.env`:
+
+  ```sh
+  cp .env.example .env
+  ```
+
+- Or pass via environment variable:
+
+  ```sh
+  PUBLIC_API_URL=https://ghwm-deployment-tst.ghwfxlab.workers.dev npm run dev
+  ```
 
 ## 👀 Want to learn more?
 
