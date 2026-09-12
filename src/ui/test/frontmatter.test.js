@@ -6,6 +6,7 @@ import {
   resolveFallbackWorkflowMetadata,
   resolveLocalWorkflowMetadata,
   listLocalWorkflowNames,
+  getGitCreationDate,
 } from '../src/lib/frontmatter.ts';
 
 test('test_parseCommentedFrontmatter_should_extract_yaml_from_delimited_block', () => {
@@ -86,7 +87,7 @@ test('test_resolveLocalWorkflowMetadata_should_load_super_linter_metadata', () =
   assert.strictEqual(meta.icon, 'fact_check');
   assert.strictEqual(meta.owner, 'ghwfxlab');
   assert.strictEqual(meta.packageName, '@ghwfxlab/ghwm-super-linter');
-  assert.strictEqual(meta.version, '1.0.0');
+  assert.strictEqual(meta.version, '1.0.1');
 });
 
 test('test_resolveLocalWorkflowMetadata_should_load_auto_assign_pr_metadata', () => {
@@ -98,7 +99,7 @@ test('test_resolveLocalWorkflowMetadata_should_load_auto_assign_pr_metadata', ()
   assert.strictEqual(meta.icon, 'person_add');
   assert.strictEqual(meta.owner, 'ghwfxlab');
   assert.strictEqual(meta.packageName, '@ghwfxlab/ghwm-auto-assign-pr');
-  assert.strictEqual(meta.version, '1.0.0');
+  assert.strictEqual(meta.version, '1.0.1');
 });
 
 test('test_resolveLocalWorkflowMetadata_should_fallback_to_NA_for_nonexistent_workflow', () => {
@@ -115,4 +116,21 @@ test('test_listLocalWorkflowNames_should_find_local_workflows', () => {
   assert.ok(Array.isArray(names));
   assert.ok(names.includes('super-linter'));
   assert.ok(names.includes('auto-assign-pr'));
+});
+
+test('test_getGitCreationDate_should_return_iso_date_for_workflow_directory', () => {
+  const date = getGitCreationDate('workflows/super-linter');
+  assert.ok(date);
+  assert.ok(!isNaN(new Date(date).getTime()));
+});
+
+test('test_getGitCreationDate_should_return_null_for_nonexistent_directory', () => {
+  const date = getGitCreationDate('workflows/non-existent-directory-xyz');
+  assert.strictEqual(date, null);
+});
+
+test('test_resolveLocalWorkflowMetadata_should_infer_createdAt_from_git_when_not_in_frontmatter', () => {
+  const meta = resolveLocalWorkflowMetadata('super-linter');
+  assert.ok(meta.createdAt);
+  assert.ok(!isNaN(new Date(meta.createdAt).getTime()));
 });
