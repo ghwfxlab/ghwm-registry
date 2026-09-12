@@ -1,16 +1,18 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 import {
-  CATALOG_WORKFLOWS,
   getApiEndpoint,
   getWorkflowDetails,
+  getTrendingWorkflows,
   formatLastInstalled,
   isOfficialProvider,
 } from '../../lib/usage';
 import { withBase } from '../../lib/paths';
 
 export async function getStaticPaths() {
-  return CATALOG_WORKFLOWS.map((workflow) => ({
+  const apiEndpoint = getApiEndpoint();
+  const { workflows } = await getTrendingWorkflows(apiEndpoint);
+  return workflows.map((workflow) => ({
     params: { name: workflow.name },
     props: { baseWorkflow: workflow },
   }));
@@ -22,13 +24,15 @@ const { baseWorkflow } = Astro.props;
 const apiEndpoint = getApiEndpoint();
 const workflow = (await getWorkflowDetails(name ?? '', apiEndpoint)) ?? baseWorkflow;
 const lastActive = formatLastInstalled(workflow.lastInstalledAt);
-const isConnected = !!apiEndpoint;
+
+const sourceRepo = workflow.owner && workflow.owner !== 'N/A' ? `${workflow.owner}/ghwm-registry` : 'google-github-actions/example-workflows';
+const versionStr = workflow.version && workflow.version !== 'N/A' ? workflow.version : 'latest';
 
 // Example manifest configuration for this workflow
-const ghwmManifestSnippet = `source: ghwfxlab/ghwm-registry
+const ghwmManifestSnippet = `source: ${sourceRepo}
 workflows:
   - name: ${workflow.name}
-    version: ${workflow.version}
+    version: ${versionStr}
     update-config-files: true`;
 
 const installCliCommand = 'ghwm install';
@@ -64,7 +68,7 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
               {workflow.title}
             </h1>
             <span class="h-[22px] inline-flex items-center font-code-sm text-code-sm bg-surface-container-high border border-outline-variant px-2 rounded text-secondary font-mono">
-              v{workflow.version}
+              {workflow.version === 'N/A' ? 'N/A' : `v${workflow.version}`}
             </span>
             {isOfficialProvider(workflow.owner) && (
               <a
@@ -77,15 +81,6 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
                 </svg>
                 <span>Official: @{workflow.owner}</span>
               </a>
-            )}
-            {isConnected && (
-              <span
-                class="h-[22px] inline-flex items-center gap-1.5 font-code-sm text-[11px] text-secondary bg-surface-container-low border border-secondary border-opacity-35 px-2 rounded"
-                title={`Live telemetry from: ${apiEndpoint}`}
-              >
-                <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-                <span>test API</span>
-              </span>
             )}
           </div>
 

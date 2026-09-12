@@ -4,6 +4,7 @@ import {
   fetchLatestGhwmTag,
   getInstallCommands,
   getGitHubToken,
+  isValidCliTag,
   DEFAULT_GHWM_REPO,
   DEFAULT_GHWM_TAG,
 } from '../src/lib/github.ts';
@@ -88,16 +89,16 @@ test('test_getGitHubToken_should_read_from_process_env', () => {
   }
 });
 
-test('test_fetchLatestGhwmTag_should_return_tag_name_when_releases_latest_succeeds', async () => {
+test('test_fetchLatestGhwmTag_should_return_tag_name_when_releases_succeeds', async () => {
   // Arrange
   let capturedHeaders = null;
   const restore = mockFetch(async (url, init) => {
-    if (url.includes('/releases/latest')) {
+    if (url.includes('/releases')) {
       capturedHeaders = init?.headers;
       return {
         ok: true,
         status: 200,
-        json: async () => ({ tag_name: 'v1.4.0' }),
+        json: async () => [{ tag_name: 'v1.4.0' }],
       };
     }
     return { ok: false, status: 404 };
@@ -116,10 +117,34 @@ test('test_fetchLatestGhwmTag_should_return_tag_name_when_releases_latest_succee
   }
 });
 
-test('test_fetchLatestGhwmTag_should_fallback_to_tags_when_releases_latest_returns_404', async () => {
+test('test_fetchLatestGhwmTag_should_support_single_object_release_response', async () => {
   // Arrange
   const restore = mockFetch(async (url) => {
-    if (url.includes('/releases/latest')) {
+    if (url.includes('/releases')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => ({ tag_name: 'v1.4.0' }),
+      };
+    }
+    return { ok: false, status: 404 };
+  });
+
+  try {
+    // Act
+    const tag = await fetchLatestGhwmTag();
+
+    // Assert
+    assert.strictEqual(tag, 'v1.4.0');
+  } finally {
+    restore();
+  }
+});
+
+test('test_fetchLatestGhwmTag_should_fallback_to_tags_when_releases_returns_404', async () => {
+  // Arrange
+  const restore = mockFetch(async (url) => {
+    if (url.includes('/releases')) {
       return { ok: false, status: 404 };
     }
     if (url.includes('/tags')) {
@@ -183,7 +208,7 @@ test('test_fetchLatestGhwmTag_should_strip_leading_at_symbol_from_tag_name', asy
     return {
       ok: true,
       status: 200,
-      json: async () => ({ tag_name: '@v2.1.0' }),
+      json: async () => [{ tag_name: '@v2.1.0' }],
     };
   });
 
@@ -197,3 +222,75 @@ test('test_fetchLatestGhwmTag_should_strip_leading_at_symbol_from_tag_name', asy
     restore();
   }
 });
+
+test('test_isValidCliTag_should_validate_cli_tags_and_reject_ui_tags', () => {
+  assert.strictEqual(isValidCliTag('v1.4.0'), true);
+  assert.strictEqual(isValidCliTag('v0.1.0'), true);
+  assert.strictEqual(isValidCliTag('1.4.0'), true);
+  assert.strictEqual(isValidCliTag('v2.0.0-rc.1'), true);
+
+  assert.strictEqual(isValidCliTag('ui-v0.0.1'), false);
+  assert.strictEqual(isValidCliTag('registry-v1.0.0'), false);
+  assert.strictEqual(isValidCliTag(''), false);
+  assert.strictEqual(isValidCliTag(null), false);
+  assert.strictEqual(isValidCliTag(undefined), false);
+});
+
+test('test_fetchLatestGhwmTag_should_skip_ui_tags_and_return_latest_cli_release', async () => {
+  // Arrange
+  const restore = mockFetch(async (url) => {
+    if (url.includes('/releases')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [
+          { tag_name: 'ui-v0.0.1' },
+          { tag_name: 'v1.4.0' },
+          { tag_name: 'v1.3.0' },
+        ],
+      };
+    }
+    return { ok: false, status: 404 };
+  });
+
+  try {
+    // Act
+    const tag = await fetchLatestGhwmTag();
+
+    // Assert
+    assert.strictEqual(tag, 'v1.4.0');
+  } finally {
+    restore();
+  }
+});
+
+test('test_fetchLatestGhwmTag_should_skip_ui_tags_in_tags_fallback', async () => {
+  // Arrange
+  const restore = mockFetch(async (url) => {
+    if (url.includes('/releases')) {
+      return { ok: false, status: 404 };
+    }
+    if (url.includes('/tags')) {
+      return {
+        ok: true,
+        status: 200,
+        json: async () => [
+          { name: 'ui-v0.0.1' },
+          { name: 'v1.4.0' },
+        ],
+      };
+    }
+    return { ok: false, status: 404 };
+  });
+
+  try {
+    // Act
+    const tag = await fetchLatestGhwmTag();
+
+    // Assert
+    assert.strictEqual(tag, 'v1.4.0');
+  } finally {
+    restore();
+  }
+});
+

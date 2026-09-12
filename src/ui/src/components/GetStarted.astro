@@ -6,16 +6,15 @@ const latestTag = await fetchLatestGhwmTag();
 const installCommands = getInstallCommands(latestTag);
 ---
 
-<!-- Quick Action Buttons & Interactive Clipboard / Selector -->
-<div class="flex flex-col md:flex-row gap-lg items-center justify-center mt-lg w-full px-md md:px-0 mx-auto">
-  <!-- Get Started (Horizontal element 1) -->
-  <button class="btn-primary font-headline-md text-headline-md px-lg py-md rounded-default shadow-sm flex items-center gap-sm transition-transform active:scale-95 cursor-pointer h-[48px] shrink-0 w-[240px] md:w-auto justify-center">
+<!-- Get Started Installation Section -->
+<div class="flex flex-col items-center justify-center mt-lg w-full px-md md:px-0 mx-auto max-w-[460px]">
+  <!-- Get Started Header -->
+  <h2 class="font-headline-md text-headline-md font-bold text-on-surface mb-xs text-center">
     Get Started
-    <span class="material-symbols-outlined text-[20px]">arrow_forward</span>
-  </button>
+  </h2>
 
-  <!-- Vertical Container (Horizontal element 2) -->
-  <div class="flex flex-col gap-sm w-full max-w-[420px] md:w-[420px] shrink-0">
+  <!-- Vertical Container -->
+  <div class="flex flex-col gap-sm w-full">
     <!-- Button Group Wrapper (Relative to hold badge) -->
     <div class="relative w-full mt-4">
       <!-- Small Recommended badge above "uv (pinned)" button -->
@@ -100,23 +99,42 @@ const installCommands = getInstallCommands(latestTag);
   // Client-side fetch to ensure the pinned version is always the latest even if published after build
   (async () => {
     try {
+      const isValidCliTag = (tag) => {
+        if (!tag) return false;
+        const clean = String(tag).trim().replace(/^@+/, '');
+        if (clean.startsWith('ui-') || clean.startsWith('registry-')) return false;
+        return /^v?\d+(\.\d+)*(-[a-zA-Z0-9.]+)?$/.test(clean);
+      };
+
       let freshTag = null;
-      const res = await fetch(`https://api.github.com/repos/${repo}/releases/latest`, {
+      const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=5`, {
         headers: { Accept: 'application/vnd.github+json' }
       });
       if (res.ok) {
-        const data = await res.json();
-        if (data && typeof data.tag_name === 'string' && data.tag_name.trim()) {
-          freshTag = data.tag_name.trim().replace(/^@+/, '');
+        const releases = await res.json();
+        if (Array.isArray(releases)) {
+          for (const rel of releases) {
+            if (rel && typeof rel.tag_name === 'string' && isValidCliTag(rel.tag_name)) {
+              freshTag = rel.tag_name.trim().replace(/^@+/, '');
+              break;
+            }
+          }
         }
-      } else if (res.status === 404) {
-        const tagsRes = await fetch(`https://api.github.com/repos/${repo}/tags?per_page=1`, {
+      }
+
+      if (!freshTag) {
+        const tagsRes = await fetch(`https://api.github.com/repos/${repo}/tags?per_page=10`, {
           headers: { Accept: 'application/vnd.github+json' }
         });
         if (tagsRes.ok) {
           const tags = await tagsRes.json();
-          if (Array.isArray(tags) && tags.length > 0 && typeof tags[0]?.name === 'string') {
-            freshTag = tags[0].name.trim().replace(/^@+/, '');
+          if (Array.isArray(tags)) {
+            for (const t of tags) {
+              if (t && typeof t.name === 'string' && isValidCliTag(t.name)) {
+                freshTag = t.name.trim().replace(/^@+/, '');
+                break;
+              }
+            }
           }
         }
       }

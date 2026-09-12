@@ -3,7 +3,14 @@
  *
  * Provides utilities for fetching workflow telemetry and installation statistics
  * from the Cloudflare Worker deployment API (e.g. https://ghwm-deployment-tst.ghwfxlab.workers.dev).
+ * Workflow metadata is dynamically resolved from workflow frontmatter and package files.
  */
+
+import {
+  resolveLocalWorkflowMetadata,
+  listLocalWorkflowNames,
+  type WorkflowMetadata,
+} from './frontmatter.ts';
 
 export interface WorkflowStat {
   workflow_name: string;
@@ -47,34 +54,6 @@ export const DEFAULT_TEST_API_URL = 'https://ghwm-deployment-tst.ghwfxlab.worker
 
 export const OFFICIAL_PROVIDERS = ['ghwfxlab'] as const;
 export type OfficialProvider = typeof OFFICIAL_PROVIDERS[number];
-
-/**
- * Curated catalog of workflows maintained in this repository.
- */
-export const CATALOG_WORKFLOWS: Omit<WorkflowItem, 'installs' | 'updates' | 'total' | 'lastInstalledAt'>[] = [
-  {
-    name: 'super-linter',
-    packageName: '@ghwfxlab/ghwm-super-linter',
-    version: '1.0.0',
-    title: 'Super-Linter',
-    description: 'Code linting workflow using Super-Linter and pre-commit hooks for comprehensive multi-language code quality.',
-    tags: ['lint', 'actions', 'pre-commit'],
-    icon: 'fact_check',
-    owner: 'ghwfxlab',
-    createdAt: '2026-09-01T10:00:00.000Z',
-  },
-  {
-    name: 'auto-assign-pr',
-    packageName: '@ghwfxlab/ghwm-auto-assign-pr',
-    version: '1.0.0',
-    title: 'Auto Assign PR',
-    description: 'Automatically add pull request reviewers and assignees to streamline pull request triage and reviews.',
-    tags: ['automation', 'pr', 'review'],
-    icon: 'person_add',
-    owner: 'ghwfxlab',
-    createdAt: '2026-09-08T12:00:00.000Z',
-  },
-];
 
 /**
  * Resolves the configured API endpoint from environment variables.
@@ -196,22 +175,78 @@ export async function fetchWorkflowStats(
 }
 
 /**
+ * Discovers workflows dynamically from the telemetry API and resolves their metadata
+ * via frontmatter. If the API is offline or returns an empty list, falls back to
+ * scanning local workflows with 0 installations recorded.
+ *
+ * @param customEndpoint Optional override endpoint (e.g. for testing)
+ */
+export async function getRegistryWorkflows(customEndpoint?: string): Promise<{
+  workflows: WorkflowItem[];
+  totalInstallations: number;
+  isConnected: boolean;
+  apiEndpoint: string | null;
+}> {
+  const endpoint = customEndpoint !== undefined ? customEndpoint.trim().replace(/\/+$/, '') : getApiEndpoint();
+  const stats = endpoint ? await fetchUsageStats(endpoint) : null;
+
+  const isConnected = stats !== null;
+  const totalInstallations = stats?.total_installations ?? 0;
+
+  const workflows: WorkflowItem[] = [];
+
+  if (stats?.workflows && stats.workflows.length > 0) {
+    for (const stat of stats.workflows) {
+      if (!stat || !stat.workflow_name) continue;
+      const meta = resolveLocalWorkflowMetadata(stat.workflow_name);
+      workflows.push({
+        ...meta,
+        installs: Number(stat.installs) || 0,
+        updates: Number(stat.updates) || 0,
+        total: Number(stat.total) || 0,
+        lastInstalledAt: stat.last_installed_at ?? null,
+      });
+    }
+  } else {
+    // Offline or empty API fallback: scan local repository workflow definitions
+    const localNames = listLocalWorkflowNames();
+    for (const name of localNames) {
+      const meta = resolveLocalWorkflowMetadata(name);
+      workflows.push({
+        ...meta,
+        installs: 0,
+        updates: 0,
+        total: 0,
+        lastInstalledAt: null,
+      });
+    }
+  }
+
+  return {
+    workflows,
+    totalInstallations,
+    isConnected,
+    apiEndpoint: isConnected ? endpoint : null,
+  };
+}
+
+/**
  * Retrieves details and stats for a single workflow by name.
  */
 export async function getWorkflowDetails(
   name: string,
   customEndpoint?: string
 ): Promise<WorkflowItem | null> {
-  const baseWorkflow = CATALOG_WORKFLOWS.find((w) => w.name === name);
-  if (!baseWorkflow) {
+  if (!name) {
     return null;
   }
 
   const endpoint = customEndpoint !== undefined ? customEndpoint.trim().replace(/\/+$/, '') : getApiEndpoint();
+  const meta = resolveLocalWorkflowMetadata(name);
   const stat = endpoint ? await fetchWorkflowStats(name, endpoint) : null;
 
   return {
-    ...baseWorkflow,
+    ...meta,
     installs: stat ? Number(stat.installs) || 0 : 0,
     updates: stat ? Number(stat.updates) || 0 : 0,
     total: stat ? Number(stat.total) || 0 : 0,
@@ -220,68 +255,16 @@ export async function getWorkflowDetails(
 }
 
 /**
- * Builds the list of trending workflows, merged with live usage metrics
- * when a target API endpoint is configured.
+ * Builds the list of trending workflows, dynamically discovered from API telemetry
+ * and frontmatter, sorted by usage (highest installs first).
  *
  * @param customEndpoint Optional override endpoint (e.g. for testing)
  */
 export async function getTrendingWorkflows(customEndpoint?: string): Promise<TrendingWorkflowsResult> {
-  const endpoint = customEndpoint !== undefined ? customEndpoint.trim().replace(/\/+$/, '') : getApiEndpoint();
-  const stats = endpoint ? await fetchUsageStats(endpoint) : null;
+  const { workflows, totalInstallations, isConnected, apiEndpoint } = await getRegistryWorkflows(customEndpoint);
 
-  const isConnected = stats !== null;
-  const totalInstallations = stats?.total_installations ?? 0;
-
-  // Build a lookup map from API stats
-  const statsMap = new Map<string, WorkflowStat>();
-  if (stats?.workflows) {
-    for (const stat of stats.workflows) {
-      if (stat && stat.workflow_name) {
-        statsMap.set(stat.workflow_name, stat);
-      }
-    }
-  }
-
-  // Merge catalog workflows with live stats
-  const mergedWorkflows: WorkflowItem[] = CATALOG_WORKFLOWS.map((item) => {
-    const stat = statsMap.get(item.name);
-    return {
-      ...item,
-      installs: stat ? Number(stat.installs) || 0 : 0,
-      updates: stat ? Number(stat.updates) || 0 : 0,
-      total: stat ? Number(stat.total) || 0 : 0,
-      lastInstalledAt: stat ? stat.last_installed_at : null,
-    };
-  });
-
-  // Include any extra workflows present in the API that were not in catalog
-  if (stats?.workflows) {
-    for (const stat of stats.workflows) {
-      if (!CATALOG_WORKFLOWS.some((c) => c.name === stat.workflow_name)) {
-        mergedWorkflows.push({
-          name: stat.workflow_name,
-          packageName: `@ghwfxlab/ghwm-${stat.workflow_name}`,
-          version: '1.0.0',
-          title: stat.workflow_name
-            .split('-')
-            .map((s) => s.charAt(0).toUpperCase() + s.slice(1))
-            .join(' '),
-          description: `Managed GitHub Actions workflow for ${stat.workflow_name}.`,
-          tags: ['workflow', 'github-actions'],
-          icon: 'terminal',
-          installs: Number(stat.installs) || 0,
-          updates: Number(stat.updates) || 0,
-          total: Number(stat.total) || 0,
-          lastInstalledAt: stat.last_installed_at,
-          owner: 'ghwfxlab',
-          createdAt: stat.last_installed_at,
-        });
-      }
-    }
-  }
-
-  // Sort workflows: higher usage (installs) first
-  mergedWorkflows.sort((a, b) => {
+  // Sort workflows: higher usage (installs) first, then name ascending
+  workflows.sort((a, b) => {
     if (b.installs !== a.installs) {
       return b.installs - a.installs;
     }
@@ -289,18 +272,19 @@ export async function getTrendingWorkflows(customEndpoint?: string): Promise<Tre
   });
 
   return {
-    workflows: mergedWorkflows,
+    workflows,
     totalInstallations,
     isConnected,
-    apiEndpoint: isConnected ? endpoint : null,
+    apiEndpoint,
   };
 }
 
 /**
  * Checks whether an owner or provider is recognized as an official workflow provider.
+ * Returns false if owner is "N/A" or unrecognized.
  */
 export function isOfficialProvider(owner: string | undefined | null): boolean {
-  if (!owner) return false;
+  if (!owner || owner === 'N/A') return false;
   return (OFFICIAL_PROVIDERS as readonly string[]).includes(owner);
 }
 
@@ -339,24 +323,29 @@ export async function getNewArrivals(
     if (timeB !== timeA) {
       return timeB - timeA;
     }
-    return b.name.localeCompare(a.name);
+    return a.name.localeCompare(b.name);
   });
   return sorted.slice(0, limit);
 }
 
 /**
- * Returns all unique tags present across catalog workflows.
+ * Returns all unique tags present across workflows.
+ * Excludes fallback "N/A" tag.
  */
-export function getAllWorkflowTags(): string[] {
+export function getAllWorkflowTags(workflows?: WorkflowItem[]): string[] {
   const tagSet = new Set<string>();
-  for (const workflow of CATALOG_WORKFLOWS) {
+  const items =
+    workflows ??
+    listLocalWorkflowNames().map((name) => resolveLocalWorkflowMetadata(name));
+
+  for (const workflow of items) {
     if (Array.isArray(workflow.tags)) {
       for (const tag of workflow.tags) {
-        if (tag) tagSet.add(tag);
+        if (tag && tag !== 'N/A') {
+          tagSet.add(tag);
+        }
       }
     }
   }
   return Array.from(tagSet).sort();
 }
-
-

@@ -1,6 +1,6 @@
 {
     "name": "@ghwfxlab/ghwm-auto-assign-pr",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Automatically add pull request reviewers and assignees",
     "files": [
         "auto-assign-pr.yaml",

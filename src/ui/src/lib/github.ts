@@ -32,6 +32,19 @@ export function getGitHubToken(): string | undefined {
 }
 
 /**
+ * Validates that a tag belongs to the CLI tool (e.g. v1.4.0, 1.4.0)
+ * and excludes non-CLI release tags like UI releases (ui-v0.0.1).
+ */
+export function isValidCliTag(tag: string | undefined | null): boolean {
+  if (!tag) return false;
+  const clean = String(tag).trim().replace(/^@+/, '');
+  if (clean.startsWith('ui-') || clean.startsWith('registry-')) {
+    return false;
+  }
+  return /^v?\d+(\.\d+)*(-[a-zA-Z0-9.]+)?$/.test(clean);
+}
+
+/**
  * Fetches the latest release tag from GitHub API for a given repository.
  * Falls back to the latest git tag if no GitHub release exists.
  * Gracefully returns fallbackTag if the request times out, fails, or is rate-limited.
@@ -57,19 +70,25 @@ export async function fetchLatestGhwmTag(options: FetchLatestTagOptions = {}): P
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    const res = await fetchImpl(`https://api.github.com/repos/${repo}/releases/latest`, {
+    const res = await fetchImpl(`https://api.github.com/repos/${repo}/releases?per_page=10`, {
       signal: controller.signal,
       headers,
     });
     clearTimeout(timeoutId);
 
     if (res.ok) {
-      const data = (await res.json()) as { tag_name?: string };
-      if (data && typeof data.tag_name === 'string' && data.tag_name.trim()) {
+      const data = (await res.json()) as Array<{ tag_name?: string }> | { tag_name?: string };
+      if (Array.isArray(data)) {
+        for (const rel of data) {
+          if (rel && typeof rel.tag_name === 'string' && isValidCliTag(rel.tag_name)) {
+            return rel.tag_name.trim().replace(/^@+/, '');
+          }
+        }
+      } else if (data && typeof data.tag_name === 'string' && isValidCliTag(data.tag_name)) {
         return data.tag_name.trim().replace(/^@+/, '');
       }
     } else if (res.status !== 404) {
-      console.warn(`[github-api] Warning: Received status ${res.status} for ${repo} releases/latest`);
+      console.warn(`[github-api] Warning: Received status ${res.status} for ${repo} releases`);
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
@@ -81,7 +100,7 @@ export async function fetchLatestGhwmTag(options: FetchLatestTagOptions = {}): P
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-    const res = await fetchImpl(`https://api.github.com/repos/${repo}/tags?per_page=1`, {
+    const res = await fetchImpl(`https://api.github.com/repos/${repo}/tags?per_page=10`, {
       signal: controller.signal,
       headers,
     });
@@ -89,8 +108,12 @@ export async function fetchLatestGhwmTag(options: FetchLatestTagOptions = {}): P
 
     if (res.ok) {
       const tags = (await res.json()) as Array<{ name?: string }>;
-      if (Array.isArray(tags) && tags.length > 0 && typeof tags[0]?.name === 'string' && tags[0].name.trim()) {
-        return tags[0].name.trim().replace(/^@+/, '');
+      if (Array.isArray(tags)) {
+        for (const t of tags) {
+          if (t && typeof t.name === 'string' && isValidCliTag(t.name)) {
+            return t.name.trim().replace(/^@+/, '');
+          }
+        }
       }
     }
   } catch (err) {
