@@ -6,7 +6,6 @@ const apiEndpoint = getApiEndpoint();
 const { workflows, totalInstallations, isConnected } = await getTrendingWorkflows(apiEndpoint);
 // Top up to 10 trending workflows
 const trendingWorkflows = workflows.slice(0, 10);
-const isProdApi = Boolean(apiEndpoint && (apiEndpoint.includes('-prd') || !apiEndpoint.includes('-tst')));
 ---
 <!-- Trending Workflows Section (10 items, 5 per row max on desktop, 2 per row on mobile) -->
 <section class="flex flex-col gap-md">
@@ -19,10 +18,9 @@ const isProdApi = Boolean(apiEndpoint && (apiEndpoint.includes('-prd') || !apiEn
       {isConnected && (
         <span
           class="font-code-sm text-[11px] text-secondary bg-surface-container-low border border-secondary border-opacity-35 px-2 py-0.5 rounded flex items-center gap-1.5"
-          title={`Target API: ${apiEndpoint}`}
         >
           <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-          <span>{isProdApi ? 'live API' : 'test API'} ({totalInstallations} installs)</span>
+          <span>{totalInstallations} installs</span>
         </span>
       )}
       <a class="font-body-sm text-body-sm text-primary hover:underline" href={withBase('/registry?sort=installs_desc')}>View all &rarr;</a>

@@ -61,10 +61,9 @@ const workflowTableData = workflows.map((w) => ({
           <div class="flex items-center gap-sm shrink-0">
             <span
               class="font-code-sm text-[12px] text-secondary bg-surface-container-low border border-secondary border-opacity-35 px-3 py-1 rounded flex items-center gap-2"
-              title={`Target API: ${apiEndpoint}`}
             >
               <span class="w-2 h-2 rounded-full bg-secondary animate-pulse"></span>
-              <span>test API connected ({totalInstallations} total installs)</span>
+              <span>{totalInstallations} installs</span>
             </span>
           </div>
         )}

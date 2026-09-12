@@ -22,7 +22,6 @@ const { baseWorkflow } = Astro.props;
 const apiEndpoint = getApiEndpoint();
 const workflow = (await getWorkflowDetails(name ?? '', apiEndpoint)) ?? baseWorkflow;
 const lastActive = formatLastInstalled(workflow.lastInstalledAt);
-const isConnected = !!apiEndpoint;
 
 // Example manifest configuration for this workflow
 const ghwmManifestSnippet = `source: ghwfxlab/ghwm-registry
@@ -77,15 +76,6 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
                 </svg>
                 <span>Official: @{workflow.owner}</span>
               </a>
-            )}
-            {isConnected && (
-              <span
-                class="h-[22px] inline-flex items-center gap-1.5 font-code-sm text-[11px] text-secondary bg-surface-container-low border border-secondary border-opacity-35 px-2 rounded"
-                title={`Live telemetry from: ${apiEndpoint}`}
-              >
-                <span class="w-1.5 h-1.5 rounded-full bg-secondary animate-pulse"></span>
-                <span>test API</span>
-              </span>
             )}
           </div>
 
