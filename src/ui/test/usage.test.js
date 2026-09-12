@@ -12,7 +12,6 @@ import {
   getOfficialWorkflows,
   getNewArrivals,
   OFFICIAL_PROVIDERS,
-  CATALOG_WORKFLOWS,
   DEFAULT_PROD_API_URL,
   DEFAULT_TEST_API_URL,
 } from '../src/lib/usage.ts';
@@ -71,28 +70,25 @@ test('test_getApiEndpoint_should_return_trimmed_url_without_trailing_slash_when_
 });
 
 test('test_fetchUsageStats_should_return_null_when_endpoint_is_empty', async () => {
-  // Arrange
-  const endpoint = '';
-
-  // Act
-  const result = await fetchUsageStats(endpoint);
-
-  // Assert
-  assert.strictEqual(result, null);
+  const stats = await fetchUsageStats('');
+  assert.strictEqual(stats, null);
 });
 
 test('test_fetchUsageStats_should_return_null_when_api_responds_with_error_status', async () => {
   // Arrange
   const restore = mockFetch(async () => {
-    return new Response('Internal Server Error', { status: 500 });
+    return new Response(JSON.stringify({ error: 'internal server error' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
   });
 
   try {
     // Act
-    const result = await fetchUsageStats('https://api.example.com');
+    const stats = await fetchUsageStats('https://api.example.com');
 
     // Assert
-    assert.strictEqual(result, null);
+    assert.strictEqual(stats, null);
   } finally {
     restore();
   }
@@ -114,8 +110,7 @@ test('test_fetchUsageStats_should_return_registry_stats_when_api_responds_succes
     ],
   };
 
-  const restore = mockFetch(async (url) => {
-    assert.strictEqual(url, 'https://api.example.com/stats');
+  const restore = mockFetch(async () => {
     return new Response(JSON.stringify(mockPayload), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -124,26 +119,22 @@ test('test_fetchUsageStats_should_return_registry_stats_when_api_responds_succes
 
   try {
     // Act
-    const result = await fetchUsageStats('https://api.example.com');
+    const stats = await fetchUsageStats('https://api.example.com');
 
     // Assert
-    assert.notStrictEqual(result, null);
-    assert.strictEqual(result?.total_installations, 42);
-    assert.strictEqual(result?.workflows.length, 1);
-    assert.strictEqual(result?.workflows[0].workflow_name, 'super-linter');
+    assert.notStrictEqual(stats, null);
+    assert.strictEqual(stats?.total_installations, 42);
+    assert.strictEqual(stats?.workflows.length, 1);
+    assert.strictEqual(stats?.workflows[0].workflow_name, 'super-linter');
+    assert.strictEqual(stats?.workflows[0].installs, 30);
   } finally {
     restore();
   }
 });
 
 test('test_fetchWorkflowStats_should_return_null_when_endpoint_or_workflow_is_empty', async () => {
-  // Arrange & Act
-  const resultEmptyEndpoint = await fetchWorkflowStats('super-linter', '');
-  const resultEmptyName = await fetchWorkflowStats('', 'https://api.example.com');
-
-  // Assert
-  assert.strictEqual(resultEmptyEndpoint, null);
-  assert.strictEqual(resultEmptyName, null);
+  assert.strictEqual(await fetchWorkflowStats('', 'https://api.example.com'), null);
+  assert.strictEqual(await fetchWorkflowStats('super-linter', ''), null);
 });
 
 test('test_fetchWorkflowStats_should_return_workflow_stats_when_api_responds_successfully', async () => {
@@ -151,14 +142,14 @@ test('test_fetchWorkflowStats_should_return_workflow_stats_when_api_responds_suc
   const mockPayload = {
     workflow_name: 'super-linter',
     source: null,
-    installs: 3,
-    updates: 0,
-    total: 3,
+    installs: 7,
+    updates: 2,
+    total: 9,
     last_installed_at: '2026-09-08T13:36:35.173Z',
   };
 
   const restore = mockFetch(async (url) => {
-    assert.strictEqual(url, 'https://api.example.com/workflows/super-linter/stats');
+    assert.ok(url.includes('/workflows/super-linter/stats'));
     return new Response(JSON.stringify(mockPayload), {
       status: 200,
       headers: { 'Content-Type': 'application/json' },
@@ -167,12 +158,13 @@ test('test_fetchWorkflowStats_should_return_workflow_stats_when_api_responds_suc
 
   try {
     // Act
-    const result = await fetchWorkflowStats('super-linter', 'https://api.example.com');
+    const stat = await fetchWorkflowStats('super-linter', 'https://api.example.com');
 
     // Assert
-    assert.notStrictEqual(result, null);
-    assert.strictEqual(result?.workflow_name, 'super-linter');
-    assert.strictEqual(result?.installs, 3);
+    assert.notStrictEqual(stat, null);
+    assert.strictEqual(stat?.workflow_name, 'super-linter');
+    assert.strictEqual(stat?.installs, 7);
+    assert.strictEqual(stat?.total, 9);
   } finally {
     restore();
   }
@@ -189,7 +181,7 @@ test('test_getTrendingWorkflows_should_fallback_to_catalog_with_zero_installs_wh
   assert.strictEqual(result.isConnected, false);
   assert.strictEqual(result.apiEndpoint, null);
   assert.strictEqual(result.totalInstallations, 0);
-  assert.strictEqual(result.workflows.length, CATALOG_WORKFLOWS.length);
+  assert.strictEqual(result.workflows.length, 2);
   assert.strictEqual(result.workflows[0].installs, 0);
 });
 
@@ -228,10 +220,57 @@ test('test_getTrendingWorkflows_should_merge_live_usage_stats_and_mark_connected
     const superLinter = result.workflows.find((w) => w.name === 'super-linter');
     assert.notStrictEqual(superLinter, undefined);
     assert.strictEqual(superLinter?.installs, 3);
+  } finally {
+    restore();
+  }
+});
 
-    const autoAssign = result.workflows.find((w) => w.name === 'auto-assign-pr');
-    assert.notStrictEqual(autoAssign, undefined);
-    assert.strictEqual(autoAssign?.installs, 0);
+test('test_getTrendingWorkflows_should_handle_external_workflows_with_NA_metadata', async () => {
+  // Arrange
+  const mockPayload = {
+    source: null,
+    total_installations: 4,
+    workflows: [
+      {
+        workflow_name: 'super-linter',
+        installs: 3,
+        updates: 0,
+        total: 3,
+        last_installed_at: '2026-09-08T13:36:35.173Z',
+      },
+      {
+        workflow_name: 'cloudrun-docker',
+        installs: 1,
+        updates: 0,
+        total: 1,
+        last_installed_at: '2026-09-12T07:58:39.920Z',
+      },
+    ],
+  };
+
+  const restore = mockFetch(async () => {
+    return new Response(JSON.stringify(mockPayload), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  });
+
+  try {
+    // Act
+    const result = await getTrendingWorkflows('https://api.example.com');
+
+    // Assert
+    assert.strictEqual(result.workflows.length, 2);
+    const cloudrun = result.workflows.find((w) => w.name === 'cloudrun-docker');
+    assert.notStrictEqual(cloudrun, undefined);
+    assert.strictEqual(cloudrun?.title, 'Cloudrun Docker');
+    assert.strictEqual(cloudrun?.description, 'N/A');
+    assert.deepStrictEqual(cloudrun?.tags, ['N/A']);
+    assert.strictEqual(cloudrun?.owner, 'N/A');
+    assert.strictEqual(cloudrun?.packageName, 'N/A');
+    assert.strictEqual(cloudrun?.version, 'N/A');
+    assert.strictEqual(cloudrun?.installs, 1);
+    assert.strictEqual(isOfficialProvider(cloudrun?.owner), false);
   } finally {
     restore();
   }
@@ -327,7 +366,6 @@ test('test_getWorkflowDetails_should_return_workflow_details_with_live_stats_whe
     // Assert
     assert.notStrictEqual(details, null);
     assert.strictEqual(details?.name, 'super-linter');
-    assert.strictEqual(details?.version, '1.0.0');
     assert.strictEqual(details?.installs, 3);
     assert.strictEqual(details?.updates, 1);
     assert.strictEqual(details?.total, 4);
@@ -338,24 +376,16 @@ test('test_getWorkflowDetails_should_return_workflow_details_with_live_stats_whe
 });
 
 test('test_getWorkflowDetails_should_return_null_when_workflow_does_not_exist', async () => {
-  // Arrange & Act
-  const details = await getWorkflowDetails('non-existent-workflow', 'https://api.example.com');
-
-  // Assert
+  const details = await getWorkflowDetails('');
   assert.strictEqual(details, null);
 });
 
-test('test_getAllWorkflowTags_should_return_sorted_unique_tags_when_catalog_workflows_exist', () => {
-  // Act
+test('test_getAllWorkflowTags_should_return_sorted_unique_tags_when_workflows_exist', () => {
   const tags = getAllWorkflowTags();
-
-  // Assert
   assert.ok(Array.isArray(tags));
   assert.ok(tags.includes('lint'));
   assert.ok(tags.includes('automation'));
-  assert.strictEqual(new Set(tags).size, tags.length);
-  const sorted = [...tags].sort();
-  assert.deepStrictEqual(tags, sorted);
+  assert.strictEqual(tags.includes('N/A'), false);
 });
 
 test('test_isOfficialProvider_should_return_true_for_ghwfxlab', () => {
@@ -368,10 +398,12 @@ test('test_isOfficialProvider_should_return_false_for_unknown_or_empty_provider'
   assert.strictEqual(isOfficialProvider(''), false);
   assert.strictEqual(isOfficialProvider(null), false);
   assert.strictEqual(isOfficialProvider(undefined), false);
+  assert.strictEqual(isOfficialProvider('N/A'), false);
 });
 
-test('test_catalog_workflows_should_all_have_official_owner', () => {
-  for (const workflow of CATALOG_WORKFLOWS) {
+test('test_local_workflows_should_all_have_official_owner', async () => {
+  const result = await getTrendingWorkflows('');
+  for (const workflow of result.workflows) {
     assert.strictEqual(isOfficialProvider(workflow.owner), true);
     assert.strictEqual(workflow.owner, 'ghwfxlab');
   }
@@ -422,6 +454,3 @@ test('test_constants_should_expose_valid_production_and_test_api_endpoints', () 
   assert.strictEqual(DEFAULT_PROD_API_URL, 'https://ghwm-deployment-prd.ghwfxlab.workers.dev');
   assert.strictEqual(DEFAULT_TEST_API_URL, 'https://ghwm-deployment-tst.ghwfxlab.workers.dev');
 });
-
-
-

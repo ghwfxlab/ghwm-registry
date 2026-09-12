@@ -1,6 +1,9 @@
 ---
-import { CATALOG_WORKFLOWS } from '../lib/usage';
+import { getTrendingWorkflows, getApiEndpoint } from '../lib/usage';
 import { withBase } from '../lib/paths';
+
+const apiEndpoint = getApiEndpoint();
+const { workflows } = await getTrendingWorkflows(apiEndpoint);
 ---
 
 <!-- Prominent Search in Hero -->
@@ -47,7 +50,7 @@ import { withBase } from '../lib/paths';
   </div>
 </form>
 
-<script define:vars={{ catalog: CATALOG_WORKFLOWS, baseUrl: (import.meta.env.BASE_URL || '/').replace(/\/+$/, '') }}>
+<script define:vars={{ catalog: workflows, baseUrl: (import.meta.env.BASE_URL || '/').replace(/\/+$/, '') }}>
   const form = document.getElementById('hero-search-form');
   const input = document.getElementById('hero-search-input');
   const dropdown = document.getElementById('hero-search-dropdown');

@@ -1,3 +1,14 @@
+# ---
+# title: Auto Assign PR
+# description: Automatically add pull request reviewers and assignees to streamline pull request triage and reviews.
+# tags:
+#   - automation
+#   - pr
+#   - review
+# icon: person_add
+# owner: ghwfxlab
+# createdAt: '2026-09-08T12:00:00.000Z'
+# ---
 ---
 name: auto-assign-pr
 files:

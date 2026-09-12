@@ -10,7 +10,7 @@ import { withBase } from '../lib/paths';
 
 const apiEndpoint = getApiEndpoint();
 const { workflows, totalInstallations, isConnected } = await getTrendingWorkflows(apiEndpoint);
-const allTags = getAllWorkflowTags();
+const allTags = getAllWorkflowTags(workflows);
 
 // Pre-format workflows for client-side table rendering
 const workflowTableData = workflows.map((w) => ({
