@@ -10,7 +10,7 @@ PROD_API_URL ?= https://ghwm-deployment-prd.ghwfxlab.workers.dev
 TEST_API_URL ?= https://ghwm-deployment-tst.ghwfxlab.workers.dev
 TARGET_API ?= prod
 
-.PHONY: help setup dev dev-prod-api dev-test-api build build-prod-api build-test-api preview clean lang lang-fix script-tests ui-tests setup-precommit precommit super-linter super-linter-fix
+.PHONY: help setup dev dev-prod-api dev-test-api build build-prod-api build-test-api sync-catalog preview clean lang lang-fix script-tests ui-tests setup-precommit precommit super-linter super-linter-fix
 
 help:
 	@echo "Available commands:"
@@ -23,6 +23,7 @@ help:
 	@echo "  build            - Build the Astro UI for production (supports TARGET_API=prod|test)"
 	@echo "  build-prod-api   - Build the Astro UI for production targeting prod API ($(PROD_API_URL))"
 	@echo "  build-test-api   - Build the Astro UI for production targeting test API ($(TEST_API_URL))"
+	@echo "  sync-catalog     - Sync local workflow frontmatter to the D1 catalog (supports TARGET_API=prod|test)"
 	@echo "  preview          - Preview the production build locally"
 	@echo "  clean            - Clean build outputs and temporary files"
 	@echo ""
@@ -91,6 +92,24 @@ build-prod-api:
 build-test-api:
 	@echo "Building Astro UI for production targeting test API ($(TEST_API_URL))..."
 	PUBLIC_API_URL="$(TEST_API_URL)" npm run build --prefix $(UI_DIR)
+
+sync-catalog:
+	@if [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "test" ]; then \
+		echo "Syncing workflow catalog to test API ($(TEST_API_URL))..."; \
+		PUBLIC_API_URL="$(TEST_API_URL)" node scripts/sync-catalog.mjs; \
+	elif [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "prod" ]; then \
+		echo "Syncing workflow catalog to production API ($(PROD_API_URL))..."; \
+		PUBLIC_API_URL="$(PROD_API_URL)" node scripts/sync-catalog.mjs; \
+	elif [ -n "$${API_URL:-}" ]; then \
+		echo "Syncing workflow catalog to custom API ($$API_URL)..."; \
+		PUBLIC_API_URL="$$API_URL" node scripts/sync-catalog.mjs; \
+	elif [ -n "$${PUBLIC_API_URL:-}" ]; then \
+		echo "Syncing workflow catalog to API ($$PUBLIC_API_URL)..."; \
+		PUBLIC_API_URL="$$PUBLIC_API_URL" node scripts/sync-catalog.mjs; \
+	else \
+		echo "Syncing workflow catalog to production API ($(PROD_API_URL))..."; \
+		PUBLIC_API_URL="$(PROD_API_URL)" node scripts/sync-catalog.mjs; \
+	fi
 
 preview:
 	@echo "Previewing production build..."

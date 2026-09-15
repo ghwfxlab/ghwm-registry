@@ -7,6 +7,8 @@ on: # yamllint disable-line rule:truthy
       - main
     paths:
       - 'src/ui/**'
+      - 'workflows/**'
+      - 'scripts/sync-catalog.mjs'
       - '.github/workflows/deploy-ui.yml'
   workflow_dispatch:
 
@@ -45,6 +47,12 @@ jobs:
         run: |
           version=$(node -p "require('./src/ui/package.json').version")
           echo "version=${version}" >> "$GITHUB_OUTPUT"
+
+      - name: Sync workflow catalog to telemetry API
+        env:
+          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
+          PUBLIC_API_URL: https://ghwm-deployment-prd.ghwfxlab.workers.dev
+        run: node scripts/sync-catalog.mjs
 
       - name: Build Astro UI
         env:
