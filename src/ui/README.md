@@ -38,6 +38,7 @@ All commands are run from the root of the project, from a terminal:
 | `npm run build`           | Build production site with production API data   |
 | `npm run build:prod-api`  | Build site targeting the production API          |
 | `npm run build:test-api`  | Build site targeting the test API                |
+| `npm run sync-catalog`    | Sync workflow frontmatter to the D1 catalog API  |
 | `npm test`                | Run UI and API client unit tests                 |
 | `npm run preview`         | Preview your build locally, before deploying     |
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
@@ -63,6 +64,12 @@ To configure the API endpoint used for fetching workflow usage statistics, set `
 
   ```sh
   PUBLIC_API_URL=https://ghwm-deployment-tst.ghwfxlab.workers.dev npm run dev
+  ```
+
+- Synchronizing workflow catalog to Cloudflare D1:
+
+  ```sh
+  WORKER_AUTH_TOKEN=<auth-token> npm run sync-catalog
   ```
 
 ## 👀 Want to learn more?

@@ -64,6 +64,14 @@ We use a `Makefile` at the root of the repository to manage tasks across differe
   make preview
   ```
 
+- **Sync Catalog**: Sync local workflow frontmatter to the Cloudflare D1 catalog via the Worker API.
+
+  ```bash
+  WORKER_AUTH_TOKEN=<token> make sync-catalog
+  # or target the test API endpoint:
+  WORKER_AUTH_TOKEN=<token> make sync-catalog TARGET_API=test
+  ```
+
 - **Run UI Tests**: Run unit tests for the UI usage and API integration.
 
   ```bash

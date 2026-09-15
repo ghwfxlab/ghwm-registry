@@ -14,6 +14,7 @@
         "build:test-api": "PUBLIC_API_URL=https://ghwm-deployment-tst.ghwfxlab.workers.dev astro build",
         "preview": "astro preview",
         "astro": "astro",
+        "sync-catalog": "node ../../scripts/sync-catalog.mjs",
         "test": "node --test test/**/*.test.js"
     },
     "dependencies": {
