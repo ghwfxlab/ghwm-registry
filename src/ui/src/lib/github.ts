@@ -87,6 +87,11 @@ export async function fetchLatestGhwmTag(options: FetchLatestTagOptions = {}): P
       } else if (data && typeof data.tag_name === 'string' && isValidCliTag(data.tag_name)) {
         return data.tag_name.trim().replace(/^@+/, '');
       }
+    } else if (res.status === 403) {
+      console.warn(
+        `[github-api] GitHub API rate limit reached (HTTP 403) for ${repo}. Falling back to default tag '${fallback}'. Set GITHUB_TOKEN or GH_TOKEN to increase rate limits.`
+      );
+      return fallback;
     } else if (res.status !== 404) {
       console.warn(`[github-api] Warning: Received status ${res.status} for ${repo} releases`);
     }
@@ -115,6 +120,13 @@ export async function fetchLatestGhwmTag(options: FetchLatestTagOptions = {}): P
           }
         }
       }
+    } else if (res.status === 403) {
+      console.warn(
+        `[github-api] GitHub API rate limit reached (HTTP 403) for ${repo}. Falling back to default tag '${fallback}'. Set GITHUB_TOKEN or GH_TOKEN to increase rate limits.`
+      );
+      return fallback;
+    } else if (res.status !== 404) {
+      console.warn(`[github-api] Warning: Received status ${res.status} for ${repo} tags`);
     }
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
