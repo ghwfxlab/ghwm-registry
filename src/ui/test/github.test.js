@@ -185,6 +185,52 @@ test('test_fetchLatestGhwmTag_should_return_fallback_when_both_release_and_tags_
   }
 });
 
+test('test_fetchLatestGhwmTag_should_return_fallback_immediately_on_403_rate_limit', async () => {
+  // Arrange
+  let calls = 0;
+  const restore = mockFetch(async (url) => {
+    calls++;
+    if (url.includes('/releases')) {
+      return { ok: false, status: 403 };
+    }
+    return { ok: true, status: 200, json: async () => [{ name: 'v9.9.9' }] };
+  });
+
+  try {
+    // Act
+    const tag = await fetchLatestGhwmTag({ fallbackTag: 'v1.4.0-fallback' });
+
+    // Assert: should return fallback immediately and NOT make a second request to /tags
+    assert.strictEqual(tag, 'v1.4.0-fallback');
+    assert.strictEqual(calls, 1);
+  } finally {
+    restore();
+  }
+});
+
+test('test_fetchLatestGhwmTag_should_return_fallback_when_tags_returns_403', async () => {
+  // Arrange
+  const restore = mockFetch(async (url) => {
+    if (url.includes('/releases')) {
+      return { ok: false, status: 404 };
+    }
+    if (url.includes('/tags')) {
+      return { ok: false, status: 403 };
+    }
+    return { ok: false, status: 404 };
+  });
+
+  try {
+    // Act
+    const tag = await fetchLatestGhwmTag({ fallbackTag: 'v1.4.0-fallback' });
+
+    // Assert
+    assert.strictEqual(tag, 'v1.4.0-fallback');
+  } finally {
+    restore();
+  }
+});
+
 test('test_fetchLatestGhwmTag_should_return_fallback_when_network_error_occurs', async () => {
   // Arrange
   const restore = mockFetch(async () => {

@@ -25,8 +25,8 @@ repos:
         require_serial: true
   - repo: local
     hooks:
-      - id: super-linter
-        name: super-linter
+      - id: super-linter-fix
+        name: super-linter-fix
         language: system
         entry: make super-linter-fix
         pass_filenames: false
