@@ -86,8 +86,8 @@ test('test_resolveLocalWorkflowMetadata_should_load_super_linter_metadata', () =
   assert.ok(meta.tags.includes('lint'));
   assert.strictEqual(meta.icon, 'fact_check');
   assert.strictEqual(meta.owner, 'ghwfxlab');
-  assert.strictEqual(meta.packageName, '@ghwfxlab/ghwm-super-linter');
-  assert.strictEqual(meta.version, '1.0.1');
+  assert.strictEqual(meta.packageName, '@ghwfxlab/super-linter');
+  assert.strictEqual(meta.version, '1.0.2');
 });
 
 test('test_resolveLocalWorkflowMetadata_should_load_auto_assign_pr_metadata', () => {
@@ -98,8 +98,8 @@ test('test_resolveLocalWorkflowMetadata_should_load_auto_assign_pr_metadata', ()
   assert.ok(meta.tags.includes('automation'));
   assert.strictEqual(meta.icon, 'person_add');
   assert.strictEqual(meta.owner, 'ghwfxlab');
-  assert.strictEqual(meta.packageName, '@ghwfxlab/ghwm-auto-assign-pr');
-  assert.strictEqual(meta.version, '1.0.1');
+  assert.strictEqual(meta.packageName, '@ghwfxlab/auto-assign-pr');
+  assert.strictEqual(meta.version, '1.0.2');
 });
 
 test('test_resolveLocalWorkflowMetadata_should_fallback_to_NA_for_nonexistent_workflow', () => {

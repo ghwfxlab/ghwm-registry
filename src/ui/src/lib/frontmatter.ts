@@ -329,7 +329,7 @@ export function resolveLocalWorkflowMetadata(
   const packageName =
     typeof frontmatter?.packageName === 'string' && frontmatter.packageName.trim()
       ? frontmatter.packageName.trim()
-      : pkgData.name?.trim() || `@ghwfxlab/ghwm-${workflowName}`;
+      : pkgData.name?.trim() || `@ghwfxlab/${workflowName}`;
 
   const version =
     typeof frontmatter?.version === 'string' && frontmatter.version.trim()
