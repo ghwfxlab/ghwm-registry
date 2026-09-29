@@ -1,13 +1,13 @@
 {
-  "name": "@ghwfxlab/auto-release",
-  "version": "1.0.0",
-  "description": "Automatically bump semantic version tags and create GitHub releases on merge to main.",
-  "files": [
-    "auto-release.yaml",
-    "config/",
-    "workflow.yml"
-  ],
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  }
+    "name": "@ghwfxlab/auto-release",
+    "version": "1.0.0",
+    "description": "Automatically bump semantic version tags and create GitHub releases on merge to main.",
+    "files": [
+        "auto-release.yaml",
+        "config/",
+        "workflow.yml"
+    ],
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    }
 }

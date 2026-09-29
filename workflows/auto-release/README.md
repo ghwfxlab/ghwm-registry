@@ -26,7 +26,7 @@ flowchart LR
     C -- Yes --> D["release job"]
     C -- No --> E["Skip release"]
     D --> F["Calculate next semver tag"]
-    F --> G["Push git tag & publish GitHub release"]
+    F --> G["Push Git tag & publish GitHub release"]
     G --> H["Trigger downstream deploy workflows"]
 ```
 
@@ -48,6 +48,7 @@ flowchart LR
 GitHub Actions has built-in loop protection: events created using the default `GITHUB_TOKEN` (such as publishing a release) **will not** trigger other workflows (e.g. `on: release: types: [published]` in a deployment pipeline).
 
 To allow automated releases to trigger downstream deployment workflows:
+
 1. Create or use an existing GitHub App with **`Contents: write`** permissions.
 2. Install the GitHub App on your repository.
 3. Configure the following repository or organization secrets:
@@ -55,20 +56,22 @@ To allow automated releases to trigger downstream deployment workflows:
    - `GH_APP_PRIVATE_KEY`: The App's private key (PEM format).
 
 > [!NOTE]
-> If `GH_APP_ID` or `GH_APP_PRIVATE_KEY` are not set, the workflow automatically and gracefully falls back to `GITHUB_TOKEN`. Releases and git tags will still be created, but downstream workflows will not be triggered automatically.
+> If `GH_APP_ID` or `GH_APP_PRIVATE_KEY` are not set, the workflow automatically and gracefully falls back to `GITHUB_TOKEN`. Releases and Git tags will still be created, but downstream workflows will not be triggered automatically.
 
 ### 2. Path Configuration (`.github/auto-release.yaml`)
 
 Because GHWM updates workflow files when you run `ghwm update`, path triggers are configured outside of the workflow file in `.github/auto-release.yaml`. This ensures your project's custom path rules are never overwritten by upstream workflow updates.
 
-#### File Syntax:
+#### File Syntax
+
 - The configuration uses standard YAML (or JSON at `.github/auto-release.json`).
 - Patterns follow Git pathspec / glob syntax relative to the repository root.
 - If `.github/auto-release.yaml` is missing or contains an empty `paths` list, **all** pushes to `main` will trigger a release.
 
-#### Examples:
+#### Examples
 
 **Frontend / TypeScript / Web:**
+
 ```yaml
 paths:
   - "src/**"
@@ -78,6 +81,7 @@ paths:
 ```
 
 **.NET / C#:**
+
 ```yaml
 paths:
   - "src/**/*.cs"
@@ -86,6 +90,7 @@ paths:
 ```
 
 **Rust:**
+
 ```yaml
 paths:
   - "src/**"
@@ -94,6 +99,7 @@ paths:
 ```
 
 **Go:**
+
 ```yaml
 paths:
   - "**/*.go"
@@ -102,6 +108,7 @@ paths:
 ```
 
 **Java (Maven / Gradle):**
+
 ```yaml
 paths:
   - "src/main/**"
@@ -110,6 +117,7 @@ paths:
 ```
 
 **Python:**
+
 ```yaml
 paths:
   - "src/**"
@@ -118,6 +126,7 @@ paths:
 ```
 
 **Skipping docs-only or CI-only updates:**
+
 By listing only code and release-critical directories under `paths:`, updates to `docs/**`, `README.md`, or test workflows will not trigger an unnecessary version bump or release candidate.
 
 ---
