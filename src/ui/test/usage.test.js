@@ -185,7 +185,7 @@ test('test_getTrendingWorkflows_should_fallback_to_catalog_with_zero_installs_wh
   assert.strictEqual(result.isConnected, false);
   assert.strictEqual(result.apiEndpoint, null);
   assert.strictEqual(result.totalInstallations, 0);
-  assert.strictEqual(result.workflows.length, 2);
+  assert.strictEqual(result.workflows.length, 3);
   assert.strictEqual(result.workflows[0].installs, 0);
 });
 
@@ -431,10 +431,11 @@ test('test_getNewArrivals_should_return_workflows_sorted_by_newest_first', async
 
   // Assert
   assert.ok(Array.isArray(arrivals));
-  assert.strictEqual(arrivals.length, 2);
+  assert.strictEqual(arrivals.length, 3);
   // auto-assign-pr was added 2026-09-08, super-linter was added 2026-09-01
   assert.strictEqual(arrivals[0].name, 'auto-assign-pr');
   assert.strictEqual(arrivals[1].name, 'super-linter');
+  assert.strictEqual(arrivals[2].name, 'auto-release');
 });
 
 test('test_getNewArrivals_should_respect_limit_parameter', async () => {
