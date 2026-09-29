@@ -1,0 +1,35 @@
+# Auto Release Configuration
+# Specify file and directory path patterns that trigger an automated release when merged to main.
+# If this file is missing or contains an empty paths list, all pushes to main trigger a release.
+
+paths:
+  # .NET / C#
+  # - 'src/**/*.cs'
+  # - '*.sln'
+  # - '**/*.csproj'
+
+  # Frontend / TypeScript / Web
+  # - 'src/**'
+  # - 'package.json'
+  # - 'package-lock.json'
+  # - 'tsconfig.json'
+
+  # Java (Maven / Gradle)
+  # - 'src/main/**'
+  # - 'pom.xml'
+  # - 'build.gradle'
+
+  # Rust
+  # - 'src/**'
+  # - 'Cargo.toml'
+  # - 'Cargo.lock'
+
+  # Golang
+  # - '**/*.go'
+  # - 'go.mod'
+  # - 'go.sum'
+
+  # Python
+  # - 'src/**'
+  # - 'pyproject.toml'
+  # - 'poetry.lock'

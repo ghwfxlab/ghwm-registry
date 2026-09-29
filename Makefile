@@ -139,6 +139,7 @@ lang-fix: check-lang-env
 script-tests:
 	@echo "[script-tests] Running helper script tests..."
 	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_workflow_package_versions.py -v
+	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_evaluate_release_paths.py -v
 
 ui-tests:
 	@echo "[ui-tests] Running UI unit tests..."
