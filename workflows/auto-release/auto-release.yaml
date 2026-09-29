@@ -23,6 +23,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           fetch-depth: 0
+          persist-credentials: false
 
       - name: Evaluate external path rules
         id: filter
@@ -106,11 +107,14 @@ jobs:
     steps:
       - name: Generate GH App token
         id: app-token
-        if: ${{ secrets.GH_APP_ID != '' && secrets.GH_APP_PRIVATE_KEY != '' }}
+        env:
+          GH_APP_ID: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
+          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }} # zizmor: ignore[secrets-outside-env]
+        if: env.GH_APP_ID != '' && env.GH_APP_PRIVATE_KEY != ''
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          client-id: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
-          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }} # zizmor: ignore[secrets-outside-env]
+          client-id: ${{ env.GH_APP_ID }}
+          private-key: ${{ env.GH_APP_PRIVATE_KEY }}
           permission-contents: write
 
       - name: Checkout The Source Code
