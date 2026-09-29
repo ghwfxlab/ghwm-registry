@@ -63,7 +63,7 @@ Because GHWM updates workflow files when you run `ghwm update`, path triggers ar
 
 #### File Syntax:
 - The configuration uses standard YAML (or JSON at `.github/auto-release.json`).
-- Patterns follow git pathspec / glob syntax relative to the repository root.
+- Patterns follow Git pathspec / glob syntax relative to the repository root.
 - If `.github/auto-release.yaml` is missing or contains an empty `paths` list, **all** pushes to `main` will trigger a release.
 
 #### Examples:
@@ -93,7 +93,7 @@ paths:
   - "Cargo.lock"
 ```
 
-**Golang:**
+**Go:**
 ```yaml
 paths:
   - "**/*.go"
@@ -144,4 +144,4 @@ The workflow declares minimum required permissions at the top level and elevates
 
 | Job | Permission | Level | Reason |
 | --- | --- | --- | --- |
-| `release` | `contents` | `write` | Pushing git tags and creating GitHub releases |
+| `release` | `contents` | `write` | Pushing Git tags and creating GitHub releases |

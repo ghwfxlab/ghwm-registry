@@ -432,10 +432,10 @@ test('test_getNewArrivals_should_return_workflows_sorted_by_newest_first', async
   // Assert
   assert.ok(Array.isArray(arrivals));
   assert.strictEqual(arrivals.length, 3);
-  // auto-assign-pr was added 2026-09-08, super-linter was added 2026-09-01
-  assert.strictEqual(arrivals[0].name, 'auto-assign-pr');
-  assert.strictEqual(arrivals[1].name, 'super-linter');
-  assert.strictEqual(arrivals[2].name, 'auto-release');
+  // auto-release was added 2026-09-29, auto-assign-pr was added 2026-09-08, super-linter was added 2026-09-01
+  assert.strictEqual(arrivals[0].name, 'auto-release');
+  assert.strictEqual(arrivals[1].name, 'auto-assign-pr');
+  assert.strictEqual(arrivals[2].name, 'super-linter');
 });
 
 test('test_getNewArrivals_should_respect_limit_parameter', async () => {
@@ -444,7 +444,7 @@ test('test_getNewArrivals_should_respect_limit_parameter', async () => {
 
   // Assert
   assert.strictEqual(arrivals.length, 1);
-  assert.strictEqual(arrivals[0].name, 'auto-assign-pr');
+  assert.strictEqual(arrivals[0].name, 'auto-release');
 });
 
 test('test_getNewArrivals_should_default_to_5_limit', async () => {
