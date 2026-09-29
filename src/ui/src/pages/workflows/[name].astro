@@ -176,6 +176,11 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
                 <li><code class="text-on-surface font-mono">.github/auto_assign.yaml</code> — Reviewer and assignee triage rules</li>
               </>
             )}
+            {workflow.name === 'auto-release' && (
+              <>
+                <li><code class="text-on-surface font-mono">.github/auto-release.yaml</code> — Path filter configuration rules</li>
+              </>
+            )}
           </ul>
         </section>
 
