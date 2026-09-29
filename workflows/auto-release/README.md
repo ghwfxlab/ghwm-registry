@@ -153,4 +153,5 @@ The workflow declares minimum required permissions at the top level and elevates
 
 | Job | Permission | Level | Reason |
 | --- | --- | --- | --- |
+| `check-paths` | `contents` | `read` | Checking out repository source code to evaluate path diffs |
 | `release` | `contents` | `write` | Pushing Git tags and creating GitHub releases |
