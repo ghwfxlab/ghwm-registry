@@ -102,6 +102,18 @@ test('test_resolveLocalWorkflowMetadata_should_load_auto_assign_pr_metadata', ()
   assert.strictEqual(meta.version, '1.0.2');
 });
 
+test('test_resolveLocalWorkflowMetadata_should_load_auto_release_metadata', () => {
+  const meta = resolveLocalWorkflowMetadata('auto-release');
+  assert.strictEqual(meta.name, 'auto-release');
+  assert.strictEqual(meta.title, 'Auto Release');
+  assert.ok(meta.description.includes('semantic version tags'));
+  assert.ok(meta.tags.includes('release'));
+  assert.strictEqual(meta.icon, 'sell');
+  assert.strictEqual(meta.owner, 'ghwfxlab');
+  assert.strictEqual(meta.packageName, '@ghwfxlab/auto-release');
+  assert.strictEqual(meta.version, '1.0.0');
+});
+
 test('test_resolveLocalWorkflowMetadata_should_fallback_to_NA_for_nonexistent_workflow', () => {
   const meta = resolveLocalWorkflowMetadata('non-existent-workflow');
   assert.strictEqual(meta.name, 'non-existent-workflow');
@@ -116,6 +128,7 @@ test('test_listLocalWorkflowNames_should_find_local_workflows', () => {
   assert.ok(Array.isArray(names));
   assert.ok(names.includes('super-linter'));
   assert.ok(names.includes('auto-assign-pr'));
+  assert.ok(names.includes('auto-release'));
 });
 
 test('test_getGitCreationDate_should_return_iso_date_for_workflow_directory', () => {
