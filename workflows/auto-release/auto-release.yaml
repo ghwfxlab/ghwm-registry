@@ -15,7 +15,7 @@ concurrency:
 jobs:
   check-paths:
     name: Check External Path Filters
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
     outputs:
@@ -35,9 +35,9 @@ jobs:
         shell: bash
         run: |
           CONFIG_FILE=""
-          for f in ".github/auto-release.yaml" ".github/auto-release.yml" ".github/auto-release.json"; do
-            if [ -f "$f" ]; then
-              CONFIG_FILE="$f"
+          for file in ".github/auto-release.yaml" ".github/auto-release.yml" ".github/auto-release.json"; do
+            if [ -f "$file" ]; then
+              CONFIG_FILE="$file"
               break
             fi
           done
@@ -50,26 +50,26 @@ jobs:
 
           PATTERNS_RAW=$(python3 -c 'import sys, json, textwrap
           code = textwrap.dedent("""
-          f = sys.argv[1]
-          with open(f, "r", encoding="utf-8") as fp:
-              c = fp.read().strip()
-          if c:
-              d = json.loads(c) if f.endswith(".json") else __import__("yaml").safe_load(c)
-              paths = d.get("paths", []) if isinstance(d, dict) else (d if isinstance(d, list) else [])
-              for p in paths:
-                  if p and isinstance(p, str) and not p.startswith("#"):
-                      print(p.strip())
+          config_file = sys.argv[1]
+          with open(config_file, "r", encoding="utf-8") as file_handle:
+              content = file_handle.read().strip()
+          if content:
+              data = json.loads(content) if config_file.endswith(".json") else __import__("yaml").safe_load(content)
+              paths = data.get("paths", []) if isinstance(data, dict) else (data if isinstance(data, list) else [])
+              for pattern in paths:
+                  if pattern and isinstance(pattern, str) and not pattern.startswith("#"):
+                      print(pattern.strip())
           """)
           exec(code)
           ' "$CONFIG_FILE")
 
           PATTERNS=()
-          while IFS= read -r p; do
-            [ -z "$p" ] && continue
-            if [[ "$p" =~ ^:\( ]]; then
-              PATTERNS+=("$p")
+          while IFS= read -r pattern; do
+            [ -z "$pattern" ] && continue
+            if [[ "$pattern" =~ ^:\( ]]; then
+              PATTERNS+=("$pattern")
             else
-              PATTERNS+=(":(glob)$p")
+              PATTERNS+=(":(glob)$pattern")
             fi
           done <<< "$PATTERNS_RAW"
 
@@ -98,7 +98,7 @@ jobs:
     name: Tag and Release
     needs: check-paths
     if: needs.check-paths.outputs.run_release == 'true'
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
     outputs:
@@ -107,16 +107,25 @@ jobs:
       name: production
       deployment: false
     steps:
+      - name: Check for GitHub App credentials
+        id: check-app-token
+        env:
+          GH_APP_ID: ${{ secrets.GH_APP_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "$GH_APP_ID" ] && [ -n "$GH_APP_PRIVATE_KEY" ]; then
+            echo "configured=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "configured=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Generate GH App token
         id: app-token
-        env:
-          GH_APP_ID: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
-          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }} # zizmor: ignore[secrets-outside-env]
-        if: env.GH_APP_ID != '' && env.GH_APP_PRIVATE_KEY != ''
+        if: steps.check-app-token.outputs.configured == 'true'
         uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
         with:
-          client-id: ${{ env.GH_APP_ID }}
-          private-key: ${{ env.GH_APP_PRIVATE_KEY }}
+          client-id: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }} # zizmor: ignore[secrets-outside-env]
           permission-contents: write
 
       - name: Checkout The Source Code
