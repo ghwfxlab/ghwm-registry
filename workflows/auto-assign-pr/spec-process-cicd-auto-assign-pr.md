@@ -4,7 +4,16 @@ version: 1.0
 date_created: 2026-10-03
 last_updated: 2026-10-03
 owner: DevOps Team
-tags: [process, cicd, github-actions, automation, pull-requests, triage, code-review]
+tags:
+  [
+    process,
+    cicd,
+    github-actions,
+    automation,
+    pull-requests,
+    triage,
+    code-review,
+  ]
 ---
 
 ## Workflow Overview
@@ -45,39 +54,39 @@ graph TD
 
 ## Jobs & Dependencies
 
-| Job Name | Purpose | Dependencies | Execution Context |
-|----------|---------|--------------|-------------------|
+| Job Name    | Purpose                                                                               | Dependencies              | Execution Context                    |
+| ----------- | ------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------ |
 | add-reviews | Evaluates pull request state and executes automatic assignee and reviewer assignments | None (standalone trigger) | GitHub-hosted runner (`ubuntu-slim`) |
 
 ## Requirements Matrix
 
 ### Functional Requirements
 
-| ID | Requirement | Priority | Acceptance Criteria |
-| ---- | ------------- | ---------- | ------------------- |
-| REQ-001 | Automatic Author Assignment | High | PR author is added as an assignee when `addAssignees: author` is configured |
-| REQ-002 | Peer Reviewer Requesting | High | Configured users and review groups are requested for review when `addReviewers: true` |
-| REQ-003 | Title and Body Filtering | Medium | Assignment is skipped without failure when PR title or description includes skip keywords (e.g., `wip`) |
-| REQ-004 | Lifecycle Event Response | High | Workflow triggers on both initial creation (`opened`) and status conversion (`ready_for_review`) |
-| REQ-005 | Draft PR Gating | Medium | Default behavior defers reviewer assignment while PR remains in draft state unless explicitly overridden |
-| REQ-006 | Allocation Limits | Low | Triage respects `numberOfAssignees` and `numberOfReviewers` limits to prevent over-subscription |
+| ID      | Requirement                 | Priority | Acceptance Criteria                                                                                      |
+| ------- | --------------------------- | -------- | -------------------------------------------------------------------------------------------------------- |
+| REQ-001 | Automatic Author Assignment | High     | PR author is added as an assignee when `addAssignees: author` is configured                              |
+| REQ-002 | Peer Reviewer Requesting    | High     | Configured users and review groups are requested for review when `addReviewers: true`                    |
+| REQ-003 | Title and Body Filtering    | Medium   | Assignment is skipped without failure when PR title or description includes skip keywords (e.g., `wip`)  |
+| REQ-004 | Lifecycle Event Response    | High     | Workflow triggers on both initial creation (`opened`) and status conversion (`ready_for_review`)         |
+| REQ-005 | Draft PR Gating             | Medium   | Default behavior defers reviewer assignment while PR remains in draft state unless explicitly overridden |
+| REQ-006 | Allocation Limits           | Low      | Triage respects `numberOfAssignees` and `numberOfReviewers` limits to prevent over-subscription          |
 
 ### Security Requirements
 
-| ID | Requirement | Implementation Constraint |
-|----|-------------|---------------------------|
-| SEC-001 | Minimal Global Permissions | Root workflow level must declare `permissions: {}` |
-| SEC-002 | Scoped Job Permissions | Job restricts write scope exclusively to `contents: write` and `pull-requests: write` |
-| SEC-003 | Immutable Action Pinning | External actions must reference immutable full commit SHAs |
-| SEC-004 | Fork Context Isolation | Standard `pull_request` event prevents leakage of write credentials to untrusted fork repositories |
+| ID      | Requirement                | Implementation Constraint                                                                          |
+| ------- | -------------------------- | -------------------------------------------------------------------------------------------------- |
+| SEC-001 | Minimal Global Permissions | Root workflow level must declare `permissions: {}`                                                 |
+| SEC-002 | Scoped Job Permissions     | Job restricts write scope exclusively to `contents: write` and `pull-requests: write`              |
+| SEC-003 | Immutable Action Pinning   | External actions must reference immutable full commit SHAs                                         |
+| SEC-004 | Fork Context Isolation     | Standard `pull_request` event prevents leakage of write credentials to untrusted fork repositories |
 
 ### Performance Requirements
 
-| ID | Metric | Target | Measurement Method |
-|----|-------|--------|-------------------|
-| PERF-001 | Execution Latency | < 30 seconds | Total workflow run duration recorded by GitHub Actions |
-| PERF-002 | API Call Efficiency | <= 5 API requests per run | GitHub REST/GraphQL API rate limit accounting |
-| PERF-003 | Cold Start Overhead | < 10 seconds | Runner initialization duration on `ubuntu-slim` |
+| ID       | Metric              | Target                    | Measurement Method                                     |
+| -------- | ------------------- | ------------------------- | ------------------------------------------------------ |
+| PERF-001 | Execution Latency   | < 30 seconds              | Total workflow run duration recorded by GitHub Actions |
+| PERF-002 | API Call Efficiency | <= 5 API requests per run | GitHub REST/GraphQL API rate limit accounting          |
+| PERF-003 | Cold Start Overhead | < 10 seconds              | Runner initialization duration on `ubuntu-slim`        |
 
 ## Input/Output Contracts
 
@@ -85,17 +94,17 @@ graph TD
 
 ```yaml
 # Configuration Contract (.github/auto_assign.yaml)
-addReviewers: boolean          # Enable/disable automatic reviewer assignments
+addReviewers: boolean # Enable/disable automatic reviewer assignments
 addAssignees: string | boolean # Assignment mode ('author', boolean, or explicit users)
-numberOfAssignees: integer     # Upper bound for assignees (0 = all configured)
-numberOfReviewers: integer     # Upper bound for reviewers (0 = all configured)
-skipKeywords: list[string]     # Substrings in PR title/body indicating bypass (e.g., 'wip')
-reviewers: list[string]        # Candidate reviewer GitHub usernames
-reviewGroups: list[string]     # Candidate reviewer GitHub team slugs
-assignees: list[string]        # Candidate assignee GitHub usernames
-assigneeGroups: list[string]   # Candidate assignee GitHub team slugs
-filterLabels: list[string]     # Required labels to trigger assignment (optional)
-runOnDraft: boolean            # Whether to run assignment logic on draft PRs (default: false)
+numberOfAssignees: integer # Upper bound for assignees (0 = all configured)
+numberOfReviewers: integer # Upper bound for reviewers (0 = all configured)
+skipKeywords: list[string] # Substrings in PR title/body indicating bypass (e.g., 'wip')
+reviewers: list[string] # Candidate reviewer GitHub usernames
+reviewGroups: list[string] # Candidate reviewer GitHub team slugs
+assignees: list[string] # Candidate assignee GitHub usernames
+assigneeGroups: list[string] # Candidate assignee GitHub team slugs
+filterLabels: list[string] # Required labels to trigger assignment (optional)
+runOnDraft: boolean # Whether to run assignment logic on draft PRs (default: false)
 
 # Repository Triggers
 pull_request:
@@ -108,18 +117,18 @@ pull_request:
 
 ```yaml
 # Pull Request Mutations (Target State)
-pr_assignees: list[string]        # Usernames successfully assigned to the pull request
-pr_reviewers: list[string]        # Usernames successfully requested for pull request review
-pr_review_groups: list[string]   # Team slugs successfully requested for pull request review
-triage_status: string             # Outcome summary ('assigned' | 'skipped' | 'no-op')
+pr_assignees: list[string] # Usernames successfully assigned to the pull request
+pr_reviewers: list[string] # Usernames successfully requested for pull request review
+pr_review_groups: list[string] # Team slugs successfully requested for pull request review
+triage_status: string # Outcome summary ('assigned' | 'skipped' | 'no-op')
 ```
 
 ### Secrets & Variables
 
-| Type | Name | Purpose | Scope |
-|------|------|---------|-------|
-| Secret | GITHUB_TOKEN | Authorizes write operations against PR assignees and reviewers API | Step / Action Execution |
-| Variable | CONFIGURATION_PATH | Relative repository path to triage rules (`.github/auto_assign.yaml`) | Action Step |
+| Type     | Name               | Purpose                                                               | Scope                   |
+| -------- | ------------------ | --------------------------------------------------------------------- | ----------------------- |
+| Secret   | GITHUB_TOKEN       | Authorizes write operations against PR assignees and reviewers API    | Step / Action Execution |
+| Variable | CONFIGURATION_PATH | Relative repository path to triage rules (`.github/auto_assign.yaml`) | Action Step             |
 
 ## Execution Constraints
 
@@ -137,23 +146,23 @@ triage_status: string             # Outcome summary ('assigned' | 'skipped' | 'n
 
 ## Error Handling Strategy
 
-| Error Type | Response | Recovery Action |
-| ------------ | ---------- | ----------------- |
-| Missing Configuration File | Workflow fails step with descriptive log | Ensure `.github/auto_assign.yaml` is committed to repository |
-| Malformed Configuration Syntax | Workflow terminates step on YAML parser error | Validate syntax against YAML linter |
-| Target User / Group Not Found | GitHub API returns 404 / 422 warning | Verify user or team exists and maintains repository read access |
-| Insufficient Token Privileges | GitHub API returns 403 Forbidden | Ensure repository workflow permissions allow PR write operations |
-| API Rate Limit Exceeded | Step terminates with HTTP 403 / 429 | Retry automatically via standard backoff or wait for window reset |
+| Error Type                     | Response                                      | Recovery Action                                                   |
+| ------------------------------ | --------------------------------------------- | ----------------------------------------------------------------- |
+| Missing Configuration File     | Workflow fails step with descriptive log      | Ensure `.github/auto_assign.yaml` is committed to repository      |
+| Malformed Configuration Syntax | Workflow terminates step on YAML parser error | Validate syntax against YAML linter                               |
+| Target User / Group Not Found  | GitHub API returns 404 / 422 warning          | Verify user or team exists and maintains repository read access   |
+| Insufficient Token Privileges  | GitHub API returns 403 Forbidden              | Ensure repository workflow permissions allow PR write operations  |
+| API Rate Limit Exceeded        | Step terminates with HTTP 403 / 429           | Retry automatically via standard backoff or wait for window reset |
 
 ## Quality Gates
 
 ### Gate Definitions
 
-| Gate | Criteria | Bypass Conditions |
-| ------ | ---------- | ------------------- |
-| Configuration Validation | `.github/auto_assign.yaml` exists and matches schema | Never bypassed |
-| Draft State Gate | Pull request must be ready for review unless `runOnDraft: true` | Draft state active |
-| Keyword Bypass Gate | Pull request title and body must not contain defined `skipKeywords` | Bypass keywords present |
+| Gate                     | Criteria                                                            | Bypass Conditions       |
+| ------------------------ | ------------------------------------------------------------------- | ----------------------- |
+| Configuration Validation | `.github/auto_assign.yaml` exists and matches schema                | Never bypassed          |
+| Draft State Gate         | Pull request must be ready for review unless `runOnDraft: true`     | Draft state active      |
+| Keyword Bypass Gate      | Pull request title and body must not contain defined `skipKeywords` | Bypass keywords present |
 
 ## Monitoring & Observability
 
@@ -165,26 +174,26 @@ triage_status: string             # Outcome summary ('assigned' | 'skipped' | 'n
 
 ### Alerting
 
-| Condition | Severity | Notification Target |
-|-----------|----------|-------------------|
-| Workflow execution failure on default branch PRs | Warning | Pull request comments / DevOps triage team |
-| Repeated GitHub API 403 permission failures | High | Repository administrator |
+| Condition                                        | Severity | Notification Target                        |
+| ------------------------------------------------ | -------- | ------------------------------------------ |
+| Workflow execution failure on default branch PRs | Warning  | Pull request comments / DevOps triage team |
+| Repeated GitHub API 403 permission failures      | High     | Repository administrator                   |
 
 ## Integration Points
 
 ### External Systems
 
-| System | Integration Type | Data Exchange | SLA Requirements |
-|--------|------------------|---------------|------------------|
+| System                    | Integration Type | Data Exchange                                      | SLA Requirements      |
+| ------------------------- | ---------------- | -------------------------------------------------- | --------------------- |
 | GitHub REST / GraphQL API | HTTPS API Client | PR metadata read, reviewer/assignee POST mutations | Availability >= 99.9% |
 
 ### Dependent Workflows
 
-| Workflow | Relationship | Trigger Mechanism |
-|----------|--------------|-------------------|
-| PR Title & Conventional Commit Check | Parallel validation | Triggered independently on PR events |
-| CI Test Suite / Super Linter | Downstream verification | Triggered independently on PR events |
-| Branch Protection Policies | Downstream consumer | Relies on triage reviewers for merge sign-off |
+| Workflow                             | Relationship            | Trigger Mechanism                             |
+| ------------------------------------ | ----------------------- | --------------------------------------------- |
+| PR Title & Conventional Commit Check | Parallel validation     | Triggered independently on PR events          |
+| CI Test Suite / Super Linter         | Downstream verification | Triggered independently on PR events          |
+| Branch Protection Policies           | Downstream consumer     | Relies on triage reviewers for merge sign-off |
 
 ## Compliance & Governance
 
@@ -204,13 +213,13 @@ triage_status: string             # Outcome summary ('assigned' | 'skipped' | 'n
 
 ### Scenario Matrix
 
-| Scenario | Expected Behavior | Validation Method |
-|----------|-------------------|-------------------|
-| PR author is listed in reviewer pool | Author is excluded from reviewer requests to satisfy GitHub rules | Validate PR review requests do not include author |
-| PR opened with 'WIP' in title | Workflow detects keyword and completes without applying assignments | Check execution logs for keyword match skip confirmation |
-| PR created by bot (e.g., Dependabot) | Executes normally; skips reviewer requests if reviewers config excludes bot PRs | Verify bot PR assignees |
-| Pull request from external fork | Job fails gracefully or operates read-only under standard PR permissions | Confirm secure isolation without exposing write tokens |
-| Zero available reviewers in pool | Workflow completes successfully with zero reviewers requested | Verify job outcome is successful with no reviewers added |
+| Scenario                             | Expected Behavior                                                               | Validation Method                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------- | -------------------------------------------------------- |
+| PR author is listed in reviewer pool | Author is excluded from reviewer requests to satisfy GitHub rules               | Validate PR review requests do not include author        |
+| PR opened with 'WIP' in title        | Workflow detects keyword and completes without applying assignments             | Check execution logs for keyword match skip confirmation |
+| PR created by bot (e.g., Dependabot) | Executes normally; skips reviewer requests if reviewers config excludes bot PRs | Verify bot PR assignees                                  |
+| Pull request from external fork      | Job fails gracefully or operates read-only under standard PR permissions        | Confirm secure isolation without exposing write tokens   |
+| Zero available reviewers in pool     | Workflow completes successfully with zero reviewers requested                   | Verify job outcome is successful with no reviewers added |
 
 ## Validation Criteria
 
@@ -239,9 +248,9 @@ triage_status: string             # Outcome summary ('assigned' | 'skipped' | 'n
 
 ### Version History
 
-| Version | Date | Changes | Author |
-|---------|------|---------|--------|
-| 1.0 | 2026-10-03 | Initial specification for auto-assign-pr workflow | DevOps Team |
+| Version | Date       | Changes                                           | Author      |
+| ------- | ---------- | ------------------------------------------------- | ----------- |
+| 1.0     | 2026-10-03 | Initial specification for auto-assign-pr workflow | DevOps Team |
 
 ## Related Specifications
 
