@@ -65,7 +65,7 @@ Optionally set these repository or organization **variables** (not secrets) to o
 | Variable | Default | Description |
 | --- | --- | --- |
 | `AUTO_RELEASE_TAG_PREFIX` | `v` | Prefix for generated tags |
-| `AUTO_RELEASE_DEFAULT_BUMP` | `patch` | Default semver bump (`major`, `minor`, `patch`) |
+| `AUTO_RELEASE_DEFAULT_BUMP` | `patch` | Default SemVer bump (`major`, `minor`, `patch`) |
 | `AUTO_RELEASE_PRERELEASE` | `false` | Create pre-release tags and releases |
 | `AUTO_RELEASE_GENERATE_NOTES` | `true` | Auto-generate release notes |
 
