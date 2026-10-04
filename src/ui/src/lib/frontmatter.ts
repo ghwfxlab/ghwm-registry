@@ -231,11 +231,11 @@ export function getGitCreationDate(targetPath: string): string | null {
       ? resolvedPath
       : path.dirname(resolvedPath);
 
-    const output = execFileSync('git', ['log', '--diff-filter=A', '--format=%aI', '-1', '--', resolvedPath], {
+    const output = execFileSync('git', ['log', '--diff-filter=A', '--reverse', '--format=%aI', '--', resolvedPath], {
       cwd,
       encoding: 'utf-8',
       stdio: ['ignore', 'pipe', 'ignore'],
-    }).trim();
+    }).split('\n')[0]?.trim();
     if (output) {
       return output;
     }
