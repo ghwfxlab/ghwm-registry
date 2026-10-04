@@ -34,21 +34,24 @@ jobs:
           EVENT_SHA: ${{ github.sha }}
         shell: bash
         run: |
-          CONFIG_FILE=""
+          CONFIG_FILES=()
           for file in ".github/auto-release.yaml" ".github/auto-release.yml" ".github/auto-release.json"; do
             if [ -f "$file" ]; then
-              CONFIG_FILE="$file"
-              break
+              CONFIG_FILES+=("$file")
             fi
           done
 
-          if [ -z "$CONFIG_FILE" ]; then
-            echo "Config file not found, defaulting execution to true."
-            echo "run_release=true" >> "$GITHUB_OUTPUT"
-            exit 0
+          if [ ${#CONFIG_FILES[@]} -gt 1 ]; then
+            echo "::error::Multiple config files found (${CONFIG_FILES[*]}). Keep only one."
+            exit 1
           fi
 
-          PATTERNS_RAW=$(python3 -c 'import sys, json, textwrap
+          PATTERNS=()
+          if [ ${#CONFIG_FILES[@]} -eq 0 ]; then
+            echo "Config file not found, defaulting execution to true."
+          else
+            CONFIG_FILE="${CONFIG_FILES[0]}"
+            PATTERNS_RAW=$(python3 -c 'import sys, json, textwrap
           code = textwrap.dedent("""
           config_file = sys.argv[1]
           with open(config_file, "r", encoding="utf-8") as file_handle:
@@ -63,15 +66,15 @@ jobs:
           exec(code)
           ' "$CONFIG_FILE")
 
-          PATTERNS=()
-          while IFS= read -r pattern; do
-            [ -z "$pattern" ] && continue
-            if [[ "$pattern" =~ ^:\( ]]; then
-              PATTERNS+=("$pattern")
-            else
-              PATTERNS+=(":(glob)$pattern")
-            fi
-          done <<< "$PATTERNS_RAW"
+            while IFS= read -r pattern; do
+              [ -z "$pattern" ] && continue
+              if [[ "$pattern" =~ ^:\( ]]; then
+                PATTERNS+=("$pattern")
+              else
+                PATTERNS+=(":(glob)$pattern")
+              fi
+            done <<< "$PATTERNS_RAW"
+          fi
 
           if [ ${#PATTERNS[@]} -eq 0 ]; then
             echo "No filter patterns defined, running release for all pushes."
@@ -140,14 +143,14 @@ jobs:
         uses: anothrNick/github-tag-action@4ed44965e0db8dab2b466a16da04aec3cc312fd8 # 1.75.0
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
-          TAG_PREFIX: v
-          DEFAULT_BUMP: patch
-          PRERELEASE: false
+          TAG_PREFIX: ${{ vars.AUTO_RELEASE_TAG_PREFIX || 'v' }}
+          DEFAULT_BUMP: ${{ vars.AUTO_RELEASE_DEFAULT_BUMP || 'patch' }}
+          PRERELEASE: ${{ vars.AUTO_RELEASE_PRERELEASE || 'false' }}
 
       - name: automatic-release # zizmor: ignore[superfluous-actions]
         uses: softprops/action-gh-release@efb35369e0ad2afab669f228072c1b0d510eae64 # v3.0.3
         with:
           token: ${{ steps.app-token.outputs.token || secrets.GITHUB_TOKEN }}
           tag_name: ${{ steps.bump-version.outputs.new_tag }}
-          generate_release_notes: true
-          prerelease: false
+          generate_release_notes: ${{ vars.AUTO_RELEASE_GENERATE_NOTES || 'true' }}
+          prerelease: ${{ vars.AUTO_RELEASE_PRERELEASE || 'false' }}

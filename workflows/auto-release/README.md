@@ -31,7 +31,7 @@ flowchart LR
 ```
 
 1. **`check-paths` Job**:
-   - Reads [`.github/auto-release.yaml`](file:///.github/auto-release.yaml) (or `.yml` / `.json`) from the repository root.
+   - Reads [`.github/auto-release.yaml`](file:///.github/auto-release.yaml) (or `.yml` / `.json`) from the repository root. Only one config file may exist; multiple files fail the job.
    - Evaluates whether any files modified between the previous commit and the current HEAD match the configured path patterns.
    - Outputs `run_release=true` if changes match, or `run_release=false` to skip the release.
 2. **`release` Job**:
@@ -57,6 +57,17 @@ To allow automated releases to trigger downstream deployment workflows:
 
 > [!NOTE]
 > If `GH_APP_ID` or `GH_APP_PRIVATE_KEY` are not set, the workflow automatically and gracefully falls back to `GITHUB_TOKEN`. Releases and Git tags will still be created, but downstream workflows will not be triggered automatically.
+
+### Release Options (Repository Variables)
+
+Optionally set these repository or organization **variables** (not secrets) to override defaults:
+
+| Variable | Default | Description |
+| --- | --- | --- |
+| `AUTO_RELEASE_TAG_PREFIX` | `v` | Prefix for generated tags |
+| `AUTO_RELEASE_DEFAULT_BUMP` | `patch` | Default semver bump (`major`, `minor`, `patch`) |
+| `AUTO_RELEASE_PRERELEASE` | `false` | Create pre-release tags and releases |
+| `AUTO_RELEASE_GENERATE_NOTES` | `true` | Auto-generate release notes |
 
 ### 2. Path Configuration (`.github/auto-release.yaml`)
 
