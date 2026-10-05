@@ -26,3 +26,6 @@ yarn-error.log*
 # Astro build output and cache
 dist/
 .astro/
+
+# Archify
+.archify/
