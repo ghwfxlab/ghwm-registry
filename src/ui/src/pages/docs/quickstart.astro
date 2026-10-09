@@ -63,25 +63,20 @@ const renovateExample = `{
   <h2>3. Install the workflows</h2>
   <CodeBlock code="ghwm install" />
   <p>
-    Commit the generated files: the workflow files under <code>.github/workflows/</code>,{' '}
-    <code>ghwm.lock</code>, and any config files created on first install. Some workflows need secrets or
-    variables; check each package's page in the <a href={withBase('/registry')}>registry</a> for its setup.
+    Commit the files it generates, including <code>ghwm.lock</code>. Some workflows need secrets or variables;
+    check each package's page in the <a href={withBase('/registry')}>registry</a> for its setup.
   </p>
 
   <h2>4. Update workflows</h2>
   <p>Bump the version in <code>ghwm.yml</code>, then refresh:</p>
   <CodeBlock code={bumpExample} label="ghwm.yml (diff)" />
   <CodeBlock code="ghwm update" />
-  <p>
-    If you also removed entries from <code>ghwm.yml</code>, run <code>ghwm update --prune</code> to refresh the
-    remaining workflows and delete the managed files of the removed ones in one step.
-  </p>
 
   <h2>5. Remove a workflow</h2>
   <p>
-    Delete its entry from <code>ghwm.yml</code>, then run <code>ghwm install</code> or{' '}
-    <code>ghwm update --prune</code>. Both prune managed files for entries that are no longer listed and
-    rewrite <code>ghwm.lock</code>.
+    Delete its entry from <code>ghwm.yml</code> and run <code>ghwm install</code>. See the{' '}
+    <a href="https://github.com/ghwfxlab/ghwm#readme" target="_blank" rel="noopener noreferrer">ghwm CLI readme</a>{' '}
+    for all commands and pruning options.
   </p>
 
   <h2>6. Keep versions current with Renovate</h2>
@@ -99,8 +94,7 @@ const renovateExample = `{
   <p>To pull one workflow from a different registry, override <code>source</code> on that entry:</p>
   <CodeBlock code={customSourceExample} label="ghwm.yml" />
   <p>
-    Usage telemetry is only sent for public registries, so workflows from private or internal registries are
-    never tracked. For authentication and other CLI options, see the{' '}
+    For authentication, telemetry, and other CLI behavior, see the{' '}
     <a href="https://github.com/ghwfxlab/ghwm#readme" target="_blank" rel="noopener noreferrer">ghwm CLI readme</a>.
   </p>
 </DocsLayout>
