@@ -13,7 +13,13 @@ const guides = [
     href: withBase('/docs/manifest/'),
     icon: 'description',
     title: 'Manifest reference',
-    text: 'Every field in workflow.yml, package.json, and ghwm.yml.',
+    text: 'Every key and field in ghwm.yml and ghwm.lock.',
+  },
+  {
+    href: withBase('/docs/frontmatter/'),
+    icon: 'sell',
+    title: 'Frontmatter reference',
+    text: 'Describe a package with title, description, tags, and icon.',
   },
   {
     href: withBase('/docs/writing-a-package/'),
@@ -35,7 +41,7 @@ const guides = [
     versions you use.
   </p>
 
-  <div class="grid grid-cols-1 sm:grid-cols-3 gap-gutter my-lg">
+  <div class="grid grid-cols-1 sm:grid-cols-2 gap-gutter my-lg">
     {guides.map((guide) => (
       <a href={guide.href} class="card-surface rounded-lg p-md flex flex-col gap-sm no-underline hover:no-underline">
         <span class="material-symbols-outlined text-primary">{guide.icon}</span>

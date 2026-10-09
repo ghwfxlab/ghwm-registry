@@ -5,7 +5,7 @@ import { withBase } from '../lib/paths';
 interface Props {
   title: string;
   description: string;
-  current: 'overview' | 'quickstart' | 'manifest' | 'writing-a-package';
+  current: 'overview' | 'quickstart' | 'manifest' | 'frontmatter' | 'writing-a-package';
 }
 
 const { title, description, current } = Astro.props;
@@ -14,6 +14,7 @@ const pages = [
   { key: 'overview', label: 'Overview', href: withBase('/docs/') },
   { key: 'quickstart', label: 'Quickstart', href: withBase('/docs/quickstart/') },
   { key: 'manifest', label: 'Manifest reference', href: withBase('/docs/manifest/') },
+  { key: 'frontmatter', label: 'Frontmatter reference', href: withBase('/docs/frontmatter/') },
   { key: 'writing-a-package', label: 'Writing a package', href: withBase('/docs/writing-a-package/') },
 ];
 ---
@@ -96,7 +97,9 @@ const pages = [
     padding: 0.1em 0.35em;
   }
   .docs-prose table {
-    width: 100%;
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
     border-collapse: collapse;
     margin: 1rem 0;
     font-size: 0.875rem;
@@ -110,5 +113,29 @@ const pages = [
   }
   .docs-prose th {
     background-color: var(--color-surface-container-low);
+  }
+  .docs-prose hr {
+    display: none;
+  }
+  .docs-prose blockquote {
+    border-left: 3px solid var(--color-outline-variant);
+    padding-left: 1rem;
+    margin: 1rem 0;
+  }
+  .docs-prose .docs-callout {
+    border-left: 3px solid var(--color-primary-container);
+    background-color: var(--color-surface-container-low);
+    border-radius: 4px;
+    padding: 0.25rem 1rem;
+    margin: 1rem 0;
+  }
+  .docs-prose .docs-callout[data-kind='warning'],
+  .docs-prose .docs-callout[data-kind='caution'] {
+    border-left-color: var(--color-tertiary);
+  }
+  .docs-prose .docs-callout-title {
+    font-weight: 600;
+    color: var(--color-on-surface);
+    margin-bottom: 0;
   }
 </style>

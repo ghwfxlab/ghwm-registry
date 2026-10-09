@@ -1,28 +1,10 @@
 ---
 import DocsLayout from '../../layouts/DocsLayout.astro';
-import CodeBlock from '../../components/CodeBlock.astro';
-import { withBase } from '../../lib/paths';
+import DocSource from '../../components/DocSource.astro';
+import { getContributingDoc, REGISTRY_REPO } from '../../lib/docs';
 
-const workflowYml = `# ---
-# title: My Workflow
-# description: One sentence on what it does.
-# tags:
-#   - ci
-# icon: bolt
-# owner: your-org
-# ---
----
-name: my-workflow
-files:
-  - source: my-workflow.yml
-    target: .github/workflows/my-workflow.yml`;
-
-const packageJson = `{
-  "name": "@ghwfxlab/my-workflow",
-  "version": "1.0.0",
-  "files": ["my-workflow.yml", "workflow.yml"],
-  "publishConfig": { "registry": "https://npm.pkg.github.com" }
-}`;
+// Rendered from this repository's CONTRIBUTING.md so there is a single source of truth.
+const doc = getContributingDoc();
 ---
 
 <DocsLayout
@@ -30,65 +12,6 @@ const packageJson = `{
   description="How to add a workflow package to the GHWM registry: directory layout, manifests, readme, and publishing."
   current="writing-a-package"
 >
-  <p>
-    A package is one directory under <code>workflows/</code> in the registry repository. Merging it to
-    <code>main</code> publishes it automatically. Read the
-    <a href={withBase('/docs/manifest/')}>manifest reference</a> for the full list of fields.
-  </p>
-
-  <h2>1. Create the directory</h2>
-  <CodeBlock code="mkdir workflows/my-workflow" />
-
-  <h2>2. Add the workflow file</h2>
-  <p>
-    Name it <code>my-workflow.yml</code> (or <code>.yaml</code>). The filename must match the directory name.
-  </p>
-
-  <h2>3. Add <code>workflow.yml</code></h2>
-  <p>List every file the CLI should write into consumer repositories.</p>
-  <CodeBlock code={workflowYml} label="workflows/my-workflow/workflow.yml" />
-
-  <h2>4. Add <code>package.json</code></h2>
-  <CodeBlock code={packageJson} label="workflows/my-workflow/package.json" />
-
-  <h2>5. Write the readme</h2>
-  <p>Add <code>README.md</code> in the package directory. It must cover:</p>
-  <ul>
-    <li>What the workflow does, in one paragraph</li>
-    <li>What gets installed in the consumer repository</li>
-    <li>Setup steps: secrets, variables, and permissions</li>
-    <li>How to trigger the workflow</li>
-    <li>How to update and remove it</li>
-    <li>Known limitations</li>
-  </ul>
-
-  <h2>6. Register it</h2>
-  <p>
-    Add a row to the Available Workflows table in both <code>README.md</code> and
-    <code>workflows/README.md</code>. The root <code>package.json</code> uses
-    <code>workspaces: ["workflows/*"]</code>, so the new directory is picked up automatically.
-  </p>
-
-  <h2>7. Open a pull request</h2>
-  <p>
-    Use a <a href="https://www.conventionalcommits.org/" target="_blank" rel="noopener noreferrer">Conventional Commits</a>
-    title such as <code>feat(my-workflow): add my-workflow</code>, and run <code>make lang</code> and
-    <code>make precommit</code> first.
-  </p>
-
-  <h2>Versioning and publishing</h2>
-  <p>
-    On merge to <code>main</code>, the publish workflow compares each package's version with GitHub Packages and
-    publishes only versions that are new. A pre-commit hook bumps the patch version when shipped content
-    changed. Bump <code>package.json</code> yourself for a minor or major release.
-  </p>
-  <ul>
-    <li><strong>Patch</strong>: bugfixes, no behaviour change</li>
-    <li><strong>Minor</strong>: new optional inputs, additive features, new packaged config files</li>
-    <li><strong>Major</strong>: breaking changes such as renamed files, removed inputs, changed permissions or default triggers</li>
-  </ul>
-  <p>
-    Only <code>package.json</code> and the paths in its <code>files</code> array count as shipped content, so
-    readme-only changes do not need a bump.
-  </p>
+  <Fragment set:html={doc.html} />
+  <DocSource tag={doc.source.tag} sourceUrl={doc.source.sourceUrl} repo={REGISTRY_REPO} />
 </DocsLayout>

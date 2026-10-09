@@ -5,13 +5,13 @@ import { getGhwmReferenceDoc } from '../../lib/docs';
 import { DEFAULT_GHWM_REPO } from '../../lib/github';
 
 // Synced from the ghwm repository at build time; see src/lib/docs.ts.
-const doc = await getGhwmReferenceDoc('docs/reference/manifest.md');
+const doc = await getGhwmReferenceDoc('docs/reference/frontmatter.md');
 ---
 
 <DocsLayout
-  title="Manifest reference"
-  description="Reference for ghwm.yml and ghwm.lock: every key and field the ghwm CLI reads and writes."
-  current="manifest"
+  title="Frontmatter reference"
+  description="How to describe a workflow package with commented YAML frontmatter: title, description, tags, icon, and more."
+  current="frontmatter"
 >
   <Fragment set:html={doc.html} />
   <DocSource tag={doc.source.tag} sourceUrl={doc.source.sourceUrl} repo={DEFAULT_GHWM_REPO} />
