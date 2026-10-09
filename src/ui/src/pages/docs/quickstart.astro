@@ -47,7 +47,7 @@ const renovateExample = `{
   <p>Pin the CLI to the latest tagged release (recommended):</p>
   <CodeBlock code={installCommands['uv-pinned']} />
   <p>
-    Prefer another tool? Use <code>{installCommands['pipx']}</code> or
+    Prefer another tool? Use <code>{installCommands['pipx']}</code> or{' '}
     <code>{installCommands['pip']}</code>.
   </p>
 
@@ -55,15 +55,15 @@ const renovateExample = `{
   <p>Add this file to the root of your repository:</p>
   <CodeBlock code={manifestExample} label="ghwm.yml" />
   <p>
-    <code>source</code> is the registry repository, and each workflow needs a <code>name</code> and an exact
-    <code>version</code>. Per-workflow options such as <code>update-triggers</code> and
+    <code>source</code> is the registry repository, and each workflow needs a <code>name</code> and an exact{' '}
+    <code>version</code>. Per-workflow options such as <code>update-triggers</code> and{' '}
     <code>update-config-files</code> are described in the <a href={withBase('/docs/manifest/')}>manifest reference</a>.
   </p>
 
   <h2>3. Install the workflows</h2>
   <CodeBlock code="ghwm install" />
   <p>
-    Commit the generated files: the workflow files under <code>.github/workflows/</code>,
+    Commit the generated files: the workflow files under <code>.github/workflows/</code>,{' '}
     <code>ghwm.lock</code>, and any config files created on first install. Some workflows need secrets or
     variables; check each package's page in the <a href={withBase('/registry')}>registry</a> for its setup.
   </p>
@@ -79,7 +79,7 @@ const renovateExample = `{
 
   <h2>5. Remove a workflow</h2>
   <p>
-    Delete its entry from <code>ghwm.yml</code>, then run <code>ghwm install</code> or
+    Delete its entry from <code>ghwm.yml</code>, then run <code>ghwm install</code> or{' '}
     <code>ghwm update --prune</code>. Both prune managed files for entries that are no longer listed and
     rewrite <code>ghwm.lock</code>.
   </p>
@@ -91,16 +91,16 @@ const renovateExample = `{
   <h2 id="custom-registries">Custom registries</h2>
   <p>
     You are not limited to this registry. The <code>source</code> key in <code>ghwm.yml</code> names the registry
-    repository in <code>owner/repository</code> format, and packages are resolved from GitHub Packages as
-    <code>@owner/name</code>. Create your own from the
-    <a href="https://github.com/ghwfxlab/ghwm-registry-template" target="_blank" rel="noopener noreferrer">ghwm-registry-template</a>
+    repository in <code>owner/repository</code> format, and packages are resolved from GitHub Packages as{' '}
+    <code>@owner/name</code>. Create your own from the{' '}
+    <a href="https://github.com/ghwfxlab/ghwm-registry-template" target="_blank" rel="noopener noreferrer">ghwm-registry-template</a>{' '}
     repository template; see <a href={withBase('/docs/writing-a-package/')}>Writing a package</a> for the layout.
   </p>
   <p>To pull one workflow from a different registry, override <code>source</code> on that entry:</p>
   <CodeBlock code={customSourceExample} label="ghwm.yml" />
   <p>
     Usage telemetry is only sent for public registries, so workflows from private or internal registries are
-    never tracked. For authentication and other CLI options, see the
+    never tracked. For authentication and other CLI options, see the{' '}
     <a href="https://github.com/ghwfxlab/ghwm#readme" target="_blank" rel="noopener noreferrer">ghwm CLI readme</a>.
   </p>
 </DocsLayout>
