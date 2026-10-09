@@ -165,7 +165,8 @@ super-linter:
 		-v $(PWD):/tmp/lint \
 		-v $$GIT_DIR:$$GIT_DIR \
 		--rm \
-		ghcr.io/super-linter/super-linter:slim-v8.7.0@sha256:c95c714f746edc70e54926a69e229c834ffcdec2450bd3475f7865164d749a56
+		ghcr.io/super-linter/super-linter:slim-v9.0.0@sha256:7d0b4d3387deaac975e86e0787c7a05a25d530469b27d74c2b4599ab5800d9e4
+
 
 super-linter-fix:
 	@echo "[super-linter-fix] Running super-linter with auto-fix via Docker..."
@@ -179,4 +180,5 @@ super-linter-fix:
 		-v $(PWD):/tmp/lint \
 		-v $$GIT_DIR:$$GIT_DIR \
 		--rm \
-		ghcr.io/super-linter/super-linter:slim-v8.7.0@sha256:c05768164eed53bac7c82aade7a14a76955206d4962cd41be97118db96fa5996
+		ghcr.io/super-linter/super-linter:slim-v9.0.0@sha256:7d0b4d3387deaac975e86e0787c7a05a25d530469b27d74c2b4599ab5800d9e4
+
