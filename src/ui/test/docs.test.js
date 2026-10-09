@@ -64,6 +64,14 @@ test('test_renderMarkdown_should_extract_and_drop_the_first_h1', () => {
   assert.ok(html.includes('<p>Intro text.</p>'));
 });
 
+test('test_renderMarkdown_should_only_drop_the_h1_line_even_when_a_lower_heading_has_the_same_text', () => {
+  const { title, html } = renderMarkdown('## Intro\n\n# Intro\n\nBody.\n', renderOptions);
+
+  assert.equal(title, 'Intro');
+  assert.ok(html.includes('<h2 id="intro">Intro</h2>'));
+  assert.ok(!html.includes('<h1'));
+});
+
 test('test_renderMarkdown_should_add_github_style_heading_ids_and_dedupe_repeats', () => {
   const { html } = renderMarkdown('## Overview\n\n## Overview\n\n### `source`\n', renderOptions);
 
@@ -125,7 +133,7 @@ test('test_loadGhwmDoc_should_fetch_from_the_pinned_tag', async () => {
   let requested = '';
   const doc = await loadGhwmDoc('docs/reference/manifest.md', {
     tag: 'v9.9.9',
-    dir: '',
+    checkoutDir: '',
     fetchFn: async (url) => {
       requested = url.toString();
       return new Response('# Hello', { status: 200 });
@@ -143,7 +151,7 @@ test('test_loadGhwmDoc_should_throw_instead_of_serving_stale_docs_when_the_fetch
   await assert.rejects(
     loadGhwmDoc('docs/reference/missing.md', {
       tag: 'v9.9.9',
-      dir: '',
+      checkoutDir: '',
       fetchFn: async () => new Response('nope', { status: 404 }),
     }),
     /HTTP 404/
@@ -151,7 +159,7 @@ test('test_loadGhwmDoc_should_throw_instead_of_serving_stale_docs_when_the_fetch
 });
 
 test('test_loadGhwmDoc_should_not_cache_failures', async () => {
-  const options = { tag: 'v9.9.9', dir: '' };
+  const options = { tag: 'v9.9.9', checkoutDir: '' };
   await assert.rejects(
     loadGhwmDoc('docs/reference/retry.md', { ...options, fetchFn: async () => new Response('', { status: 500 }) })
   );
@@ -163,14 +171,14 @@ test('test_loadGhwmDoc_should_not_cache_failures', async () => {
   assert.equal(doc.markdown, 'ok');
 });
 
-test('test_loadGhwmDoc_should_read_from_a_local_checkout_when_dir_is_set', async () => {
-  const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'ghwm-docs-'));
+test('test_loadGhwmDoc_should_read_from_a_local_checkout_when_checkout_dir_is_set', async () => {
+  const checkoutDir = fs.mkdtempSync(path.join(os.tmpdir(), 'ghwm-docs-'));
   try {
-    fs.mkdirSync(path.join(dir, 'docs', 'reference'), { recursive: true });
-    fs.writeFileSync(path.join(dir, 'docs', 'reference', 'manifest.md'), '# Local');
+    fs.mkdirSync(path.join(checkoutDir, 'docs', 'reference'), { recursive: true });
+    fs.writeFileSync(path.join(checkoutDir, 'docs', 'reference', 'manifest.md'), '# Local');
 
     const doc = await loadGhwmDoc('docs/reference/manifest.md', {
-      dir,
+      checkoutDir,
       fetchFn: async () => {
         throw new Error('should not fetch');
       },
@@ -178,9 +186,9 @@ test('test_loadGhwmDoc_should_read_from_a_local_checkout_when_dir_is_set', async
 
     assert.equal(doc.markdown, '# Local');
     assert.equal(doc.tag, null);
-    await assert.rejects(loadGhwmDoc('docs/reference/nope.md', { dir }), /does not exist/);
+    await assert.rejects(loadGhwmDoc('docs/reference/nope.md', { checkoutDir }), /does not exist/);
   } finally {
-    fs.rmSync(dir, { recursive: true, force: true });
+    fs.rmSync(checkoutDir, { recursive: true, force: true });
   }
 });
 

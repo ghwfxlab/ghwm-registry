@@ -16,6 +16,9 @@ import { withBase } from './paths.ts';
 
 export const REGISTRY_REPO = 'ghwfxlab/ghwm-registry';
 
+const DEFAULT_FETCH_TIMEOUT_MS = 10_000;
+const EXTERNAL_LINK_ATTRIBUTES = 'target="_blank" rel="noopener noreferrer"';
+
 /** Repo-relative ghwm doc paths mapped to the site route that renders them. */
 export const GHWM_DOC_ROUTES: Record<string, string> = {
   'docs/reference/manifest.md': '/docs/manifest/',
@@ -35,106 +38,132 @@ export interface LoadedDoc {
 export interface LoadGhwmDocOptions {
   tag?: string;
   /** Path to a local ghwm checkout. Defaults to the GHWM_DOCS_DIR environment variable. */
-  dir?: string;
+  checkoutDir?: string;
   repo?: string;
   fetchFn?: typeof fetch;
   timeoutMs?: number;
 }
 
 const docCache = new Map<string, Promise<LoadedDoc>>();
-let tagPromise: Promise<string> | undefined;
+let docsTagPromise: Promise<string> | undefined;
 
 /**
  * Resolves the ghwm release tag the docs are pinned to. Unlike the install-command helper this never
  * accepts the stale built-in fallback tag, because silently publishing old docs defeats the sync.
  */
 export function getDocsTag(): Promise<string> {
-  tagPromise ??= (async () => {
-    const override = process.env.GHWM_DOCS_TAG?.trim();
-    if (override) return override;
-    const tag = await fetchLatestGhwmTag();
-    if (tag === DEFAULT_GHWM_TAG) {
+  docsTagPromise ??= (async () => {
+    const pinnedTag = process.env.GHWM_DOCS_TAG?.trim();
+    if (pinnedTag) return pinnedTag;
+
+    const latestTag = await fetchLatestGhwmTag();
+    if (latestTag === DEFAULT_GHWM_TAG) {
       throw new Error(
-        `Could not resolve the latest ghwm release tag (got fallback '${tag}', likely a GitHub API rate limit). ` +
+        `Could not resolve the latest ghwm release tag (got fallback '${latestTag}', likely a GitHub API rate limit). ` +
           'Set GITHUB_TOKEN/GH_TOKEN, GHWM_DOCS_TAG, or GHWM_DOCS_DIR.'
       );
     }
-    return tag;
+    return latestTag;
   })();
-  return tagPromise;
+  return docsTagPromise;
+}
+
+/** Builds the GitHub URLs that point back at a doc (and its sibling files) at a given ref. */
+function describeDocLocation(repository: string, ref: string, docPath: string) {
+  const blobBase = `https://github.com/${repository}/blob/${ref}`;
+  return { sourceUrl: `${blobBase}/${docPath}`, blobBase };
+}
+
+function readDocFromCheckout(checkoutDir: string, repository: string, docPath: string): LoadedDoc {
+  const docFile = path.resolve(checkoutDir, docPath);
+  if (!fs.existsSync(docFile)) {
+    throw new Error(`GHWM_DOCS_DIR is set but ${docFile} does not exist.`);
+  }
+  return {
+    markdown: fs.readFileSync(docFile, 'utf8'),
+    tag: null,
+    ...describeDocLocation(repository, 'main', docPath),
+  };
+}
+
+async function fetchDocFromRelease(
+  repository: string,
+  tag: string,
+  docPath: string,
+  fetchFn: typeof fetch,
+  timeoutMs: number
+): Promise<LoadedDoc> {
+  const rawUrl = `https://raw.githubusercontent.com/${repository}/${tag}/${docPath}`;
+  const abortController = new AbortController();
+  const timeoutId = setTimeout(() => abortController.abort(), timeoutMs);
+  try {
+    const response = await fetchFn(rawUrl, { signal: abortController.signal });
+    if (!response.ok) {
+      throw new Error(`Failed to fetch ${rawUrl}: HTTP ${response.status}`);
+    }
+    return {
+      markdown: await response.text(),
+      tag,
+      ...describeDocLocation(repository, tag, docPath),
+    };
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 /**
  * Loads a markdown file from the ghwm repository. Fails loudly instead of falling back to stale content.
  */
-export function loadGhwmDoc(relPath: string, options: LoadGhwmDocOptions = {}): Promise<LoadedDoc> {
-  const repo = options.repo || DEFAULT_GHWM_REPO;
-  const dir = options.dir ?? process.env.GHWM_DOCS_DIR;
-  const cacheKey = `${repo}|${dir ?? options.tag ?? ''}|${relPath}`;
-  const cached = docCache.get(cacheKey);
-  if (cached) return cached;
+export function loadGhwmDoc(docPath: string, options: LoadGhwmDocOptions = {}): Promise<LoadedDoc> {
+  const repository = options.repo || DEFAULT_GHWM_REPO;
+  const checkoutDir = options.checkoutDir ?? process.env.GHWM_DOCS_DIR;
+  const cacheKey = `${repository}|${checkoutDir ?? options.tag ?? ''}|${docPath}`;
 
-  const loading = (async (): Promise<LoadedDoc> => {
-    if (dir) {
-      const file = path.resolve(dir, relPath);
-      if (!fs.existsSync(file)) {
-        throw new Error(`GHWM_DOCS_DIR is set but ${file} does not exist.`);
-      }
-      return {
-        markdown: fs.readFileSync(file, 'utf8'),
-        tag: null,
-        sourceUrl: `https://github.com/${repo}/blob/main/${relPath}`,
-        blobBase: `https://github.com/${repo}/blob/main`,
-      };
+  const cachedLoad = docCache.get(cacheKey);
+  if (cachedLoad) return cachedLoad;
+
+  const pendingLoad = (async (): Promise<LoadedDoc> => {
+    if (checkoutDir) {
+      return readDocFromCheckout(checkoutDir, repository, docPath);
     }
-
     const tag = options.tag ?? (await getDocsTag());
-    const url = `https://raw.githubusercontent.com/${repo}/${tag}/${relPath}`;
-    const controller = new AbortController();
-    const timer = setTimeout(() => controller.abort(), options.timeoutMs ?? 10000);
-    try {
-      const res = await (options.fetchFn || fetch)(url, { signal: controller.signal });
-      if (!res.ok) {
-        throw new Error(`Failed to fetch ${url}: HTTP ${res.status}`);
-      }
-      return {
-        markdown: await res.text(),
-        tag,
-        sourceUrl: `https://github.com/${repo}/blob/${tag}/${relPath}`,
-        blobBase: `https://github.com/${repo}/blob/${tag}`,
-      };
-    } finally {
-      clearTimeout(timer);
-    }
+    return fetchDocFromRelease(
+      repository,
+      tag,
+      docPath,
+      options.fetchFn || fetch,
+      options.timeoutMs ?? DEFAULT_FETCH_TIMEOUT_MS
+    );
   })();
 
   // Do not cache failures, so a retry in the same process can succeed.
-  loading.catch(() => docCache.delete(cacheKey));
-  docCache.set(cacheKey, loading);
-  return loading;
+  pendingLoad.catch(() => docCache.delete(cacheKey));
+  docCache.set(cacheKey, pendingLoad);
+  return pendingLoad;
+}
+
+function isRegistryRoot(directory: string): boolean {
+  return fs.existsSync(path.join(directory, 'CONTRIBUTING.md')) && fs.existsSync(path.join(directory, 'workflows'));
 }
 
 /**
  * Finds the root of this repository (the directory holding CONTRIBUTING.md and workflows/).
  */
-export function findRegistryRoot(start: string = process.cwd()): string {
-  let dir = path.resolve(start);
-  while (dir !== path.dirname(dir)) {
-    if (fs.existsSync(path.join(dir, 'CONTRIBUTING.md')) && fs.existsSync(path.join(dir, 'workflows'))) {
-      return dir;
-    }
-    dir = path.dirname(dir);
+export function findRegistryRoot(startDir: string = process.cwd()): string {
+  let currentDir = path.resolve(startDir);
+  while (currentDir !== path.dirname(currentDir)) {
+    if (isRegistryRoot(currentDir)) return currentDir;
+    currentDir = path.dirname(currentDir);
   }
-  throw new Error(`Could not locate the ${REGISTRY_REPO} repository root from ${start}.`);
+  throw new Error(`Could not locate the ${REGISTRY_REPO} repository root from ${startDir}.`);
 }
 
 /** Loads a markdown file from this repository's checkout. */
-export function loadRegistryDoc(relPath: string, root: string = findRegistryRoot()): LoadedDoc {
+export function loadRegistryDoc(docPath: string, registryRoot: string = findRegistryRoot()): LoadedDoc {
   return {
-    markdown: fs.readFileSync(path.join(root, relPath), 'utf8'),
+    markdown: fs.readFileSync(path.join(registryRoot, docPath), 'utf8'),
     tag: null,
-    sourceUrl: `https://github.com/${REGISTRY_REPO}/blob/main/${relPath}`,
-    blobBase: `https://github.com/${REGISTRY_REPO}/blob/main`,
+    ...describeDocLocation(REGISTRY_REPO, 'main', docPath),
   };
 }
 
@@ -165,6 +194,9 @@ const ALERT_TITLES: Record<string, string> = {
   CAUTION: 'Caution',
 };
 
+/** Matches the `[!NOTE]`-style marker GitHub puts at the start of an alert blockquote. */
+const ALERT_MARKER_PATTERN = /^<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(?:<br\s*\/?>)?\s*/i;
+
 export function escapeHtml(value: string): string {
   return value
     .replace(/&/g, '&amp;')
@@ -189,79 +221,114 @@ export function resolveLink(href: string, options: RenderOptions): { href: strin
     return { href, external: /^https?:/i.test(href) };
   }
 
-  const hashIndex = href.indexOf('#');
-  const filePart = hashIndex === -1 ? href : href.slice(0, hashIndex);
-  const hash = hashIndex === -1 ? '' : href.slice(hashIndex);
-  const resolved = path.posix.normalize(path.posix.join(options.docDir ?? '', filePart));
+  const anchorIndex = href.indexOf('#');
+  const pathPart = anchorIndex === -1 ? href : href.slice(0, anchorIndex);
+  const anchor = anchorIndex === -1 ? '' : href.slice(anchorIndex);
+  const resolvedPath = path.posix.normalize(path.posix.join(options.docDir ?? '', pathPart));
 
-  const route = options.linkMap?.[resolved];
-  if (route) return { href: `${route}${hash}`, external: false };
-  return { href: `${options.blobBase}/${resolved}${hash}`, external: true };
+  const siteRoute = options.linkMap?.[resolvedPath];
+  if (siteRoute) return { href: `${siteRoute}${anchor}`, external: false };
+  return { href: `${options.blobBase}/${resolvedPath}${anchor}`, external: true };
 }
 
 /** Removes a `## Heading` section (up to the next `## ` heading). */
 export function removeSection(markdown: string, heading: string): string {
   const lines = markdown.split('\n');
-  const start = lines.findIndex((line) => line.trim() === `## ${heading}`);
-  if (start === -1) return markdown;
-  let end = lines.findIndex((line, i) => i > start && line.startsWith('## '));
-  if (end === -1) end = lines.length;
-  return [...lines.slice(0, start), ...lines.slice(end)].join('\n');
+  const sectionStart = lines.findIndex((line) => line.trim() === `## ${heading}`);
+  if (sectionStart === -1) return markdown;
+
+  const nextHeadingIndex = lines.findIndex(
+    (line, lineIndex) => lineIndex > sectionStart && line.startsWith('## ')
+  );
+  const sectionEnd = nextHeadingIndex === -1 ? lines.length : nextHeadingIndex;
+  return [...lines.slice(0, sectionStart), ...lines.slice(sectionEnd)].join('\n');
 }
 
 /** Drops everything before the first `## ` heading (after the title). */
 export function dropPreamble(markdown: string): string {
-  const index = markdown.search(/^## /m);
-  return index === -1 ? markdown : markdown.slice(index);
+  const firstSectionIndex = markdown.search(/^## /m);
+  return firstSectionIndex === -1 ? markdown : markdown.slice(firstSectionIndex);
+}
+
+/** Splits off the first H1 so the page layout can render the title itself. */
+function extractTitle(markdown: string): { title: string | null; body: string } {
+  const titleMatch = markdown.match(/^# +(.+)\n/m);
+  if (!titleMatch || titleMatch.index === undefined) return { title: null, body: markdown };
+
+  const titleEnd = titleMatch.index + titleMatch[0].length;
+  return {
+    title: titleMatch[1].trim(),
+    body: markdown.slice(0, titleMatch.index) + markdown.slice(titleEnd),
+  };
+}
+
+/** Returns a function that gives each heading a unique GitHub-style id, numbering repeats. */
+function createHeadingIdGenerator(): (headingText: string) => string {
+  const usageCounts = new Map<string, number>();
+  return (headingText) => {
+    const baseSlug = slugify(headingText);
+    const previousUses = usageCounts.get(baseSlug) ?? 0;
+    usageCounts.set(baseSlug, previousUses + 1);
+    return previousUses === 0 ? baseSlug : `${baseSlug}-${previousUses}`;
+  };
+}
+
+function renderCodeBlock(code: string): string {
+  return (
+    '<div class="terminal-bg border border-outline-variant rounded-default overflow-hidden my-md">' +
+    '<pre class="font-code-md text-code-md text-on-surface p-md overflow-x-auto m-0">' +
+    `<code>${escapeHtml(code)}</code></pre></div>\n`
+  );
+}
+
+function renderDiagramNote(sourceUrl: string): string {
+  return (
+    '<p><em>A diagram is available in the ' +
+    `<a href="${escapeHtml(sourceUrl)}" ${EXTERNAL_LINK_ATTRIBUTES}>source document</a>.</em></p>\n`
+  );
+}
+
+/** Renders a blockquote, turning GitHub alert syntax (`> [!NOTE]`) into a titled callout. */
+function renderBlockquote(blockquoteHtml: string): string {
+  const alertMarker = blockquoteHtml.match(ALERT_MARKER_PATTERN);
+  if (!alertMarker) return `<blockquote>${blockquoteHtml}</blockquote>\n`;
+
+  const alertKind = alertMarker[1].toUpperCase();
+  const htmlAfterMarker = blockquoteHtml
+    .slice(alertMarker[0].length)
+    .replace(/^<\/p>\s*/, '<p>')
+    .replace(/^<p><\/p>\s*/, '');
+  const calloutBodyHtml = htmlAfterMarker.startsWith('<p>') ? htmlAfterMarker : `<p>${htmlAfterMarker}`;
+
+  return (
+    `<aside class="docs-callout" data-kind="${alertKind.toLowerCase()}">` +
+    `<p class="docs-callout-title">${ALERT_TITLES[alertKind]}</p>${calloutBodyHtml}</aside>\n`
+  );
 }
 
 export function renderMarkdown(markdown: string, options: RenderOptions): RenderedDoc {
-  let title: string | null = null;
-  const body = markdown.replace(/^# +(.+)\n/m, (_match, text: string) => {
-    title = text.trim();
-    return '';
-  });
-
-  const seen = new Map<string, number>();
+  const { title, body } = extractTitle(markdown);
+  const nextHeadingId = createHeadingIdGenerator();
 
   const marked = new Marked({
     gfm: true,
     renderer: {
       heading(token: Tokens.Heading) {
-        const base = slugify(token.text);
-        const count = seen.get(base) ?? 0;
-        seen.set(base, count + 1);
-        const id = count === 0 ? base : `${base}-${count}`;
-        return `<h${token.depth} id="${id}">${this.parser.parseInline(token.tokens)}</h${token.depth}>\n`;
+        const headingHtml = this.parser.parseInline(token.tokens);
+        return `<h${token.depth} id="${nextHeadingId(token.text)}">${headingHtml}</h${token.depth}>\n`;
       },
       link(token: Tokens.Link) {
         const { href, external } = resolveLink(token.href, options);
-        const titleAttr = token.title ? ` title="${escapeHtml(token.title)}"` : '';
-        const rel = external ? ' target="_blank" rel="noopener noreferrer"' : '';
-        return `<a href="${escapeHtml(href)}"${titleAttr}${rel}>${this.parser.parseInline(token.tokens)}</a>`;
+        const titleAttribute = token.title ? ` title="${escapeHtml(token.title)}"` : '';
+        const externalAttributes = external ? ` ${EXTERNAL_LINK_ATTRIBUTES}` : '';
+        const linkTextHtml = this.parser.parseInline(token.tokens);
+        return `<a href="${escapeHtml(href)}"${titleAttribute}${externalAttributes}>${linkTextHtml}</a>`;
       },
       code(token: Tokens.Code) {
-        if (token.lang === 'mermaid') {
-          return `<p><em>A diagram is available in the <a href="${escapeHtml(options.sourceUrl)}" target="_blank" rel="noopener noreferrer">source document</a>.</em></p>\n`;
-        }
-        return (
-          '<div class="terminal-bg border border-outline-variant rounded-default overflow-hidden my-md">' +
-          '<pre class="font-code-md text-code-md text-on-surface p-md overflow-x-auto m-0">' +
-          `<code>${escapeHtml(token.text)}</code></pre></div>\n`
-        );
+        return token.lang === 'mermaid' ? renderDiagramNote(options.sourceUrl) : renderCodeBlock(token.text);
       },
       blockquote(token: Tokens.Blockquote) {
-        const inner = this.parser.parse(token.tokens);
-        const alert = inner.match(/^<p>\[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*(?:<br\s*\/?>)?\s*/i);
-        if (!alert) return `<blockquote>${inner}</blockquote>\n`;
-
-        const kind = alert[1].toUpperCase();
-        const rest = inner.slice(alert[0].length).replace(/^<\/p>\s*/, '<p>').replace(/^<p><\/p>\s*/, '');
-        const content = rest.startsWith('<p>') ? rest : `<p>${rest}`;
-        return (
-          `<aside class="docs-callout" data-kind="${kind.toLowerCase()}">` +
-          `<p class="docs-callout-title">${ALERT_TITLES[kind]}</p>${content}</aside>\n`
-        );
+        return renderBlockquote(this.parser.parse(token.tokens));
       },
     },
   });
@@ -272,13 +339,13 @@ export function renderMarkdown(markdown: string, options: RenderOptions): Render
 /**
  * Loads and renders one of the ghwm reference docs listed in GHWM_DOC_ROUTES.
  */
-export async function getGhwmReferenceDoc(relPath: string): Promise<RenderedDoc & { source: LoadedDoc }> {
-  const source = await loadGhwmDoc(relPath);
+export async function getGhwmReferenceDoc(docPath: string): Promise<RenderedDoc & { source: LoadedDoc }> {
+  const source = await loadGhwmDoc(docPath);
   const linkMap = Object.fromEntries(
-    Object.entries(GHWM_DOC_ROUTES).map(([file, route]) => [file, withBase(route)])
+    Object.entries(GHWM_DOC_ROUTES).map(([routedDocPath, route]) => [routedDocPath, withBase(route)])
   );
   const rendered = renderMarkdown(source.markdown, {
-    docDir: path.posix.dirname(relPath),
+    docDir: path.posix.dirname(docPath),
     linkMap,
     blobBase: source.blobBase,
     sourceUrl: source.sourceUrl,
