@@ -1,0 +1,59 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import { withBase } from '../../lib/paths';
+
+const guides = [
+  {
+    href: withBase('/docs/quickstart/'),
+    icon: 'rocket_launch',
+    title: 'Quickstart',
+    text: 'Install the CLI, create ghwm.yml, and install your first workflow.',
+  },
+  {
+    href: withBase('/docs/manifest/'),
+    icon: 'description',
+    title: 'Manifest reference',
+    text: 'Every field in workflow.yml, package.json, and ghwm.yml.',
+  },
+  {
+    href: withBase('/docs/writing-a-package/'),
+    icon: 'edit_note',
+    title: 'Writing a package',
+    text: 'Add a workflow to the registry and publish it.',
+  },
+];
+---
+
+<DocsLayout
+  title="Documentation"
+  description="Guides for installing GitHub workflows with ghwm, the manifest reference, and how to write your own workflow package."
+  current="overview"
+>
+  <p>
+    GHWM treats GitHub Actions workflows as versioned packages. A registry holds the packages, the
+    <code>ghwm</code> CLI installs them into your repository, and a <code>ghwm.yml</code> file records which
+    versions you use.
+  </p>
+
+  <div class="grid grid-cols-1 sm:grid-cols-3 gap-gutter my-lg">
+    {guides.map((guide) => (
+      <a href={guide.href} class="card-surface rounded-lg p-md flex flex-col gap-sm no-underline hover:no-underline">
+        <span class="material-symbols-outlined text-primary">{guide.icon}</span>
+        <span class="font-headline-md text-[16px] font-semibold text-on-surface">{guide.title}</span>
+        <span class="font-body-sm text-body-sm text-on-surface-variant">{guide.text}</span>
+      </a>
+    ))}
+  </div>
+
+  <h2>More help</h2>
+  <ul>
+    <li>
+      <a href="https://github.com/ghwfxlab/ghwm#readme" target="_blank" rel="noopener noreferrer">ghwm CLI readme</a>
+      for authentication and local development options.
+    </li>
+    <li>
+      <a href="https://github.com/ghwfxlab/ghwm-registry" target="_blank" rel="noopener noreferrer">ghwm-registry on GitHub</a>
+      for source, issues, and contributions.
+    </li>
+  </ul>
+</DocsLayout>

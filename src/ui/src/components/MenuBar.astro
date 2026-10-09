@@ -32,7 +32,7 @@ const getLinkClass = (tab: string) => {
         <a class={getLinkClass('explore')} href={withBase('/')}>Explore</a>
         <a class={getLinkClass('registry')} href={withBase('/registry')}>Registry</a>
         <a class={getLinkClass('official')} href={withBase('/official')}>Official</a>
-        <a class={getLinkClass('docs')} href="https://github.com/ghwfxlab/ghwm" target="_blank" rel="noopener noreferrer">Docs</a>
+        <a class={getLinkClass('docs')} href={withBase('/docs/')}>Docs</a>
       </nav>
     </div>
 
@@ -66,7 +66,7 @@ const getLinkClass = (tab: string) => {
     <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'explore' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href={withBase('/')}>Explore</a>
     <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'registry' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href={withBase('/registry')}>Registry</a>
     <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'official' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href={withBase('/official')}>Official</a>
-    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'docs' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href="https://github.com/ghwfxlab/ghwm" target="_blank" rel="noopener noreferrer">Docs</a>
+    <a class={`block py-xs px-sm rounded text-body-sm font-body-sm ${activeTab === 'docs' ? 'text-primary bg-surface-container font-semibold' : 'text-on-surface-variant'}`} href={withBase('/docs/')}>Docs</a>
 
     <!-- Mobile Search -->
     <form action={withBase('/registry')} method="GET" class="flex items-center bg-surface-container-low rounded-default border border-outline-variant px-sm py-xs input-focus mt-xs">

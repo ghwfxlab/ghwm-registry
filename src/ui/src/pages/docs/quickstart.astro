@@ -1,0 +1,114 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+import { fetchLatestGhwmTag, getInstallCommands } from '../../lib/github';
+import { withBase } from '../../lib/paths';
+
+const latestTag = await fetchLatestGhwmTag();
+const installCommands = getInstallCommands(latestTag);
+
+const manifestExample = `source: ghwfxlab/ghwm-registry
+workflows:
+  - name: super-linter
+    version: 1.0.0
+  - name: auto-assign-pr
+    version: 1.0.0
+    update-triggers: true
+    update-config-files: true`;
+
+const bumpExample = ` source: ghwfxlab/ghwm-registry
+ workflows:
+   - name: super-linter
+-    version: 1.0.0
++    version: 1.1.0`;
+
+const customSourceExample = `source: ghwfxlab/ghwm-registry
+workflows:
+  - name: super-linter
+    version: 1.0.0
+  - name: internal-deploy
+    version: 2.1.0
+    source: my-org/my-registry`;
+
+const renovateExample = `{
+  "extends": ["github>ghwfxlab/ghwm-registry//renovate/default.json"]
+}`;
+---
+
+<DocsLayout
+  title="Quickstart"
+  description="Install the ghwm CLI, describe your workflows in ghwm.yml, and install them into your repository."
+  current="quickstart"
+>
+  <p>
+    This guide installs the CLI and adds two workflows to a repository. It takes a few minutes.
+  </p>
+
+  <h2>1. Install the CLI</h2>
+  <p>Pin the CLI to the latest tagged release (recommended):</p>
+  <CodeBlock code={installCommands['uv-pinned']} />
+  <p>
+    Prefer another tool? Use <code>{installCommands['pipx']}</code> or
+    <code>{installCommands['pip']}</code>.
+  </p>
+
+  <h2>2. Create <code>ghwm.yml</code></h2>
+  <p>Add this file to the root of your repository:</p>
+  <CodeBlock code={manifestExample} label="ghwm.yml" />
+  <ul>
+    <li><code>source</code> is the registry repository the packages come from.</li>
+    <li><code>name</code> and <code>version</code> select a package and the exact version to install.</li>
+    <li>
+      <code>update-triggers: true</code> replaces your <code>on:</code> section with the packaged triggers
+      on update. By default your existing triggers are preserved.
+    </li>
+    <li>
+      <code>update-config-files: true</code> replaces packaged config files (for example
+      <code>.github/auto_assign.yaml</code> ) on update. By default they are only created when missing.
+    </li>
+  </ul>
+
+  <h2>3. Install the workflows</h2>
+  <CodeBlock code="ghwm install" />
+  <p>
+    Commit the generated files: the workflow files under <code>.github/workflows/</code>,
+    <code>ghwm.lock</code>, and any config files created on first install. Some workflows need secrets or
+    variables; check each package's page in the <a href={withBase('/registry')}>registry</a> for its setup.
+  </p>
+
+  <h2>4. Update workflows</h2>
+  <p>Bump the version in <code>ghwm.yml</code>, then refresh:</p>
+  <CodeBlock code={bumpExample} label="ghwm.yml (diff)" />
+  <CodeBlock code="ghwm update" />
+  <p>
+    If you also removed entries from <code>ghwm.yml</code>, run <code>ghwm update --prune</code> to refresh the
+    remaining workflows and delete the managed files of the removed ones in one step.
+  </p>
+
+  <h2>5. Remove a workflow</h2>
+  <p>
+    Delete its entry from <code>ghwm.yml</code>, then run <code>ghwm install</code> or
+    <code>ghwm update --prune</code>. Both prune managed files for entries that are no longer listed and
+    rewrite <code>ghwm.lock</code>.
+  </p>
+
+  <h2>6. Keep versions current with Renovate</h2>
+  <p>Add the preset to <code>renovate.json</code> to receive pull requests when new package versions ship:</p>
+  <CodeBlock code={renovateExample} label="renovate.json" />
+
+  <h2 id="custom-registries">Custom registries</h2>
+  <p>
+    You are not limited to this registry. The <code>source</code> key in <code>ghwm.yml</code> names the registry
+    repository in <code>owner/repository</code> format, and packages are resolved from GitHub Packages as
+    <code>@owner/name</code>. Create your own from the
+    <a href="https://github.com/ghwfxlab/ghwm-registry-template" target="_blank" rel="noopener noreferrer">ghwm-registry-template</a>
+    repository template; see <a href={withBase('/docs/writing-a-package/')}>Writing a package</a> for the layout.
+  </p>
+  <p>To pull one workflow from a different registry, override <code>source</code> on that entry:</p>
+  <CodeBlock code={customSourceExample} label="ghwm.yml" />
+  <p>
+    Usage telemetry is only sent for public registries, so workflows from private or internal registries are
+    never tracked. For authentication and other CLI options, see the
+    <a href="https://github.com/ghwfxlab/ghwm#readme" target="_blank" rel="noopener noreferrer">ghwm CLI readme</a>.
+  </p>
+</DocsLayout>

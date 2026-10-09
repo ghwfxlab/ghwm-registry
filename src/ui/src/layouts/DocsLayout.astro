@@ -1,0 +1,114 @@
+---
+import Layout from './Layout.astro';
+import { withBase } from '../lib/paths';
+
+interface Props {
+  title: string;
+  description: string;
+  current: 'overview' | 'quickstart' | 'manifest' | 'writing-a-package';
+}
+
+const { title, description, current } = Astro.props;
+
+const pages = [
+  { key: 'overview', label: 'Overview', href: withBase('/docs/') },
+  { key: 'quickstart', label: 'Quickstart', href: withBase('/docs/quickstart/') },
+  { key: 'manifest', label: 'Manifest reference', href: withBase('/docs/manifest/') },
+  { key: 'writing-a-package', label: 'Writing a package', href: withBase('/docs/writing-a-package/') },
+];
+---
+
+<Layout title={`${title} - GHWM Docs`} description={description} activeTab="docs">
+  <main class="flex-grow w-full max-w-7xl mx-auto px-margin md:px-lg py-xl flex flex-col md:flex-row gap-xl">
+    <nav aria-label="Documentation" class="md:w-56 shrink-0">
+      <ul class="flex md:flex-col gap-xs overflow-x-auto md:sticky md:top-24">
+        {pages.map((page) => (
+          <li>
+            <a
+              href={page.href}
+              aria-current={current === page.key ? 'page' : undefined}
+              class={`block whitespace-nowrap font-body-sm text-body-sm px-sm py-xs rounded transition-colors ${
+                current === page.key
+                  ? 'text-primary bg-surface-container font-semibold'
+                  : 'text-on-surface-variant hover:text-primary hover:bg-surface-container'
+              }`}
+            >
+              {page.label}
+            </a>
+          </li>
+        ))}
+      </ul>
+    </nav>
+
+    <article class="docs-prose min-w-0 flex-1 max-w-3xl">
+      <h1 class="font-display-lg text-display-lg leading-tight mb-md">{title}</h1>
+      <slot />
+    </article>
+  </main>
+</Layout>
+
+<style is:global>
+  .docs-prose h2 {
+    font-size: 1.5rem;
+    font-weight: 600;
+    margin-top: 2.5rem;
+    margin-bottom: 0.75rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid var(--color-outline-variant);
+  }
+  .docs-prose h3 {
+    font-size: 1.125rem;
+    font-weight: 600;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+  }
+  .docs-prose p,
+  .docs-prose li {
+    color: var(--color-on-surface-variant);
+    line-height: 1.7;
+  }
+  .docs-prose p {
+    margin: 0.75rem 0;
+  }
+  .docs-prose ul,
+  .docs-prose ol {
+    margin: 0.75rem 0;
+    padding-left: 1.5rem;
+  }
+  .docs-prose ul {
+    list-style: disc;
+  }
+  .docs-prose ol {
+    list-style: decimal;
+  }
+  .docs-prose a {
+    color: var(--color-primary);
+  }
+  .docs-prose a:hover {
+    text-decoration: underline;
+  }
+  .docs-prose :not(pre) > code {
+    font-family: var(--font-mono);
+    font-size: 0.875em;
+    background-color: var(--color-surface-container-low);
+    border: 1px solid var(--color-outline-variant);
+    border-radius: 4px;
+    padding: 0.1em 0.35em;
+  }
+  .docs-prose table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0;
+    font-size: 0.875rem;
+  }
+  .docs-prose th,
+  .docs-prose td {
+    text-align: left;
+    padding: 0.5rem 0.75rem;
+    border: 1px solid var(--color-outline-variant);
+    vertical-align: top;
+  }
+  .docs-prose th {
+    background-color: var(--color-surface-container-low);
+  }
+</style>

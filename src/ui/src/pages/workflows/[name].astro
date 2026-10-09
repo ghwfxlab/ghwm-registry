@@ -40,7 +40,11 @@ const badgeUrl = `${apiEndpoint || 'https://ghwm-deployment-tst.ghwfxlab.workers
 const badgeMarkdown = `![Installs](${badgeUrl})`;
 ---
 
-<Layout title={`${workflow.title} - GHWM Registry`} activeTab="registry">
+<Layout
+  title={`${workflow.title} - GHWM Registry`}
+  description={workflow.description && workflow.description !== 'N/A' ? workflow.description : undefined}
+  activeTab="registry"
+>
   <main class="flex-grow w-full max-w-7xl mx-auto px-margin md:px-lg py-xl flex flex-col gap-xl">
 
     <!-- Breadcrumb / Back Link -->

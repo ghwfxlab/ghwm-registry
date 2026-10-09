@@ -1,0 +1,113 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import CodeBlock from '../../components/CodeBlock.astro';
+
+const workflowYml = `# ---
+# title: Super-Linter
+# description: Code linting workflow using Super-Linter and pre-commit hooks for code quality.
+# tags:
+#   - lint
+#   - actions
+#   - pre-commit
+# icon: fact_check
+# owner: ghwfxlab
+# ---
+---
+name: super-linter
+files:
+  - source: super-linter.yaml
+    target: .github/workflows/super-linter.yaml
+  - source: config/super-linter.env
+    target: .github/super-linter.env`;
+
+const packageJson = `{
+  "name": "@ghwfxlab/super-linter",
+  "version": "1.0.2",
+  "description": "Code linting workflow using Super-Linter",
+  "files": ["super-linter.yaml", "workflow.yml", "config/"],
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
+  }
+}`;
+
+const ghwmYml = `source: ghwfxlab/ghwm-registry
+workflows:
+  - name: super-linter
+    version: 1.0.2
+    update-triggers: false
+    update-config-files: false`;
+---
+
+<DocsLayout
+  title="Manifest reference"
+  description="Reference for workflow.yml, package.json, and ghwm.yml: every field the registry and the ghwm CLI read."
+  current="manifest"
+>
+  <p>
+    Three files describe the system: <code>workflow.yml</code> and <code>package.json</code> live inside each
+    package in the registry, and <code>ghwm.yml</code> lives in your own repository.
+  </p>
+
+  <h2><code>workflow.yml</code></h2>
+  <p>
+    Declares what a package installs. It starts with a commented frontmatter block that the registry uses for
+    its listing, followed by the manifest itself.
+  </p>
+  <CodeBlock code={workflowYml} label="workflows/super-linter/workflow.yml" />
+
+  <h3>Frontmatter (comment block)</h3>
+  <table>
+    <thead><tr><th>Key</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>title</code></td><td>Display name shown in the registry.</td></tr>
+      <tr><td><code>description</code></td><td>One-sentence summary shown on cards and search.</td></tr>
+      <tr><td><code>tags</code></td><td>List of keywords used for filtering.</td></tr>
+      <tr><td><code>icon</code></td><td>A <a href="https://fonts.google.com/icons" target="_blank" rel="noopener noreferrer">Material Symbols</a> icon name.</td></tr>
+      <tr><td><code>owner</code></td><td>Maintainer or organisation of the package.</td></tr>
+    </tbody>
+  </table>
+
+  <h3>Manifest keys</h3>
+  <table>
+    <thead><tr><th>Key</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>name</code></td><td>Package name. Must match the directory name.</td></tr>
+      <tr><td><code>files[].source</code></td><td>Path of a file inside the package.</td></tr>
+      <tr><td><code>files[].target</code></td><td>Where the file is written in the consumer repository, for example <code>.github/workflows/&lt;name&gt;.yaml</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2><code>package.json</code></h2>
+  <p>Makes the package publishable to GitHub Packages and carries its version.</p>
+  <CodeBlock code={packageJson} label="workflows/super-linter/package.json" />
+  <table>
+    <thead><tr><th>Key</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>name</code></td><td>Scoped package name, <code>@ghwfxlab/&lt;name&gt;</code>.</td></tr>
+      <tr><td><code>version</code></td><td>SemVer version. A new version is published on merge to <code>main</code>.</td></tr>
+      <tr><td><code>files</code></td><td>Everything shipped in the package: the workflow file, <code>workflow.yml</code>, and any config directories.</td></tr>
+      <tr><td><code>publishConfig.registry</code></td><td>Always <code>https://npm.pkg.github.com</code>.</td></tr>
+    </tbody>
+  </table>
+
+  <h2><code>ghwm.yml</code></h2>
+  <p>Lives in the consumer repository and pins the packages it uses.</p>
+  <CodeBlock code={ghwmYml} label="ghwm.yml" />
+  <table>
+    <thead><tr><th>Key</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>source</code></td><td>Registry repository, <code>owner/repo</code>.</td></tr>
+      <tr><td><code>workflows[].name</code></td><td>Package to install.</td></tr>
+      <tr><td><code>workflows[].version</code></td><td>Exact version to install. Required for registry installs.</td></tr>
+      <tr><td><code>workflows[].source</code></td><td>Registry repository for this workflow only, overriding the top-level <code>source</code>.</td></tr>
+      <tr><td><code>workflows[].target</code></td><td>Custom filename under <code>.github/workflows/</code>. Defaults to the packaged filename.</td></tr>
+      <tr><td><code>workflows[].update-triggers</code></td><td>When <code>true</code>, updates replace the workflow's <code>on:</code> section with the packaged one. Default <code>false</code>.</td></tr>
+      <tr><td><code>workflows[].update-envs</code></td><td>When <code>true</code>, updates replace the workflow's <code>env:</code> section with the packaged one. Default <code>false</code>.</td></tr>
+      <tr><td><code>workflows[].update-config-files</code></td><td>When <code>true</code>, updates overwrite packaged config files. Default <code>false</code> (files are only created when missing).</td></tr>
+    </tbody>
+  </table>
+  <p>
+    Entries can also be written in compact form, as <code>name@version</code>. The mapping form above is
+    recommended because it supports the per-workflow options.
+  </p>
+</DocsLayout>
