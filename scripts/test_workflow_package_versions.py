@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-import io
 import importlib.util
+import io
 import json
 import subprocess
 import sys
@@ -10,9 +10,10 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-
 MODULE_PATH = Path(__file__).resolve().with_name("workflow_package_versions.py")
-MODULE_SPEC = importlib.util.spec_from_file_location("workflow_package_versions", MODULE_PATH)
+MODULE_SPEC = importlib.util.spec_from_file_location(
+    "workflow_package_versions", MODULE_PATH
+)
 if MODULE_SPEC is None or MODULE_SPEC.loader is None:
     raise RuntimeError(f"Could not load module spec from {MODULE_PATH}")
 workflow_package_versions = importlib.util.module_from_spec(MODULE_SPEC)
@@ -71,8 +72,12 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
         workflow_dir = repo_root / WORKFLOW_DIR_RELATIVE
         (workflow_dir / "config").mkdir(parents=True)
         (workflow_dir / "README.md").write_text(README_CONTENT, encoding="utf-8")
-        (workflow_dir / WORKFLOW_FILE_NAME).write_text(INITIAL_WORKFLOW_CONTENT, encoding="utf-8")
-        (workflow_dir / "workflow.yml").write_text(WORKFLOW_MANIFEST_CONTENT, encoding="utf-8")
+        (workflow_dir / WORKFLOW_FILE_NAME).write_text(
+            INITIAL_WORKFLOW_CONTENT, encoding="utf-8"
+        )
+        (workflow_dir / "workflow.yml").write_text(
+            WORKFLOW_MANIFEST_CONTENT, encoding="utf-8"
+        )
         (workflow_dir / "config" / "auto_assign.yaml").write_text(
             CONFIG_FILE_CONTENT,
             encoding="utf-8",
@@ -83,7 +88,9 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
                     "name": WORKFLOW_PACKAGE_NAME,
                     "version": version,
                     "files": list(PUBLISHED_FILES),
-                    "publishConfig": {"registry": workflow_package_versions.REGISTRY_URL},
+                    "publishConfig": {
+                        "registry": workflow_package_versions.REGISTRY_URL
+                    },
                 },
                 indent=2,
             )
@@ -135,17 +142,23 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
             ],
         )
 
-        self.assertEqual([package.workflow_name for package in changed_packages], [WORKFLOW_NAME])
+        self.assertEqual(
+            [package.workflow_name for package in changed_packages], [WORKFLOW_NAME]
+        )
 
     def test_parse_release_version_when_semver_is_non_plain(self) -> None:
         for raw_version in ("1.0", "1.0.0-beta", "01.2.3"):
-            with self.subTest(raw_version=raw_version):
-                with self.assertRaisesRegex(ValueError, "Use MAJOR.MINOR.PATCH versions"):
-                    workflow_package_versions._parse_release_version(raw_version)
+            with (
+                self.subTest(raw_version=raw_version),
+                self.assertRaisesRegex(ValueError, "Use MAJOR.MINOR.PATCH versions"),
+            ):
+                workflow_package_versions._parse_release_version(raw_version)
 
     def test_gh_cli_token_when_gh_is_unavailable(self) -> None:
         # Arrange
-        with mock.patch.object(workflow_package_versions.shutil, "which", return_value=None):
+        with mock.patch.object(
+            workflow_package_versions.shutil, "which", return_value=None
+        ):
             # Act
             token = workflow_package_versions._gh_cli_token()
 
@@ -155,8 +168,14 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
     def test_github_token_when_gh_cli_has_no_token(self) -> None:
         # Arrange
         with (
-            mock.patch.object(workflow_package_versions, "_gh_cli_token", return_value=None),
-            mock.patch.dict(workflow_package_versions.os.environ, {"GH_TOKEN": ENV_TOKEN}, clear=True),
+            mock.patch.object(
+                workflow_package_versions, "_gh_cli_token", return_value=None
+            ),
+            mock.patch.dict(
+                workflow_package_versions.os.environ,
+                {"GH_TOKEN": ENV_TOKEN},
+                clear=True,
+            ),
         ):
             # Act
             token = workflow_package_versions._github_token()
@@ -166,10 +185,14 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
 
     def test_range_paths_when_merge_base_cannot_be_resolved(self) -> None:
         # Arrange
-        with mock.patch.object(workflow_package_versions, "_run_git", return_value=""):
+        with (
+            mock.patch.object(workflow_package_versions, "_run_git", return_value=""),
+            self.assertRaisesRegex(RuntimeError, "Could not resolve a merge-base"),
+        ):
             # Act & Assert
-            with self.assertRaisesRegex(RuntimeError, "Could not resolve a merge-base"):
-                workflow_package_versions._range_paths(Path("/tmp"), base_ref="main", head_ref="HEAD")
+            workflow_package_versions._range_paths(
+                Path("/tmp"), base_ref="main", head_ref="HEAD"
+            )
 
     def test_load_workflow_package_when_files_array_is_invalid(self) -> None:
         # Arrange
@@ -193,31 +216,44 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
 
     def test_fix_staged_when_changes_are_readme_only(self) -> None:
         repo_root, workflow_dir = self.create_repo()
-        (workflow_dir / "README.md").write_text(DOCS_ONLY_README_CONTENT, encoding="utf-8")
+        (workflow_dir / "README.md").write_text(
+            DOCS_ONLY_README_CONTENT, encoding="utf-8"
+        )
         _git(repo_root, "add", README_FILE_RELATIVE.as_posix())
 
         result = workflow_package_versions.fix_staged(repo_root)
 
         self.assertEqual(result, 0)
-        package_data = json.loads((workflow_dir / "package.json").read_text(encoding="utf-8"))
+        package_data = json.loads(
+            (workflow_dir / "package.json").read_text(encoding="utf-8")
+        )
         self.assertEqual(package_data["version"], INITIAL_VERSION)
 
     def test_fix_staged_when_token_is_missing_for_publishable_change(self) -> None:
         repo_root, workflow_dir = self.create_repo()
-        (workflow_dir / WORKFLOW_FILE_NAME).write_text(UPDATED_WORKFLOW_CONTENT, encoding="utf-8")
+        (workflow_dir / WORKFLOW_FILE_NAME).write_text(
+            UPDATED_WORKFLOW_CONTENT, encoding="utf-8"
+        )
         _git(repo_root, "add", WORKFLOW_FILE_RELATIVE.as_posix())
 
-        with mock.patch.object(workflow_package_versions, "_github_token", return_value=None):
-            with self.assertRaisesRegex(RuntimeError, "Cannot auto-bump workflow package versions"):
-                workflow_package_versions.fix_staged(repo_root)
+        with mock.patch.object(
+            workflow_package_versions, "_github_token", return_value=None
+        ), self.assertRaisesRegex(
+            RuntimeError, "Cannot auto-bump workflow package versions"
+        ):
+            workflow_package_versions.fix_staged(repo_root)
 
     def test_fix_staged_when_local_version_is_outdated(self) -> None:
         repo_root, workflow_dir = self.create_repo()
-        (workflow_dir / WORKFLOW_FILE_NAME).write_text(UPDATED_WORKFLOW_CONTENT, encoding="utf-8")
+        (workflow_dir / WORKFLOW_FILE_NAME).write_text(
+            UPDATED_WORKFLOW_CONTENT, encoding="utf-8"
+        )
         _git(repo_root, "add", WORKFLOW_FILE_RELATIVE.as_posix())
 
         with (
-            mock.patch.object(workflow_package_versions, "_github_token", return_value=TOKEN),
+            mock.patch.object(
+                workflow_package_versions, "_github_token", return_value=TOKEN
+            ),
             mock.patch.object(
                 workflow_package_versions,
                 "_read_published_version",
@@ -227,7 +263,9 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
             result = workflow_package_versions.fix_staged(repo_root)
 
         self.assertEqual(result, 1)
-        package_data = json.loads((workflow_dir / "package.json").read_text(encoding="utf-8"))
+        package_data = json.loads(
+            (workflow_dir / "package.json").read_text(encoding="utf-8")
+        )
         self.assertEqual(package_data["version"], PATCH_VERSION)
         self.assertIn(
             PACKAGE_JSON_RELATIVE.as_posix(),
@@ -236,11 +274,15 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
 
     def test_fix_staged_when_local_version_is_already_ahead(self) -> None:
         repo_root, workflow_dir = self.create_repo(version=PATCH_VERSION)
-        (workflow_dir / WORKFLOW_FILE_NAME).write_text(UPDATED_WORKFLOW_CONTENT, encoding="utf-8")
+        (workflow_dir / WORKFLOW_FILE_NAME).write_text(
+            UPDATED_WORKFLOW_CONTENT, encoding="utf-8"
+        )
         _git(repo_root, "add", WORKFLOW_FILE_RELATIVE.as_posix())
 
         with (
-            mock.patch.object(workflow_package_versions, "_github_token", return_value=TOKEN),
+            mock.patch.object(
+                workflow_package_versions, "_github_token", return_value=TOKEN
+            ),
             mock.patch.object(
                 workflow_package_versions,
                 "_read_published_version",
@@ -250,7 +292,9 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
             result = workflow_package_versions.fix_staged(repo_root)
 
         self.assertEqual(result, 0)
-        package_data = json.loads((workflow_dir / "package.json").read_text(encoding="utf-8"))
+        package_data = json.loads(
+            (workflow_dir / "package.json").read_text(encoding="utf-8")
+        )
         self.assertEqual(package_data["version"], PATCH_VERSION)
         self.assertNotIn(
             PACKAGE_JSON_RELATIVE.as_posix(),
@@ -259,11 +303,15 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
 
     def test_fix_staged_when_package_has_not_been_published_yet(self) -> None:
         repo_root, workflow_dir = self.create_repo()
-        (workflow_dir / WORKFLOW_FILE_NAME).write_text(UPDATED_WORKFLOW_CONTENT, encoding="utf-8")
+        (workflow_dir / WORKFLOW_FILE_NAME).write_text(
+            UPDATED_WORKFLOW_CONTENT, encoding="utf-8"
+        )
         _git(repo_root, "add", WORKFLOW_FILE_RELATIVE.as_posix())
 
         with (
-            mock.patch.object(workflow_package_versions, "_github_token", return_value=TOKEN),
+            mock.patch.object(
+                workflow_package_versions, "_github_token", return_value=TOKEN
+            ),
             mock.patch.object(
                 workflow_package_versions,
                 "_read_published_version",
@@ -273,12 +321,16 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
             result = workflow_package_versions.fix_staged(repo_root)
 
         self.assertEqual(result, 0)
-        package_data = json.loads((workflow_dir / "package.json").read_text(encoding="utf-8"))
+        package_data = json.loads(
+            (workflow_dir / "package.json").read_text(encoding="utf-8")
+        )
         self.assertEqual(package_data["version"], INITIAL_VERSION)
 
     def test_check_range_when_changes_are_docs_only(self) -> None:
         repo_root, workflow_dir = self.create_repo()
-        (workflow_dir / "README.md").write_text(DOCS_ONLY_README_CONTENT, encoding="utf-8")
+        (workflow_dir / "README.md").write_text(
+            DOCS_ONLY_README_CONTENT, encoding="utf-8"
+        )
         _git(repo_root, "add", README_FILE_RELATIVE.as_posix())
         _git(repo_root, "commit", "-m", "docs only")
 
@@ -291,17 +343,24 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
         )
 
         self.assertEqual(result, 0)
-        self.assertEqual(json.loads(report_path.read_text(encoding="utf-8")), {"checked": [], "outdated": []})
+        self.assertEqual(
+            json.loads(report_path.read_text(encoding="utf-8")),
+            {"checked": [], "outdated": []},
+        )
 
     def test_check_range_when_local_version_is_not_ahead(self) -> None:
         repo_root, workflow_dir = self.create_repo()
-        (workflow_dir / WORKFLOW_FILE_NAME).write_text(UPDATED_WORKFLOW_CONTENT, encoding="utf-8")
+        (workflow_dir / WORKFLOW_FILE_NAME).write_text(
+            UPDATED_WORKFLOW_CONTENT, encoding="utf-8"
+        )
         _git(repo_root, "add", WORKFLOW_FILE_RELATIVE.as_posix())
         _git(repo_root, "commit", "-m", "workflow change")
 
         report_path = repo_root / "workflow-report.json"
         with (
-            mock.patch.object(workflow_package_versions, "_github_token", return_value=TOKEN),
+            mock.patch.object(
+                workflow_package_versions, "_github_token", return_value=TOKEN
+            ),
             mock.patch.object(
                 workflow_package_versions,
                 "_read_published_version",
@@ -333,13 +392,17 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
 
     def test_check_range_when_package_is_unpublished(self) -> None:
         repo_root, workflow_dir = self.create_repo()
-        (workflow_dir / WORKFLOW_FILE_NAME).write_text(UPDATED_WORKFLOW_CONTENT, encoding="utf-8")
+        (workflow_dir / WORKFLOW_FILE_NAME).write_text(
+            UPDATED_WORKFLOW_CONTENT, encoding="utf-8"
+        )
         _git(repo_root, "add", WORKFLOW_FILE_RELATIVE.as_posix())
         _git(repo_root, "commit", "-m", "workflow change")
 
         report_path = repo_root / "workflow-report.json"
         with (
-            mock.patch.object(workflow_package_versions, "_github_token", return_value=TOKEN),
+            mock.patch.object(
+                workflow_package_versions, "_github_token", return_value=TOKEN
+            ),
             mock.patch.object(
                 workflow_package_versions,
                 "_read_published_version",
@@ -374,72 +437,101 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
         with mock.patch.object(
             workflow_package_versions.subprocess,
             "run",
-            return_value=mock.Mock(returncode=0, stdout='["0.9.0", "1.0.0"]', stderr=""),
+            return_value=mock.Mock(
+                returncode=0, stdout='["0.9.0", "1.0.0"]', stderr=""
+            ),
         ):
             # Act
-            version = workflow_package_versions._read_published_version(WORKFLOW_PACKAGE_NAME, TOKEN)
+            version = workflow_package_versions._read_published_version(
+                WORKFLOW_PACKAGE_NAME, TOKEN
+            )
 
         # Assert
         self.assertEqual(version, INITIAL_VERSION)
 
     def test_read_published_version_when_npm_authentication_fails(self) -> None:
         # Arrange
-        with mock.patch.object(
-            workflow_package_versions.subprocess,
-            "run",
-            return_value=mock.Mock(returncode=1, stdout="", stderr="ENEEDAUTH"),
+        with (
+            mock.patch.object(
+                workflow_package_versions.subprocess,
+                "run",
+                return_value=mock.Mock(returncode=1, stdout="", stderr="ENEEDAUTH"),
+            ),
+            self.assertRaisesRegex(RuntimeError, "authentication is required"),
         ):
             # Act & Assert
-            with self.assertRaisesRegex(RuntimeError, "authentication is required"):
-                workflow_package_versions._read_published_version(WORKFLOW_PACKAGE_NAME, TOKEN)
+            workflow_package_versions._read_published_version(
+                WORKFLOW_PACKAGE_NAME, TOKEN
+            )
 
     def test_read_published_version_when_registry_returns_404(self) -> None:
         # Arrange
         with mock.patch.object(
             workflow_package_versions.subprocess,
             "run",
-            return_value=mock.Mock(returncode=1, stdout="", stderr="E404 package missing"),
+            return_value=mock.Mock(
+                returncode=1, stdout="", stderr="E404 package missing"
+            ),
         ):
             # Act
-            version = workflow_package_versions._read_published_version(WORKFLOW_PACKAGE_NAME, TOKEN)
+            version = workflow_package_versions._read_published_version(
+                WORKFLOW_PACKAGE_NAME, TOKEN
+            )
 
         # Assert
         self.assertIsNone(version)
 
     def test_read_published_version_when_npm_is_missing(self) -> None:
         # Arrange
-        with mock.patch.object(
-            workflow_package_versions.subprocess,
-            "run",
-            side_effect=FileNotFoundError("npm"),
+        with (
+            mock.patch.object(
+                workflow_package_versions.subprocess,
+                "run",
+                side_effect=FileNotFoundError("npm"),
+            ),
+            self.assertRaisesRegex(RuntimeError, "npm is required"),
         ):
             # Act & Assert
-            with self.assertRaisesRegex(RuntimeError, "npm is required"):
-                workflow_package_versions._read_published_version(WORKFLOW_PACKAGE_NAME, TOKEN)
+            workflow_package_versions._read_published_version(
+                WORKFLOW_PACKAGE_NAME, TOKEN
+            )
 
     def test_check_range_when_token_is_missing_and_validation_is_needed(self) -> None:
         # Arrange
         repo_root, workflow_dir = self.create_repo()
-        (workflow_dir / WORKFLOW_FILE_NAME).write_text(UPDATED_WORKFLOW_CONTENT, encoding="utf-8")
+        (workflow_dir / WORKFLOW_FILE_NAME).write_text(
+            UPDATED_WORKFLOW_CONTENT, encoding="utf-8"
+        )
         _git(repo_root, "add", WORKFLOW_FILE_RELATIVE.as_posix())
         _git(repo_root, "commit", "-m", "workflow change")
 
         # Act & Assert
-        with mock.patch.object(workflow_package_versions, "_github_token", return_value=None):
-            with self.assertRaisesRegex(RuntimeError, "Set GH_TOKEN or GITHUB_TOKEN in CI"):
-                workflow_package_versions.check_range(
-                    repo_root,
-                    base_ref="HEAD~1",
-                    head_ref="HEAD",
-                    report_path=None,
-                )
+        with mock.patch.object(
+            workflow_package_versions, "_github_token", return_value=None
+        ), self.assertRaisesRegex(
+            RuntimeError, "Set GH_TOKEN or GITHUB_TOKEN in CI"
+        ):
+            workflow_package_versions.check_range(
+                repo_root,
+                base_ref="HEAD~1",
+                head_ref="HEAD",
+                report_path=None,
+            )
 
     def test_main_when_called_with_fix_staged_argument(self) -> None:
         # Arrange
         with (
-            mock.patch.object(workflow_package_versions.sys, "argv", ["workflow_package_versions.py", "fix-staged"]),
-            mock.patch.object(workflow_package_versions, "_repo_root", return_value=SCRIPT_REPO_ROOT),
-            mock.patch.object(workflow_package_versions, "fix_staged", return_value=0) as mock_fix_staged,
+            mock.patch.object(
+                workflow_package_versions.sys,
+                "argv",
+                ["workflow_package_versions.py", "fix-staged"],
+            ),
+            mock.patch.object(
+                workflow_package_versions, "_repo_root", return_value=SCRIPT_REPO_ROOT
+            ),
+            mock.patch.object(
+                workflow_package_versions, "fix_staged", return_value=0
+            ) as mock_fix_staged,
         ):
             # Act
             exit_code = workflow_package_versions.main()
@@ -452,9 +544,15 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
         # Arrange
         stderr = io.StringIO()
         with (
-            mock.patch.object(workflow_package_versions.sys, "argv", ["workflow_package_versions.py", "fix-staged"]),
+            mock.patch.object(
+                workflow_package_versions.sys,
+                "argv",
+                ["workflow_package_versions.py", "fix-staged"],
+            ),
             mock.patch.object(workflow_package_versions.sys, "stderr", stderr),
-            mock.patch.object(workflow_package_versions, "_repo_root", return_value=SCRIPT_REPO_ROOT),
+            mock.patch.object(
+                workflow_package_versions, "_repo_root", return_value=SCRIPT_REPO_ROOT
+            ),
             mock.patch.object(
                 workflow_package_versions,
                 "fix_staged",
@@ -478,7 +576,9 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
         # Assert
         self.assertEqual(name, "super-linter")
 
-    def test_get_workflow_name_from_path_when_path_is_outside_workflows_directory(self) -> None:
+    def test_get_workflow_name_from_path_when_path_is_outside_workflows_directory(
+        self,
+    ) -> None:
         # Arrange
         path = "src/ui/package.json"
 
@@ -560,7 +660,9 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
             ),
         ):
             # Act
-            checked, outdated = workflow_package_versions._check_packages([package], TOKEN)
+            checked, outdated = workflow_package_versions._check_packages(
+                [package], TOKEN
+            )
 
         # Assert
         self.assertEqual(len(checked), 1)
@@ -571,5 +673,3 @@ class WorkflowPackageVersionsTests(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
-
-
