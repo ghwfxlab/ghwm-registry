@@ -1,0 +1,17 @@
+---
+import DocsLayout from '../../layouts/DocsLayout.astro';
+import DocSource from '../../components/DocSource.astro';
+import { getContributingDoc, REGISTRY_REPO } from '../../lib/docs';
+
+// Rendered from this repository's CONTRIBUTING.md so there is a single source of truth.
+const doc = getContributingDoc();
+---
+
+<DocsLayout
+  title="Writing a package"
+  description="How to add a workflow package to the GHWM registry: directory layout, manifests, readme, and publishing."
+  current="writing-a-package"
+>
+  <Fragment set:html={doc.html} />
+  <DocSource tag={doc.source.tag} sourceUrl={doc.source.sourceUrl} repo={REGISTRY_REPO} />
+</DocsLayout>

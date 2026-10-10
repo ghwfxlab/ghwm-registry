@@ -1,4 +1,6 @@
 ---
+import { withBase } from '../lib/paths';
+
 const currentYear = new Date().getFullYear();
 ---
 
@@ -13,7 +15,7 @@ const currentYear = new Date().getFullYear();
 
     <!-- Right Navigation Links -->
     <div class="flex flex-wrap gap-md md:gap-lg font-code-sm text-code-sm text-on-surface-variant">
-      <a href="https://github.com/ghwfxlab/ghwm" class="hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer">Documentation</a>
+      <a href={withBase('/docs/')} class="hover:text-primary transition-colors">Documentation</a>
       <a href="https://github.com/ghwfxlab/ghwm#telemetry--privacy" class="hover:text-primary transition-colors" target="_blank" rel="noopener noreferrer">Privacy</a>
     </div>
   </div>

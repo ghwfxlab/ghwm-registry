@@ -1,0 +1,15 @@
+---
+interface Props {
+  code: string;
+  label?: string;
+}
+
+const { code, label } = Astro.props;
+---
+
+<div class="terminal-bg border border-outline-variant rounded-default overflow-hidden my-md">
+  {label && (
+    <div class="font-code-sm text-code-sm text-outline px-md py-xs border-b border-outline-variant">{label}</div>
+  )}
+  <pre class="font-code-md text-code-md text-on-surface p-md overflow-x-auto m-0"><code>{code}</code></pre>
+</div>

@@ -44,6 +44,22 @@ All commands are run from the root of the project, from a terminal:
 | `npm run astro ...`       | Run CLI commands like `astro add`, `astro check` |
 | `npm run astro -- --help` | Get help using the Astro CLI                     |
 
+## 📚 Synced Docs
+
+The manifest and frontmatter reference pages under `/docs` are not stored in this repository. At build
+time they are fetched from the latest `ghwm` release tag, and the build fails if that is not possible
+(it never falls back to stale docs). "Writing a package" is rendered from the root `CONTRIBUTING.md`.
+
+| Variable        | Purpose                                                                        |
+| --------------- | ------------------------------------------------------------------------------ |
+| `GITHUB_TOKEN`  | Avoids GitHub API rate limits when resolving the latest release (set in CI)    |
+| `GHWM_DOCS_TAG` | Pin the `ghwm` tag the docs are fetched from, instead of the latest release    |
+| `GHWM_DOCS_DIR` | Read the docs from a local `ghwm` checkout instead (offline work, doc authors) |
+
+```sh
+GHWM_DOCS_DIR=~/src/ghwm/main npm run dev
+```
+
 ## ⚙️ Environment Configuration
 
 To configure the API endpoint used for fetching workflow usage statistics, set `PUBLIC_API_URL`:

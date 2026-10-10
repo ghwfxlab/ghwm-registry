@@ -1,0 +1,56 @@
+---
+import { withBase } from '../lib/paths';
+
+const steps = [
+  {
+    icon: 'search',
+    title: 'Pick a workflow',
+    text: 'Browse the registry and choose a packaged workflow, such as linting or auto-assigning reviewers.',
+  },
+  {
+    icon: 'edit_document',
+    title: 'Add it to ghwm.yml',
+    text: 'List the package and version in ghwm.yml, then run ghwm install to write the files into .github/.',
+  },
+  {
+    icon: 'update',
+    title: 'Stay up to date',
+    text: 'Bump the version and run ghwm update, or let Renovate open the pull request for you.',
+  },
+];
+---
+
+<!-- How It Works Section -->
+<section class="flex flex-col gap-md">
+  <div class="flex justify-between items-end border-b border-outline-variant pb-sm mb-xs">
+    <h2 class="font-headline-lg text-headline-lg flex items-center gap-sm">
+      <span class="material-symbols-outlined text-tertiary">route</span>
+      How it works
+    </h2>
+    <a class="font-body-sm text-body-sm text-primary hover:underline" href={withBase('/docs/quickstart/')}>Quickstart &rarr;</a>
+  </div>
+
+  <ol class="grid grid-cols-1 md:grid-cols-3 gap-gutter list-none p-0 m-0">
+    {steps.map((step, index) => (
+      <li class="card-surface rounded-lg p-md flex flex-col gap-sm">
+        <div class="flex items-center gap-sm">
+          <span class="w-8 h-8 rounded-full bg-surface-container-high border border-outline-variant flex items-center justify-center font-code-sm text-code-sm text-primary shrink-0">{index + 1}</span>
+          <span class="material-symbols-outlined text-primary text-[20px]">{step.icon}</span>
+        </div>
+        <h3 class="font-headline-md text-[16px] font-semibold">{step.title}</h3>
+        <p class="font-body-sm text-body-sm text-on-surface-variant">{step.text}</p>
+      </li>
+    ))}
+  </ol>
+
+  <div class="card-surface rounded-lg p-md flex flex-col md:flex-row md:items-center justify-between gap-sm">
+    <div class="flex items-start gap-sm">
+      <span class="material-symbols-outlined text-secondary mt-0.5">hub</span>
+      <p class="font-body-sm text-body-sm text-on-surface-variant">
+        <span class="text-on-surface font-semibold">Bring your own registry.</span>
+        The <code class="font-code-sm">source</code> key in <code class="font-code-sm">ghwm.yml</code> names the registry repository, so you can host your own packages alongside or instead of this one.
+      </p>
+    </div>
+    <a class="font-body-sm text-body-sm text-primary hover:underline shrink-0" href={withBase('/docs/quickstart/#custom-registries')}>Learn more &rarr;</a>
+  </div>
+</section>

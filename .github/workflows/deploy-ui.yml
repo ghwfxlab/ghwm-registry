@@ -9,7 +9,15 @@ on: # yamllint disable-line rule:truthy
       - 'src/ui/**'
       - 'workflows/**'
       - 'scripts/sync-catalog.mjs'
+      - 'CONTRIBUTING.md'
       - '.github/workflows/deploy-ui.yml'
+  # The docs are synced from the latest ghwm release at build time, so rebuild when the CLI ships.
+  # A release workflow in ghwm can send `ghwm-release`; the daily run is the fallback.
+  repository_dispatch:
+    types:
+      - ghwm-release
+  schedule:
+    - cron: '17 5 * * *'
   workflow_dispatch:
 
 permissions: {}
@@ -56,6 +64,8 @@ jobs:
 
       - name: Build Astro UI
         env:
+          # Avoids GitHub API rate limits when resolving the latest ghwm release for the synced docs
+          GITHUB_TOKEN: ${{ github.token }}
           PUBLIC_API_URL: https://ghwm-deployment-prd.ghwfxlab.workers.dev
           ASTRO_SITE: https://ghwfxlab.github.io
           ASTRO_BASE: /ghwm

@@ -1,0 +1,14 @@
+---
+interface Props {
+  tag: string | null;
+  sourceUrl: string;
+  repo: string;
+}
+
+const { tag, sourceUrl, repo } = Astro.props;
+---
+
+<p class="font-code-sm text-code-sm text-outline mt-xl pt-md border-t border-outline-variant">
+  {tag ? `Synced from ${repo} ${tag}.` : `Rendered from ${repo}.`}{' '}
+  <a href={sourceUrl} target="_blank" rel="noopener noreferrer">View source on GitHub</a>
+</p>
