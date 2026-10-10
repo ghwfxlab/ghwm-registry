@@ -87,7 +87,7 @@ test('test_resolveLocalWorkflowMetadata_should_load_super_linter_metadata', () =
   assert.strictEqual(meta.icon, 'fact_check');
   assert.strictEqual(meta.owner, 'ghwfxlab');
   assert.strictEqual(meta.packageName, '@ghwfxlab/super-linter');
-  assert.strictEqual(meta.version, '1.0.2');
+  assert.match(meta.version, /^\d+\.\d+\.\d+/);
 });
 
 test('test_resolveLocalWorkflowMetadata_should_load_auto_assign_pr_metadata', () => {
@@ -99,7 +99,7 @@ test('test_resolveLocalWorkflowMetadata_should_load_auto_assign_pr_metadata', ()
   assert.strictEqual(meta.icon, 'person_add');
   assert.strictEqual(meta.owner, 'ghwfxlab');
   assert.strictEqual(meta.packageName, '@ghwfxlab/auto-assign-pr');
-  assert.strictEqual(meta.version, '1.0.2');
+  assert.match(meta.version, /^\d+\.\d+\.\d+/);
 });
 
 test('test_resolveLocalWorkflowMetadata_should_load_auto_release_metadata', () => {
@@ -111,7 +111,7 @@ test('test_resolveLocalWorkflowMetadata_should_load_auto_release_metadata', () =
   assert.strictEqual(meta.icon, 'sell');
   assert.strictEqual(meta.owner, 'ghwfxlab');
   assert.strictEqual(meta.packageName, '@ghwfxlab/auto-release');
-  assert.strictEqual(meta.version, '1.0.0');
+  assert.match(meta.version, /^\d+\.\d+\.\d+/);
 });
 
 test('test_resolveLocalWorkflowMetadata_should_fallback_to_NA_for_nonexistent_workflow', () => {

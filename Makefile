@@ -10,7 +10,7 @@ PROD_API_URL ?= https://ghwm-deployment-prd.ghwfxlab.workers.dev
 TEST_API_URL ?= https://ghwm-deployment-tst.ghwfxlab.workers.dev
 TARGET_API ?= prod
 
-.PHONY: help setup dev dev-prod-api dev-test-api build build-prod-api build-test-api sync-catalog preview clean lang lang-fix script-tests ui-tests setup-precommit precommit super-linter super-linter-fix
+.PHONY: help setup dev dev-prod-api dev-test-api build build-prod-api build-test-api sync-catalog preview clean lang lang-fix check-script-env script-tests ui-tests setup-precommit precommit super-linter super-linter-fix
 
 help:
 	@echo "Available commands:"
@@ -136,7 +136,16 @@ lang-fix: check-lang-env
 	@echo "[lang-fix] Running textlint --fix..."
 	@npx textlint --config $(TEXTLINT_CONFIG) --ignore-path $(TEXTLINT_IGNORE) . --fix
 
-script-tests:
+check-script-env:
+	@echo "[check-script-env] Ensuring Python environment for helper scripts..."
+	@which python3 >/dev/null 2>&1 || (echo "[check-script-env] ❌ python3 not found; install Python" && exit 1)
+	@python3 -c "import yaml" >/dev/null 2>&1 || ( \
+		echo "[check-script-env] Installing dependencies from scripts/requirements.txt..." && \
+		python3 -m pip install -q -r scripts/requirements.txt \
+	)
+	@echo "[check-script-env] OK"
+
+script-tests: check-script-env
 	@echo "[script-tests] Running helper script tests..."
 	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_workflow_package_versions.py -v
 	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_evaluate_release_paths.py -v
@@ -145,9 +154,9 @@ ui-tests:
 	@echo "[ui-tests] Running UI unit tests..."
 	@npm test --prefix $(UI_DIR)
 
-setup-precommit:
+setup-precommit: check-script-env
 	@echo "[setup-precommit] Installing pre-commit hooks..."
-	@pip install pre-commit
+	@python3 -m pip install pre-commit
 	@pre-commit install --install-hooks
 
 precommit:
@@ -181,4 +190,3 @@ super-linter-fix:
 		-v $$GIT_DIR:$$GIT_DIR \
 		--rm \
 		ghcr.io/super-linter/super-linter:slim-v9.0.0@sha256:7d0b4d3387deaac975e86e0787c7a05a25d530469b27d74c2b4599ab5800d9e4
-

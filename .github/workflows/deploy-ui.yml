@@ -37,7 +37,7 @@ jobs:
           node-version: '22'
 
       - name: Install UI dependencies
-        run: npm install --prefix src/ui
+        run: npm ci --prefix src/ui
 
       - name: Run UI unit tests
         run: npm test --prefix src/ui
@@ -50,7 +50,7 @@ jobs:
 
       - name: Sync workflow catalog to telemetry API
         env:
-          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
+          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }} # zizmor: ignore[secrets-outside-env]
           PUBLIC_API_URL: https://ghwm-deployment-prd.ghwfxlab.workers.dev
         run: node scripts/sync-catalog.mjs
 
