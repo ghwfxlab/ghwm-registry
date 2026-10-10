@@ -103,7 +103,7 @@ make precommit
 | --- | --- |
 | `make lang` | Lint prose (terminology, style) with textlint |
 | `make lang-fix` | Autofix textlint violations |
-| `make script-tests` | Run unit tests for the `scripts/workflow_package_versions.py` helper |
+| `make script-tests` | Run unit tests for repository helper scripts |
 | `make precommit` | Run all pre-commit hooks on every file |
 | `make super-linter` | Full lint pass (YAML, Markdown, Actions) via Docker |
 | `make super-linter-fix` | Full lint pass with autofix via Docker |
