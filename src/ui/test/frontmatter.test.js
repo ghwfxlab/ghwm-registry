@@ -87,7 +87,7 @@ test('test_resolveLocalWorkflowMetadata_should_load_super_linter_metadata', () =
   assert.strictEqual(meta.icon, 'fact_check');
   assert.strictEqual(meta.owner, 'ghwfxlab');
   assert.strictEqual(meta.packageName, '@ghwfxlab/super-linter');
-  assert.strictEqual(meta.version, '1.0.2');
+  assert.strictEqual(meta.version, '1.1.0');
 });
 
 test('test_resolveLocalWorkflowMetadata_should_load_auto_assign_pr_metadata', () => {
