@@ -41,7 +41,7 @@ setup:
 	@echo "Installing dependencies for Astro UI in $(UI_DIR)..."
 	npm install --prefix $(UI_DIR)
 
-dev:
+dev: setup
 	@if [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "test" ]; then \
 		echo "Targeting test API ($(TEST_API_URL))..."; \
 		PUBLIC_API_URL="$(TEST_API_URL)" npm run dev --prefix $(UI_DIR); \
@@ -59,15 +59,15 @@ dev:
 		PUBLIC_API_URL="$(PROD_API_URL)" npm run dev --prefix $(UI_DIR); \
 	fi
 
-dev-prod-api:
+dev-prod-api: setup
 	@echo "Targeting production API ($(PROD_API_URL))..."
 	PUBLIC_API_URL="$(PROD_API_URL)" npm run dev --prefix $(UI_DIR)
 
-dev-test-api:
+dev-test-api: setup
 	@echo "Targeting test API ($(TEST_API_URL))..."
 	PUBLIC_API_URL="$(TEST_API_URL)" npm run dev --prefix $(UI_DIR)
 
-build:
+build: setup
 	@if [ "$$(echo "$${TARGET_API:-}" | tr '[:upper:]' '[:lower:]')" = "test" ]; then \
 		echo "Targeting test API ($(TEST_API_URL))..."; \
 		PUBLIC_API_URL="$(TEST_API_URL)" npm run build --prefix $(UI_DIR); \
@@ -85,11 +85,11 @@ build:
 		PUBLIC_API_URL="$(PROD_API_URL)" npm run build --prefix $(UI_DIR); \
 	fi
 
-build-prod-api:
+build-prod-api: setup
 	@echo "Building Astro UI for production targeting production API ($(PROD_API_URL))..."
 	PUBLIC_API_URL="$(PROD_API_URL)" npm run build --prefix $(UI_DIR)
 
-build-test-api:
+build-test-api: setup
 	@echo "Building Astro UI for production targeting test API ($(TEST_API_URL))..."
 	PUBLIC_API_URL="$(TEST_API_URL)" npm run build --prefix $(UI_DIR)
 
