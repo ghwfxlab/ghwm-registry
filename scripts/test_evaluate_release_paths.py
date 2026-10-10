@@ -46,6 +46,7 @@ class EvaluateReleasePathsTests(unittest.TestCase):
         script = _extract_filter_script(WORKFLOW_PATH)
         proc = subprocess.run(
             ["bash", "-s"],
+            check=False,
             input=script,
             cwd=repo_dir,
             env=env,
