@@ -181,4 +181,3 @@ super-linter-fix:
 		-v $$GIT_DIR:$$GIT_DIR \
 		--rm \
 		ghcr.io/super-linter/super-linter:slim-v9.0.0@sha256:7d0b4d3387deaac975e86e0787c7a05a25d530469b27d74c2b4599ab5800d9e4
-
