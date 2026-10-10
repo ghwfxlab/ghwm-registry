@@ -50,7 +50,7 @@ jobs:
 
       - name: Sync workflow catalog to telemetry API
         env:
-          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }}
+          WORKER_AUTH_TOKEN: ${{ secrets.WORKER_AUTH_TOKEN }} # zizmor: ignore[secrets-outside-env]
           PUBLIC_API_URL: https://ghwm-deployment-prd.ghwfxlab.workers.dev
         run: node scripts/sync-catalog.mjs
 
