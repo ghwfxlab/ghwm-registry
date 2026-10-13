@@ -143,6 +143,8 @@ The image is built by the `super-linter-lean` workflow, which also writes its ta
 gh variable set SUPER_LINTER_CUSTOM_IMAGE --body ghcr.io/my-org/my-repo/super-linter-lean:v9.0.0
 ```
 
+On pull requests the workflow also runs `superlint-lean drift`, which fails the check when a changed file needs a linter that `.github/super-linter.env` does not enable (the lean image would skip it). Add the missing `VALIDATE_*` flag, or exclude the file type with `FILTER_REGEX_EXCLUDE`.
+
 If `SUPER_LINTER_CUSTOM` is `true` and the variable is empty, the workflow stops with a message instead of falling back to the upstream image. The image must be a Super-Linter image: it keeps the upstream entrypoint (`/action/lib/linter.sh`) and has the linters your `VALIDATE_*` flags enable.
 
 The workflow runs the image the way a container action runs: your `.github/super-linter.env` (and the fix file when fixes are on) is passed to the container, the workspace is mounted, and the workflow token is available as `GITHUB_TOKEN`.
