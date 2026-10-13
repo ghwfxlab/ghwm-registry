@@ -22,7 +22,7 @@ It reads `.github/super-linter.env` and `.github/workflows/super-linter.yaml`, s
 
 The workflow runs on pushes to `main` that change `.github/super-linter.env`, `.github/workflows/super-linter.yaml` or the workflow itself, and on manual dispatch. It then:
 
-1. Reads `SUPER_LINTER_VERSION` from `.github/workflows/super-linter.yaml`.
+1. Reads the upstream release from the version comment of the `super-linter/super-linter/slim` step in `.github/workflows/super-linter.yaml`.
 2. Builds the image with the superlint-lean action and smoke-tests it: for every enabled linter it runs the image on Super-Linter's own good and bad fixtures and requires that the good files pass and the bad files fail.
 3. Scans the image with Trivy. HIGH and CRITICAL findings that have a fix are listed in the job summary; a CRITICAL finding with a fix stops the build (`TRIVY_BLOCKING_SEVERITY`).
 4. Pushes `ghcr.io/<owner>/<repo>/super-linter-lean` with three tags: `latest`, `<version>` and `<version>-<short sha>` (immutable).
@@ -92,7 +92,7 @@ ghwm update --prune
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| `SUPER_LINTER_VERSION not found` | The `super-linter` workflow is older than 2.0.0 or the line was removed | Install `super-linter` 2.0.0 or later |
+| `No 'uses: super-linter/super-linter/slim@<sha> # vX.Y.Z' step found` | The slim step or its version comment was removed or reformatted | Restore the step as installed by `super-linter` 2.0.0 or later |
 | Smoke test reports `FAIL (not-linted)` for a linter | The image lacks that linter or the fixtures do not match the version | Check the generated `plan.json` and the pinned superlint-lean version |
 | Trivy gate fails | A CRITICAL finding with a fix in the image | Rebuild after upstream releases a fixed version, or lower `TRIVY_BLOCKING_SEVERITY` |
 | `SUPER_LINTER_CUSTOM_IMAGE was not updated` | App credentials not available | Set the variable as shown in the job summary |
