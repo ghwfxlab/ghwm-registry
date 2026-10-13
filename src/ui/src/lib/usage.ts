@@ -264,55 +264,39 @@ export async function fetchWorkflowDetails(
   return fetchWorkflowStats(workflowName, base, timeoutMs);
 }
 
+const isSet = (v: string | null | undefined): v is string => !!v && v !== 'N/A';
+
 /**
- * Synchronizes verified workflow metadata in bulk to the D1 catalog via POST /v1/catalog/sync.
- * Requires bearer authentication token.
- *
- * @param endpoint Base URL of the API
- * @param authToken Worker authentication token (Bearer token)
- * @param workflows Array of workflow metadata objects to persist
- * @param timeoutMs Request timeout in milliseconds (default: 8000ms)
- * @returns Sync result or null if the request failed
+ * Merges the build-time metadata of a workflow with what the API (D1) holds.
+ * Workflows that live in this repository (`isLocal`) take their metadata from the
+ * checkout, which is the source of truth at build time; every other workflow keeps
+ * the API values and falls back to the local fallback object ("N/A" placeholders).
  */
-export async function syncWorkflowCatalog(
-  endpoint: string,
-  authToken: string,
-  workflows: Array<Record<string, unknown>>,
-  timeoutMs = 8000
-): Promise<{ status: string; count: number } | null> {
-  const base = endpoint.trim().replace(/\/+$/, '');
-  if (!base || !authToken) {
-    return null;
-  }
+function mergeMetadata(
+  meta: WorkflowMetadata,
+  stat: Partial<WorkflowStat> | null | undefined,
+  isLocal: boolean
+): Pick<WorkflowMetadata, 'title' | 'description' | 'tags' | 'icon' | 'owner' | 'version' | 'createdAt'> {
+  const str = (local: string, api: string | null | undefined): string => {
+    const [first, second] = isLocal ? [local, api] : [api, local];
+    return isSet(first) ? first : isSet(second) ? second : local;
+  };
 
-  const url = `${base}/catalog/sync`;
-  try {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+  const apiTags =
+    Array.isArray(stat?.tags) && stat.tags.length > 0 && !(stat.tags.length === 1 && stat.tags[0] === 'N/A')
+      ? (stat.tags as string[])
+      : null;
+  const localTags = meta.tags.length > 0 && !(meta.tags.length === 1 && meta.tags[0] === 'N/A') ? meta.tags : null;
 
-    const res = await fetch(url, {
-      method: 'POST',
-      signal: controller.signal,
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${authToken.trim()}`,
-      },
-      body: JSON.stringify({ workflows }),
-    });
-    clearTimeout(timeoutId);
-
-    if (!res.ok) {
-      console.warn(`[usage-api] Warning: Received status ${res.status} from ${url}`);
-      return null;
-    }
-
-    const data = (await res.json()) as { status: string; count: number };
-    return data;
-  } catch (err) {
-    const message = err instanceof Error ? err.message : String(err);
-    console.warn(`[usage-api] Warning: Could not sync catalog to ${url}: ${message}`);
-    return null;
-  }
+  return {
+    title: str(meta.title, stat?.title),
+    description: str(meta.description, stat?.description),
+    tags: (isLocal ? localTags ?? apiTags : apiTags ?? localTags) ?? meta.tags,
+    icon: str(meta.icon, stat?.icon),
+    owner: str(meta.owner, stat?.owner),
+    version: str(meta.version, stat?.version),
+    createdAt: (isLocal ? meta.createdAt ?? stat?.created_at : stat?.created_at ?? meta.createdAt) ?? null,
+  };
 }
 
 /**
@@ -353,26 +337,19 @@ export async function getRegistryWorkflows(customEndpoint?: string): Promise<{
 
   const workflows: WorkflowItem[] = [];
 
+  const localNames = listLocalWorkflowNames();
+  const localSet = new Set(localNames);
+
   if (workflowsList && workflowsList.length > 0) {
     for (const stat of workflowsList) {
       if (!stat || !stat.workflow_name) continue;
       const meta = resolveLocalWorkflowMetadata(stat.workflow_name);
-
-      const hasValidTags =
-        Array.isArray(stat.tags) &&
-        stat.tags.length > 0 &&
-        !(stat.tags.length === 1 && stat.tags[0] === 'N/A');
+      const merged = mergeMetadata(meta, stat, localSet.has(stat.workflow_name));
 
       workflows.push({
         name: stat.workflow_name,
         packageName: meta.packageName,
-        version: stat.version && stat.version !== 'N/A' ? stat.version : meta.version,
-        title: stat.title && stat.title !== 'N/A' ? stat.title : meta.title,
-        description: stat.description && stat.description !== 'N/A' ? stat.description : meta.description,
-        tags: hasValidTags ? (stat.tags as string[]) : meta.tags,
-        icon: stat.icon && stat.icon !== 'N/A' ? stat.icon : meta.icon,
-        owner: stat.owner && stat.owner !== 'N/A' ? stat.owner : meta.owner,
-        createdAt: stat.created_at && stat.created_at !== 'N/A' ? stat.created_at : meta.createdAt,
+        ...merged,
         sourceUrl: stat.source_url && stat.source_url !== 'N/A' ? stat.source_url : null,
         installs: Number(stat.installs) || 0,
         updates: Number(stat.updates) || 0,
@@ -380,9 +357,22 @@ export async function getRegistryWorkflows(customEndpoint?: string): Promise<{
         lastInstalledAt: stat.last_installed_at ?? null,
       });
     }
+
+    // Workflows in this repository that nobody has installed yet are not in D1:
+    // list them too, with zero installs, so a new workflow gets a page on the first deploy.
+    const known = new Set(workflows.map((w) => w.name));
+    for (const name of localNames) {
+      if (known.has(name)) continue;
+      workflows.push({
+        ...resolveLocalWorkflowMetadata(name),
+        installs: 0,
+        updates: 0,
+        total: 0,
+        lastInstalledAt: null,
+      });
+    }
   } else {
     // Offline or empty API fallback: scan local repository workflow definitions
-    const localNames = listLocalWorkflowNames();
     for (const name of localNames) {
       const meta = resolveLocalWorkflowMetadata(name);
       workflows.push({
@@ -419,21 +409,12 @@ export async function getWorkflowDetails(
   const meta = resolveLocalWorkflowMetadata(name);
   const stat = endpoint ? await fetchWorkflowDetails(name, endpoint) : null;
 
-  const hasValidTags =
-    Array.isArray(stat?.tags) &&
-    (stat?.tags.length ?? 0) > 0 &&
-    !(stat?.tags.length === 1 && stat?.tags[0] === 'N/A');
+  const merged = mergeMetadata(meta, stat, listLocalWorkflowNames().includes(name));
 
   return {
     ...meta,
     name: (stat && stat.workflow_name) || meta.name,
-    title: stat?.title && stat.title !== 'N/A' ? stat.title : meta.title,
-    description: stat?.description && stat.description !== 'N/A' ? stat.description : meta.description,
-    tags: hasValidTags ? (stat?.tags as string[]) : meta.tags,
-    icon: stat?.icon && stat.icon !== 'N/A' ? stat.icon : meta.icon,
-    owner: stat?.owner && stat.owner !== 'N/A' ? stat.owner : meta.owner,
-    version: stat?.version && stat.version !== 'N/A' ? stat.version : meta.version,
-    createdAt: stat?.created_at && stat.created_at !== 'N/A' ? stat.created_at : meta.createdAt,
+    ...merged,
     sourceUrl: stat?.source_url && stat.source_url !== 'N/A' ? stat.source_url : null,
     installs: stat ? Number(stat.installs) || 0 : 0,
     updates: stat ? Number(stat.updates) || 0 : 0,

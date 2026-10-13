@@ -1,13 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { execFileSync } from 'node:child_process';
+import { listLocalWorkflowNames, resolveLocalWorkflowMetadata } from '../src/lib/frontmatter.ts';
 import {
   getApiEndpoint,
   fetchCatalog,
   fetchUsageStats,
   fetchWorkflowStats,
   fetchWorkflowDetails,
-  syncWorkflowCatalog,
   getTrendingWorkflows,
   getWorkflowDetails,
   getAllWorkflowTags,
@@ -264,7 +263,9 @@ test('test_getTrendingWorkflows_should_handle_external_workflows_with_NA_metadat
     const result = await getTrendingWorkflows('https://api.example.com');
 
     // Assert
-    assert.strictEqual(result.workflows.length, 2);
+    // The two payload workflows plus every local workflow D1 does not know yet.
+    const extraLocal = listLocalWorkflowNames().filter((n) => n !== 'super-linter');
+    assert.strictEqual(result.workflows.length, 2 + extraLocal.length);
     const cloudrun = result.workflows.find((w) => w.name === 'cloudrun-docker');
     assert.notStrictEqual(cloudrun, undefined);
     assert.strictEqual(cloudrun?.title, 'Cloudrun Docker');
@@ -644,9 +645,9 @@ test('test_getTrendingWorkflows_should_prefer_catalog_endpoint_and_use_api_metad
     const result = await getTrendingWorkflows('https://api.example.com');
     assert.strictEqual(result.isConnected, true);
     assert.strictEqual(result.totalInstallations, 88);
-    assert.strictEqual(result.workflows.length, 1);
+    assert.strictEqual(result.workflows.length, 1 + listLocalWorkflowNames().length);
 
-    const wf = result.workflows[0];
+    const wf = result.workflows.find((w) => w.name === 'cloudrun-docker');
     assert.strictEqual(wf.name, 'cloudrun-docker');
     assert.strictEqual(wf.title, 'Deploy to Cloud Run');
     assert.strictEqual(wf.description, 'Continuous deployment to Google Cloud Run containers.');
@@ -699,9 +700,9 @@ test('test_getTrendingWorkflows_should_fallback_to_stats_when_catalog_endpoint_f
     const result = await getTrendingWorkflows('https://api.example.com');
     assert.strictEqual(result.isConnected, true);
     assert.strictEqual(result.totalInstallations, 20);
-    assert.strictEqual(result.workflows.length, 1);
-    assert.strictEqual(result.workflows[0].name, 'super-linter');
-    assert.strictEqual(result.workflows[0].installs, 20);
+    assert.strictEqual(result.workflows.length, listLocalWorkflowNames().length);
+    const superLinter = result.workflows.find((w) => w.name === 'super-linter');
+    assert.strictEqual(superLinter?.installs, 20);
   } finally {
     restore();
   }
@@ -750,88 +751,109 @@ test('test_getWorkflowDetails_should_override_NA_metadata_with_api_fields', asyn
   }
 });
 
-test('test_syncWorkflowCatalog_should_return_null_when_endpoint_or_token_is_missing', async () => {
-  assert.strictEqual(await syncWorkflowCatalog('', 'valid-token', []), null);
-  assert.strictEqual(await syncWorkflowCatalog('https://api.example.com', '', []), null);
-});
-
-test('test_syncWorkflowCatalog_should_send_bearer_token_and_workflows_payload', async () => {
-  let capturedAuthHeader = null;
-  let capturedBody = null;
-
-  const restore = mockFetch(async (url, init) => {
-    assert.ok(url.endsWith('/catalog/sync'));
-    assert.strictEqual(init?.method, 'POST');
-    capturedAuthHeader = init?.headers?.Authorization || null;
-    capturedBody = JSON.parse(init?.body);
-
-    return new Response(JSON.stringify({ status: 'synced', count: 2 }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  });
-
-  try {
-    const sampleWorkflows = [
-      { workflow_name: 'super-linter', title: 'Super-Linter' },
-      { workflow_name: 'auto-assign-pr', title: 'Auto Assign PR' },
-    ];
-
-    const result = await syncWorkflowCatalog(
-      'https://api.example.com',
-      'secret-worker-token-xyz',
-      sampleWorkflows
-    );
-
-    assert.notStrictEqual(result, null);
-    assert.strictEqual(result?.status, 'synced');
-    assert.strictEqual(result?.count, 2);
-    assert.strictEqual(capturedAuthHeader, 'Bearer secret-worker-token-xyz');
-    assert.strictEqual(capturedBody?.workflows?.length, 2);
-    assert.strictEqual(capturedBody?.workflows[0]?.workflow_name, 'super-linter');
-  } finally {
-    restore();
-  }
-});
-
-test('test_syncWorkflowCatalog_should_return_null_when_api_responds_with_unauthorized', async () => {
-  const restore = mockFetch(async () => {
-    return new Response(JSON.stringify({ error: 'unauthorized' }), {
-      status: 401,
-      headers: { 'Content-Type': 'application/json' },
-    });
-  });
-
-  try {
-    const result = await syncWorkflowCatalog('https://api.example.com', 'bad-token', []);
-    assert.strictEqual(result, null);
-  } finally {
-    restore();
-  }
-});
-
-test('test_sync_catalog_script_should_exit_zero_with_notice_when_token_is_missing', () => {
-  const output = execFileSync('node', ['../../../scripts/sync-catalog.mjs'], {
-    cwd: import.meta.dirname,
-    encoding: 'utf-8',
-    env: { ...process.env, WORKER_AUTH_TOKEN: '', AUTH_TOKEN: '' },
-  });
-  assert.ok(output.includes('Notice: WORKER_AUTH_TOKEN not set; skipping catalog synchronization.'));
-});
-
-test('test_sync_catalog_script_should_exit_one_when_strict_flag_and_token_is_missing', () => {
-  assert.throws(
-    () => {
-      execFileSync('node', ['../../../scripts/sync-catalog.mjs', '--strict'], {
-        cwd: import.meta.dirname,
-        encoding: 'utf-8',
-        env: { ...process.env, WORKER_AUTH_TOKEN: '', AUTH_TOKEN: '' },
-      });
-    },
-    (err) => {
-      return err.status === 1;
-    }
+test('test_getTrendingWorkflows_should_list_local_workflows_missing_from_the_catalog_with_zero_installs', async () => {
+  const restore = mockFetch(async () =>
+    new Response(
+      JSON.stringify({
+        total_workflows: 1,
+        total_installations: 5,
+        workflows: [{ workflow_name: 'third-party', title: 'Third Party', installs: 5, updates: 0, total: 5 }],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
   );
+
+  try {
+    const result = await getTrendingWorkflows('https://api.example.com');
+    assert.strictEqual(result.isConnected, true);
+    assert.ok(result.workflows.some((w) => w.name === 'third-party'));
+    for (const name of listLocalWorkflowNames()) {
+      const wf = result.workflows.find((w) => w.name === name);
+      assert.notStrictEqual(wf, undefined, `${name} should be listed`);
+      assert.strictEqual(wf?.installs, 0);
+      assert.notStrictEqual(wf?.title, 'N/A');
+    }
+  } finally {
+    restore();
+  }
 });
 
+test('test_getTrendingWorkflows_should_prefer_checkout_metadata_over_catalog_for_local_workflows', async () => {
+  const restore = mockFetch(async () =>
+    new Response(
+      JSON.stringify({
+        total_workflows: 1,
+        total_installations: 9,
+        workflows: [
+          {
+            workflow_name: 'super-linter',
+            title: 'Stale Title',
+            description: 'Stale description',
+            tags: ['stale'],
+            version: '0.0.1',
+            installs: 9,
+            updates: 0,
+            total: 9,
+            last_installed_at: '2026-09-08T13:36:35.173Z',
+          },
+        ],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+  );
 
+  try {
+    const result = await getTrendingWorkflows('https://api.example.com');
+    const wf = result.workflows.find((w) => w.name === 'super-linter');
+    const local = resolveLocalWorkflowMetadata('super-linter');
+    assert.strictEqual(wf?.title, local.title);
+    assert.strictEqual(wf?.description, local.description);
+    assert.strictEqual(wf?.version, local.version);
+    assert.deepStrictEqual(wf?.tags, local.tags);
+    // Usage numbers always come from the API.
+    assert.strictEqual(wf?.installs, 9);
+  } finally {
+    restore();
+  }
+});
+
+test('test_getTrendingWorkflows_should_fill_local_gaps_from_the_catalog', async () => {
+  // A local workflow whose checkout lacks a field keeps the API value for it.
+  const restore = mockFetch(async () =>
+    new Response(
+      JSON.stringify({
+        total_workflows: 1,
+        total_installations: 1,
+        workflows: [{ workflow_name: 'super-linter', source_url: 'https://github.com/ghwfxlab/ghwm-registry', installs: 1, updates: 0, total: 1 }],
+      }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+  );
+
+  try {
+    const result = await getTrendingWorkflows('https://api.example.com');
+    const wf = result.workflows.find((w) => w.name === 'super-linter');
+    assert.strictEqual(wf?.sourceUrl, 'https://github.com/ghwfxlab/ghwm-registry');
+  } finally {
+    restore();
+  }
+});
+
+test('test_getWorkflowDetails_should_prefer_checkout_metadata_for_local_workflows', async () => {
+  const restore = mockFetch(async () =>
+    new Response(
+      JSON.stringify({ workflow_name: 'super-linter', title: 'Stale Title', version: '0.0.1', installs: 3, updates: 1, total: 4 }),
+      { status: 200, headers: { 'Content-Type': 'application/json' } }
+    )
+  );
+
+  try {
+    const details = await getWorkflowDetails('super-linter', 'https://api.example.com');
+    const local = resolveLocalWorkflowMetadata('super-linter');
+    assert.strictEqual(details?.title, local.title);
+    assert.strictEqual(details?.version, local.version);
+    assert.strictEqual(details?.installs, 3);
+  } finally {
+    restore();
+  }
+});
