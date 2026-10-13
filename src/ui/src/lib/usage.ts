@@ -87,23 +87,7 @@ export function getApiEndpoint(): string {
   return String(rawUrl).trim().replace(/\/+$/, '');
 }
 
-/**
- * Formats an ISO date string into a user-readable date (e.g. "Sep 8, 2026").
- */
-export function formatLastInstalled(isoString: string | null): string | null {
-  if (!isoString) return null;
-  try {
-    const d = new Date(isoString);
-    if (isNaN(d.getTime())) return null;
-    return d.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  } catch {
-    return null;
-  }
-}
+export { formatLastInstalled } from './format.ts';
 
 /**
  * Fetches all registered workflows from the canonical catalog endpoint.
@@ -382,7 +366,7 @@ export async function getRegistryWorkflows(customEndpoint?: string): Promise<{
       workflows.push({
         name: stat.workflow_name,
         packageName: meta.packageName,
-        version: meta.version !== 'N/A' ? meta.version : stat.version && stat.version !== 'N/A' ? stat.version : 'N/A',
+        version: stat.version && stat.version !== 'N/A' ? stat.version : meta.version,
         title: stat.title && stat.title !== 'N/A' ? stat.title : meta.title,
         description: stat.description && stat.description !== 'N/A' ? stat.description : meta.description,
         tags: hasValidTags ? (stat.tags as string[]) : meta.tags,
@@ -448,7 +432,7 @@ export async function getWorkflowDetails(
     tags: hasValidTags ? (stat?.tags as string[]) : meta.tags,
     icon: stat?.icon && stat.icon !== 'N/A' ? stat.icon : meta.icon,
     owner: stat?.owner && stat.owner !== 'N/A' ? stat.owner : meta.owner,
-    version: meta.version !== 'N/A' ? meta.version : stat?.version && stat.version !== 'N/A' ? stat.version : 'N/A',
+    version: stat?.version && stat.version !== 'N/A' ? stat.version : meta.version,
     createdAt: stat?.created_at && stat.created_at !== 'N/A' ? stat.created_at : meta.createdAt,
     sourceUrl: stat?.source_url && stat.source_url !== 'N/A' ? stat.source_url : null,
     installs: stat ? Number(stat.installs) || 0 : 0,

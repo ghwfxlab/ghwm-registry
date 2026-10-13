@@ -90,17 +90,16 @@ To configure the API endpoint used for fetching workflow usage statistics, set `
 
 ## ⚡ Live Metadata
 
-The home page is static. `/registry/` and `/workflows/<name>/` hydrate version, title, description and tags in the
-browser (`src/lib/ghLive.ts`) so they never lag a release:
+Pages are built statically, but the Worker (`ghwm-deployment`) keeps D1 current with GitHub, so `/registry/` and
+`/workflows/<name>/` read it in the browser (`src/lib/liveApi.ts`) instead of waiting for a rebuild:
 
-1. `GET {PUBLIC_API_URL}/live` and `/live/:name` on the Worker (token-backed, edge-cached ~60s).
-2. Fallback: `raw.githubusercontent.com/ghwfxlab/ghwm-registry/main/workflows/...` (plus one `api.github.com` listing call on the registry page).
-3. Fallback: the values baked in at build time.
-
-Results are cached in `sessionStorage` for 2 minutes. Install and update counts always come from the build.
-
-Worker contract: `GET /live` returns `{ generated_at, workflows: [{ name, version, title, description, tags, icon, owner }] }`;
-`GET /live/:name` returns one item or 404. Send `Cache-Control: public, max-age=60` and allow CORS from the site origin.
+- `/workflows/<name>/`: calls `GET {PUBLIC_API_URL}/workflows/:name`. The Worker answers from D1 and, when its metadata is older
+  than 10 minutes, refreshes the row from the workflow's own source repository (ETag-conditional, one caller per
+  workflow per interval). The page patches the version, title and description and shows a "checked N min ago" label;
+  if a refresh was triggered it reads once more after 3 seconds.
+- `/registry/`: calls `GET {PUBLIC_API_URL}/catalog` (a plain D1 read) and merges it over the build-time rows, including
+  install counts and workflows from other registries that were added after the last build.
+- If the Worker is unreachable, the build-time values stay. Responses are cached in `sessionStorage` for 60 seconds.
 
 ## 👀 Want to learn more?
 
