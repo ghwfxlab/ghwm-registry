@@ -1,0 +1,12 @@
+{
+    "name": "@ghwfxlab/super-linter-lean",
+    "version": "1.0.0",
+    "description": "Build, scan and publish a Super-Linter image with only the linters a repository enables",
+    "files": [
+        "super-linter-lean.yaml",
+        "workflow.yml"
+    ],
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    }
+}

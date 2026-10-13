@@ -1,0 +1,155 @@
+---
+name: Super-Linter lean image
+
+# Builds a Super-Linter image that contains only the linters enabled in
+# .github/super-linter.env, scans it, pushes it to GHCR and records its tag in
+# the SUPER_LINTER_CUSTOM_IMAGE repository variable. The super-linter workflow
+# runs that image when SUPER_LINTER_CUSTOM is true.
+
+on: # yamllint disable-line rule:truthy
+  push:
+    branches:
+      - main
+    paths:
+      - .github/super-linter.env
+      - .github/workflows/super-linter.yaml
+      - .github/workflows/super-linter-lean.yaml
+  workflow_dispatch:
+
+permissions: {}
+
+env:
+  SUPER_LINTER_CONFIG_PATH: .github/super-linter.env
+  # Findings of this severity that have a fix stop the build; everything else is only reported
+  TRIVY_BLOCKING_SEVERITY: CRITICAL
+
+concurrency:
+  group: super-linter-lean
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build lean image
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Read the Super-Linter version
+        id: version
+        run: |
+          version="$(
+            sed -n 's/^  SUPER_LINTER_VERSION: *\(v[0-9][^ ]*\).*/\1/p' .github/workflows/super-linter.yaml |
+              head -n 1
+          )"
+          if [ -z "${version}" ]; then
+            echo "::error::SUPER_LINTER_VERSION not found in .github/workflows/super-linter.yaml"
+            exit 1
+          fi
+          echo "version=${version}" >> "${GITHUB_OUTPUT}"
+
+      - name: Build the image and smoke-test it
+        id: lean
+        uses: ghwfxlab/superlint-lean@93cc8cfd6fec1be0a1af612f0329e6201562c19c # feat/composite-action
+        with:
+          upstream-tag: ${{ steps.version.outputs.version }}
+          env-files: ${{ env.SUPER_LINTER_CONFIG_PATH }}
+
+      - name: Scan the image (report)
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: ${{ steps.lean.outputs.image }}
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: table
+          output: trivy-report.txt
+          exit-code: "0"
+
+      - name: Add the scan to the summary
+        run: |
+          {
+            echo "### Trivy (HIGH and CRITICAL with a fix)"
+            echo
+            echo '```text'
+            cat trivy-report.txt
+            echo '```'
+          } >> "${GITHUB_STEP_SUMMARY}"
+
+      - name: Scan the image (gate)
+        uses: aquasecurity/trivy-action@a9c7b0f06e461e9d4b4d1711f154ee024b8d7ab8 # v0.36.0
+        with:
+          image-ref: ${{ steps.lean.outputs.image }}
+          severity: ${{ env.TRIVY_BLOCKING_SEVERITY }}
+          ignore-unfixed: true
+          format: table
+          exit-code: "1"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Push the image
+        id: push
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+          REPOSITORY: ${{ github.repository }}
+          SHA: ${{ github.sha }}
+          LOCAL_IMAGE: ${{ steps.lean.outputs.image }}
+        run: |
+          image="ghcr.io/${REPOSITORY,,}/super-linter-lean"
+          for tag in latest "${VERSION}" "${VERSION}-${SHA::7}"; do
+            docker tag "${LOCAL_IMAGE}" "${image}:${tag}"
+            docker push --quiet "${image}:${tag}"
+          done
+          echo "image=${image}:${VERSION}-${SHA::7}" >> "${GITHUB_OUTPUT}"
+
+      - name: Check for GitHub App credentials
+        id: app
+        env:
+          GH_APP_ID: ${{ secrets.GH_APP_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "${GH_APP_ID}" ] && [ -n "${GH_APP_PRIVATE_KEY}" ]; then
+            echo "configured=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "configured=false" >> "${GITHUB_OUTPUT}"
+          fi
+
+      - name: Generate GitHub App token
+        id: app-token
+        if: steps.app.outputs.configured == 'true'
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }} # zizmor: ignore[secrets-outside-env]
+          permission-variables: write
+
+      - name: Record the image in SUPER_LINTER_CUSTOM_IMAGE
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          GH_REPO: ${{ github.repository }}
+          IMAGE: ${{ steps.push.outputs.image }}
+        run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            {
+              echo "The GitHub App credentials (GH_APP_ID, GH_APP_PRIVATE_KEY) are not available,"
+              echo "so the variable was not updated."
+              echo "Set it yourself:"
+              echo
+              echo '```sh'
+              echo "gh variable set SUPER_LINTER_CUSTOM_IMAGE --body ${IMAGE}"
+              echo '```'
+            } >> "${GITHUB_STEP_SUMMARY}"
+            echo "::warning::SUPER_LINTER_CUSTOM_IMAGE was not updated; see the job summary."
+            exit 0
+          fi
+          gh variable set SUPER_LINTER_CUSTOM_IMAGE --body "${IMAGE}"
+          echo "SUPER_LINTER_CUSTOM_IMAGE is now \`${IMAGE}\`" >> "${GITHUB_STEP_SUMMARY}"
