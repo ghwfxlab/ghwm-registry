@@ -30,13 +30,13 @@ Depending on your configuration, Super-Linter can run in one of three modes:
 
 1. **Slim Mode (Default)**: Uses the lightweight `super-linter/super-linter/slim` image. It is faster to pull and start, and is ideal for projects that do not need heavier, platform-specific tooling.
 2. **Standard/Full Mode**: Uses the full `super-linter/super-linter` image. This includes all supported linters, adding coverage for languages like **Rust** (Rustfmt/Clippy), **PowerShell** (PSScriptAnalyzer), **.NET** (dotnet tools), and **Azure Resource Manager** (arm-ttk).
-3. **Custom Mode**: Runs a lean image published by the `super-linter-lean` workflow, which contains only the linters your `.github/super-linter.env` enables. It pulls in a fraction of the time. See [Run the lean image](#example-run-the-lean-image).
+3. **Custom Mode**: Runs a lean image published by the `super-linter-lean` workflow, which contains only the linters your `.github/super-linter.env` enables, so the linting itself starts and runs faster. The upstream steps are skipped, but the runner still pulls their images at job start. See [Run the lean image](#example-run-the-lean-image).
 
 | Job | Environment Controls | Description |
 | --- | --- | --- |
 | `super-linter` | `RUN_SUPER_LINTER_SLIM: true` (default) | Runs the slim variant of Super-Linter for fast validation of common web/dev files (YAML, MD, JSON, Actions, text, etc.). |
 | `super-linter` | `RUN_SUPER_LINTER_SLIM: false` | Runs the standard/full variant of Super-Linter to include heavier linters like Rustfmt, Clippy, .NET, PowerShell, and ARM templates. |
-| `super-linter` | `SUPER_LINTER_CUSTOM: true` | Runs the image in the `SUPER_LINTER_CUSTOM_IMAGE` env (by default the repository variable of the same name) instead. `RUN_SUPER_LINTER_SLIM` is ignored. |
+| `super-linter` | `SUPER_LINTER_CUSTOM: true` | Runs the image in the `SUPER_LINTER_CUSTOM_IMAGE` env (by default the repository variable of the same name) and skips both upstream steps. It takes precedence over `RUN_SUPER_LINTER_SLIM`, which can stay `true`. |
 
 ### Linters enabled by default
 
@@ -109,7 +109,6 @@ The installed config files are a starting point. Adjust them to your project's n
   - `PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH` — path to an optional custom script to run before linting.
   - `RUN_SUPER_LINTER_SLIM` — set to `true` (default) to run the slim version of Super-Linter, or `false` for the full version.
   - `RUN_SUPER_LINTER_FIXES` — set to `true` to enable automatic linting fixes (default: `false`). If enabled, fixes will be automatically committed and pushed to your PR branch.
-  - `SUPER_LINTER_VERSION` — the upstream Super-Linter release to run, used as the image tag (default: the release this workflow version was written for).
   - `SUPER_LINTER_CUSTOM` — set to `true` to run the lean image in `SUPER_LINTER_CUSTOM_IMAGE` (default: `false`).
   - `SUPER_LINTER_CUSTOM_IMAGE` — the lean image to run; by default the repository variable of the same name, which the `super-linter-lean` workflow keeps current. Put an image here to pin it in the workflow.
 
@@ -133,7 +132,6 @@ Set `SUPER_LINTER_CUSTOM` in the `env` section of `.github/workflows/super-linte
 ```yaml
 env:
   RUN_SUPER_LINTER_SLIM: true
-  SUPER_LINTER_VERSION: v9.0.0
   SUPER_LINTER_CUSTOM: true # run the image from the SUPER_LINTER_CUSTOM_IMAGE variable
 ```
 
@@ -194,11 +192,9 @@ To change the trigger branches, edit `.github/workflows/super-linter.yaml` and u
 
 ### Upgrading from 1.x to 2.0
 
-Version 2.0 runs every mode with one `docker run` step instead of the upstream `super-linter/super-linter` action, so only the image you run is pulled (the action pulled both the slim and the full image at job start, even for the one it skipped). What changes for you:
+Version 2.0 adds the custom mode. What changes for you:
 
-- The upstream release is now the `SUPER_LINTER_VERSION` env value (an image tag) and no longer a commit SHA in a `uses:` line. Dependabot does not propose updates for it; change the value yourself.
-- Nothing else changes for the default (slim) and standard modes: same config files, same variables.
-- New: `SUPER_LINTER_CUSTOM` for the lean image.
+- New: `SUPER_LINTER_CUSTOM` and `SUPER_LINTER_CUSTOM_IMAGE` for the lean image. With the default `SUPER_LINTER_CUSTOM: false` nothing changes: same upstream steps, config files and variables.
 
 Update `ghwm.yml` with a new version, then:
 
