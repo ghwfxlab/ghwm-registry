@@ -55,8 +55,7 @@ jobs:
 
       - name: Build the image and smoke-test it
         id: lean
-        # Pinned to the branch commit of superlint-lean#46; bump it to the merge commit once that is in.
-        uses: ghwfxlab/superlint-lean@3aa6cd6565bb84bd21f9becfef82a815ac8bf6d2 # feat/composite-action
+        uses: ghwfxlab/superlint-lean@58cc76bc4b1188fc2bed69f95423204a95f6d445 # composite action (superlint-lean#46)
         with:
           upstream-tag: ${{ steps.version.outputs.version }}
           env-files: ${{ env.SUPER_LINTER_CONFIG_PATH }}
