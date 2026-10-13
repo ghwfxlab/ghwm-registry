@@ -1,0 +1,15 @@
+# ---
+# title: Super-Linter lean image
+# description: Build, scan and publish a Super-Linter image with only the linters a repository enables.
+# tags:
+#   - lint
+#   - docker
+#   - supply-chain
+# icon: bolt
+# owner: ghwfxlab
+# ---
+---
+name: super-linter-lean
+files:
+  - source: super-linter-lean.yaml
+    target: .github/workflows/super-linter-lean.yaml
