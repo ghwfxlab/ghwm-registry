@@ -36,7 +36,7 @@ Depending on your configuration, Super-Linter can run in one of three modes:
 | --- | --- | --- |
 | `super-linter` | `RUN_SUPER_LINTER_SLIM: true` (default) | Runs the slim variant of Super-Linter for fast validation of common web/dev files (YAML, MD, JSON, Actions, text, etc.). |
 | `super-linter` | `RUN_SUPER_LINTER_SLIM: false` | Runs the standard/full variant of Super-Linter to include heavier linters like Rustfmt, Clippy, .NET, PowerShell, and ARM templates. |
-| `super-linter` | `SUPER_LINTER_CUSTOM: true` | Runs the image stored in the `SUPER_LINTER_CUSTOM_IMAGE` repository variable instead. `RUN_SUPER_LINTER_SLIM` is ignored. |
+| `super-linter` | `SUPER_LINTER_CUSTOM: true` | Runs the image in the `SUPER_LINTER_CUSTOM_IMAGE` env (by default the repository variable of the same name) instead. `RUN_SUPER_LINTER_SLIM` is ignored. |
 
 ### Linters enabled by default
 
@@ -72,7 +72,7 @@ Add to `ghwm.yml` in your repository root:
 source: ghwfxlab/ghwm-registry
 workflows:
   - name: super-linter
-    version: 1.0.0
+    version: 2.0.0
     update-config-files: true
 ```
 
@@ -110,7 +110,8 @@ The installed config files are a starting point. Adjust them to your project's n
   - `RUN_SUPER_LINTER_SLIM` — set to `true` (default) to run the slim version of Super-Linter, or `false` for the full version.
   - `RUN_SUPER_LINTER_FIXES` — set to `true` to enable automatic linting fixes (default: `false`). If enabled, fixes will be automatically committed and pushed to your PR branch.
   - `SUPER_LINTER_VERSION` — the upstream Super-Linter release to run, used as the image tag (default: the release this workflow version was written for).
-  - `SUPER_LINTER_CUSTOM` — set to `true` to run the lean image from the `SUPER_LINTER_CUSTOM_IMAGE` repository variable (default: `false`).
+  - `SUPER_LINTER_CUSTOM` — set to `true` to run the lean image in `SUPER_LINTER_CUSTOM_IMAGE` (default: `false`).
+  - `SUPER_LINTER_CUSTOM_IMAGE` — the lean image to run; by default the repository variable of the same name, which the `super-linter-lean` workflow keeps current. Put an image here to pin it in the workflow.
 
 #### Example: Run Standard/Full Super-Linter (e.g. for Rust or .NET projects)
 
@@ -222,7 +223,7 @@ The CLI leaves config files such as `.github/super-linter.env`, `.github/super-l
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| `SUPER_LINTER_CUSTOM is true but the SUPER_LINTER_CUSTOM_IMAGE variable is empty` | The lean image has not been built yet | Run the `super-linter-lean` workflow, or set the variable yourself |
+| `SUPER_LINTER_CUSTOM is true but SUPER_LINTER_CUSTOM_IMAGE is empty` | The lean image has not been built yet | Run the `super-linter-lean` workflow, or set the variable yourself |
 | `BUILD_DATE: unbound variable` with a custom image | The image does not set the `BUILD_*` variables | Regenerate it with a superlint-lean version that sets them, or set `BUILD_DATE`, `BUILD_REVISION` and `BUILD_VERSION` in the image |
 | Custom image cannot be pulled | Private package without access | Grant the repository read access to the package, or add the registry secrets |
 | Super-Linter fails on YAML files | yamllint config too strict | Adjust rules in `.github/linters/.yaml-lint.yml` |
