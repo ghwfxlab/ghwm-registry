@@ -25,7 +25,7 @@ test('test_fetchWorkflowLive_should_use_worker_when_it_responds', async () => {
 
 test('test_fetchWorkflowLive_should_fall_back_to_raw_github_when_worker_fails', async () => {
   const fetchImpl = async (url) => {
-    if (url.startsWith('https://w.example')) throw new Error('down');
+    if (new URL(url).host === 'w.example') throw new Error('down');
     if (url.endsWith('package.json')) return text(JSON.stringify({ version: '1.3.0', description: 'pkg desc' }));
     return text(YAML);
   };
@@ -42,7 +42,7 @@ test('test_fetchWorkflowLive_should_return_null_when_everything_fails', async ()
 });
 
 test('test_fetchWorkflowLive_should_return_null_on_malformed_worker_payload_and_no_raw', async () => {
-  const fetchImpl = async (url) => (url.startsWith('https://w.example') ? text('{not json') : text('', 404));
+  const fetchImpl = async (url) => (new URL(url).host === 'w.example' ? text('{not json') : text('', 404));
   assert.strictEqual(await fetchWorkflowLive('x', { endpoint: 'https://w.example', fetchImpl, storage: null }), null);
 });
 
