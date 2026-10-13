@@ -28,8 +28,6 @@ env:
   SUPER_LINTER_FIX_CONFIG_PATH: .github/super-linter-fix.env
   RUN_SUPER_LINTER_SLIM: true
   RUN_SUPER_LINTER_FIXES: false
-  # Upstream Super-Linter release to run (the image tag)
-  SUPER_LINTER_VERSION: v9.0.0
   # true: run the lean image published by the super-linter-lean workflow
   SUPER_LINTER_CUSTOM: false
   # The lean image to run. The super-linter-lean workflow keeps the repository
@@ -66,22 +64,25 @@ jobs:
         run: |
           echo "Running custom script from ${{ env.PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH }}..."
           ${{ env.PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH }}
-      - name: Select the Super-Linter image
+      - name: Run Slim Super-Linter
+        if: ${{ env.SUPER_LINTER_CUSTOM != 'true' && env.RUN_SUPER_LINTER_SLIM == 'true' }}
+        uses: super-linter/super-linter/slim@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Run Super-Linter
+        if: ${{ env.SUPER_LINTER_CUSTOM != 'true' && env.RUN_SUPER_LINTER_SLIM != 'true' }}
+        uses: super-linter/super-linter@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Check the lean image is configured
+        if: ${{ env.SUPER_LINTER_CUSTOM == 'true' }}
         run: |
-          if [ "${SUPER_LINTER_CUSTOM}" = "true" ]; then
-            if [ -z "${SUPER_LINTER_CUSTOM_IMAGE}" ]; then
-              echo "::error::SUPER_LINTER_CUSTOM is true but SUPER_LINTER_CUSTOM_IMAGE is empty."
-              echo "Run the super-linter-lean workflow first."
-              exit 1
-            fi
-            image="${SUPER_LINTER_CUSTOM_IMAGE}"
-          elif [ "${RUN_SUPER_LINTER_SLIM}" = "true" ]; then
-            image="ghcr.io/super-linter/super-linter:slim-${SUPER_LINTER_VERSION}"
-          else
-            image="ghcr.io/super-linter/super-linter:${SUPER_LINTER_VERSION}"
+          if [ -z "${SUPER_LINTER_CUSTOM_IMAGE}" ]; then
+            echo "::error::SUPER_LINTER_CUSTOM is true but SUPER_LINTER_CUSTOM_IMAGE is empty."
+            echo "Run the super-linter-lean workflow first."
+            exit 1
           fi
-          echo "SUPER_LINTER_IMAGE=${image}" >> "$GITHUB_ENV"
-          echo "Super-Linter image: \`${image}\`" >> "$GITHUB_STEP_SUMMARY"
+          echo "Super-Linter image: \`${SUPER_LINTER_CUSTOM_IMAGE}\`" >> "$GITHUB_STEP_SUMMARY"
       - name: Log in to the registry of the custom image
         if: ${{ env.SUPER_LINTER_CUSTOM == 'true' }}
         env:
@@ -90,7 +91,7 @@ jobs:
           REGISTRY_PASSWORD: ${{ secrets.SUPER_LINTER_REGISTRY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          host="${SUPER_LINTER_IMAGE%%/*}"
+          host="${SUPER_LINTER_CUSTOM_IMAGE%%/*}"
           case "${host}" in
             *.* | *:* | localhost) ;;
             *) host="" ;;
@@ -117,7 +118,8 @@ jobs:
             --env "${SUPER_LINTER_CONFIG_PATH}" --root . --base "origin/${BASE_REF}" --report "${report}" || status=$?
           cat "${report}" >> "$GITHUB_STEP_SUMMARY"
           exit "${status}"
-      - name: Run Super-Linter
+      - name: Run the lean Super-Linter image
+        if: ${{ env.SUPER_LINTER_CUSTOM == 'true' }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
@@ -148,7 +150,7 @@ jobs:
             --volume "$(dirname "${GITHUB_EVENT_PATH}"):/github/workflow"
             --volume "${file_commands}:/github/file_commands"
           )
-          docker run "${args[@]}" "${SUPER_LINTER_IMAGE}"
+          docker run "${args[@]}" "${SUPER_LINTER_CUSTOM_IMAGE}"
       - name: Commit and push linting fixes
         # Run only on:
         # - Pull requests

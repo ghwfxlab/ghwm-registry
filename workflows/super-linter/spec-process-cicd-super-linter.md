@@ -83,7 +83,7 @@ graph TD
 | REQ-002 | Secret Leak Prevention         | High     | Scans Git commit history and working tree using Gitleaks to detect exposed credentials               |
 | REQ-003 | Action Security Auditing       | High     | Analyzes GitHub Actions workflows using actionlint and zizmor for security antipatterns              |
 | REQ-004 | Prose Terminology Verification | Medium   | Enforces natural language consistency and project terminology using textlint                         |
-| REQ-005 | Execution Modes                | High     | Slim, full or custom image, selected by env, with one run step                                       |
+| REQ-005 | Execution Modes                | High     | Slim, full or custom image, selected by env                                                          |
 | REQ-006 | Automated Fix Propagation      | Medium   | Automatically formats and commits lint fixes to pull request branches when autofixing is enabled     |
 | REQ-007 | Pre-lint Custom Hooks          | Low      | Executes user-defined pre-lint setup scripts when `PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH` is specified |
 | REQ-008 | Custom Image                   | Medium   | Runs the image in `SUPER_LINTER_CUSTOM_IMAGE` when `SUPER_LINTER_CUSTOM` is true                     |
@@ -118,7 +118,6 @@ PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH: string  # Optional path to executable scrip
 SUPER_LINTER_CONFIG_PATH: string             # Path to base configuration file (default: .github/super-linter.env)
 SUPER_LINTER_FIX_CONFIG_PATH: string         # Path to auto-fix configuration file (default: .github/super-linter-fix.env)
 RUN_SUPER_LINTER_SLIM: boolean               # Toggle slim container (true) vs full container (false)
-SUPER_LINTER_VERSION: string                 # Upstream Super-Linter release, used as the image tag
 SUPER_LINTER_CUSTOM: boolean                 # true: run SUPER_LINTER_CUSTOM_IMAGE instead (default: false)
 RUN_SUPER_LINTER_FIXES: boolean              # Toggle automated fixing and pushing (default: false)
 
