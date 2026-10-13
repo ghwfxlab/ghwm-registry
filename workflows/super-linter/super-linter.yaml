@@ -102,6 +102,21 @@ jobs:
             printf '%s' "${REGISTRY_PASSWORD}" |
               docker login ${host:+"${host}"} --username "${REGISTRY_USERNAME}" --password-stdin
           fi
+      - name: Install uv for the drift check
+        if: ${{ env.SUPER_LINTER_CUSTOM == 'true' && github.event_name == 'pull_request' }}
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - name: Check the changed files against the lean image
+        if: ${{ env.SUPER_LINTER_CUSTOM == 'true' && github.event_name == 'pull_request' }}
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # The lean image only has the linters the env file enables; fail when a changed file needs another one.
+          report="${RUNNER_TEMP}/drift.md"
+          status=0
+          uvx --from "superlint-lean==0.0.9" superlint-lean drift \
+            --env "${SUPER_LINTER_CONFIG_PATH}" --root . --base "origin/${BASE_REF}" --report "${report}" || status=$?
+          cat "${report}" >> "$GITHUB_STEP_SUMMARY"
+          exit "${status}"
       - name: Run Super-Linter
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
