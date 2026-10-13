@@ -87,6 +87,7 @@ graph TD
 | REQ-006 | Automated Fix Propagation      | Medium   | Automatically formats and commits lint fixes to pull request branches when autofixing is enabled     |
 | REQ-007 | Pre-lint Custom Hooks          | Low      | Executes user-defined pre-lint setup scripts when `PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH` is specified |
 | REQ-008 | Custom Image                   | Medium   | Runs the image in `SUPER_LINTER_CUSTOM_IMAGE` when `SUPER_LINTER_CUSTOM` is true                     |
+| REQ-009 | Lean Image Drift Check         | Medium   | Fails a pull request when a changed file needs a linter the env file does not enable                 |
 
 ### Security Requirements
 
