@@ -2,18 +2,26 @@ import test from 'node:test';
 import assert from 'node:assert';
 import { fetchWorkflowDetailsLive, fetchCatalogLive, formatRelativeTime } from '../src/lib/liveApi.ts';
 
-const json = (body, status = 200) => ({ ok: status < 400, status, json: async () => body });
+const WORKER_URL = 'https://worker.example';
 
-function memStorage() {
-  const m = new Map();
-  return { getItem: (k) => m.get(k) ?? null, setItem: (k, v) => m.set(k, v) };
+function jsonResponse(body, status = 200) {
+  return { ok: status < 400, status, json: async () => body };
 }
 
-test('test_fetchWorkflowDetailsLive_should_read_workflow_from_worker_and_drop_NA_values', async () => {
-  const calls = [];
+function createMemoryStorage() {
+  const entries = new Map();
+  return {
+    getItem: (key) => entries.get(key) ?? null,
+    setItem: (key, value) => entries.set(key, value),
+  };
+}
+
+test('test_fetchWorkflowDetailsLive_should_read_the_workflow_and_drop_NA_values_when_the_worker_responds', async () => {
+  // Arrange
+  const requestedUrls = [];
   const fetchImpl = async (url) => {
-    calls.push(url);
-    return json({
+    requestedUrls.push(url);
+    return jsonResponse({
       workflow_name: 'super-linter',
       title: 'Super Linter',
       description: 'N/A',
@@ -24,67 +32,146 @@ test('test_fetchWorkflowDetailsLive_should_read_workflow_from_worker_and_drop_NA
       metadata_refreshed_at: '2026-10-13T12:00:00.000Z',
     });
   };
-  const live = await fetchWorkflowDetailsLive('https://w.example/', 'super-linter', { fetchImpl, storage: null });
-  assert.deepStrictEqual(calls, ['https://w.example/workflows/super-linter']);
-  assert.strictEqual(live.version, '1.3.0');
-  assert.strictEqual(live.description, null);
-  assert.deepStrictEqual(live.tags, ['lint']);
-  assert.strictEqual(live.installs, 4);
-  assert.strictEqual(live.metadata_refreshed_at, '2026-10-13T12:00:00.000Z');
+
+  // Act
+  const details = await fetchWorkflowDetailsLive(`${WORKER_URL}/`, 'super-linter', { fetchImpl, storage: null });
+
+  // Assert
+  assert.deepStrictEqual(requestedUrls, [`${WORKER_URL}/workflows/super-linter`]);
+  assert.strictEqual(details.version, '1.3.0');
+  assert.strictEqual(details.description, null);
+  assert.deepStrictEqual(details.tags, ['lint']);
+  assert.strictEqual(details.installs, 4);
+  assert.strictEqual(details.metadata_refreshed_at, '2026-10-13T12:00:00.000Z');
 });
 
-test('test_fetchWorkflowDetailsLive_should_return_null_on_error_status_malformed_payload_or_missing_endpoint', async () => {
-  assert.strictEqual(
-    await fetchWorkflowDetailsLive('https://w.example', 'x', { fetchImpl: async () => json({}, 404), storage: null }),
-    null,
-  );
-  assert.strictEqual(
-    await fetchWorkflowDetailsLive('https://w.example', 'x', { fetchImpl: async () => json({ nope: 1 }), storage: null }),
-    null,
-  );
-  assert.strictEqual(
-    await fetchWorkflowDetailsLive('https://w.example', 'x', {
-      fetchImpl: async () => {
-        throw new Error('offline');
-      },
-      storage: null,
-    }),
-    null,
-  );
-  assert.strictEqual(await fetchWorkflowDetailsLive('', 'x', { storage: null }), null);
+test('test_fetchWorkflowDetailsLive_should_return_null_when_the_worker_answers_with_an_error_status', async () => {
+  // Arrange
+  const fetchImpl = async () => jsonResponse({}, 404);
+
+  // Act
+  const details = await fetchWorkflowDetailsLive(WORKER_URL, 'unknown-workflow', { fetchImpl, storage: null });
+
+  // Assert
+  assert.strictEqual(details, null);
 });
 
-test('test_fetchWorkflowDetailsLive_should_abort_on_timeout', async () => {
-  const fetchImpl = (url, { signal }) =>
-    new Promise((_, reject) => signal.addEventListener('abort', () => reject(new Error('aborted'))));
-  const started = Date.now();
-  assert.strictEqual(await fetchWorkflowDetailsLive('https://w.example', 'x', { fetchImpl, timeoutMs: 20, storage: null }), null);
-  assert.ok(Date.now() - started < 1000);
+test('test_fetchWorkflowDetailsLive_should_return_null_when_the_payload_is_malformed', async () => {
+  // Arrange
+  const fetchImpl = async () => jsonResponse({ unexpected: true });
+
+  // Act
+  const details = await fetchWorkflowDetailsLive(WORKER_URL, 'super-linter', { fetchImpl, storage: null });
+
+  // Assert
+  assert.strictEqual(details, null);
 });
 
-test('test_fetchWorkflowDetailsLive_should_cache_within_ttl_and_bypass_cache_when_fresh', async () => {
-  let n = 0;
+test('test_fetchWorkflowDetailsLive_should_return_null_when_the_network_request_fails', async () => {
+  // Arrange
   const fetchImpl = async () => {
-    n++;
-    return json({ workflow_name: 'a', version: '1.0.0' });
+    throw new Error('offline');
   };
-  const storage = memStorage();
-  let t = 1000;
-  const opts = { fetchImpl, storage, ttlMs: 100, now: () => t };
-  await fetchWorkflowDetailsLive('https://w.example', 'a', opts);
-  await fetchWorkflowDetailsLive('https://w.example', 'a', opts);
-  assert.strictEqual(n, 1);
-  await fetchWorkflowDetailsLive('https://w.example', 'a', { ...opts, fresh: true });
-  assert.strictEqual(n, 2);
-  t += 200;
-  await fetchWorkflowDetailsLive('https://w.example', 'a', opts);
-  assert.strictEqual(n, 3);
+
+  // Act
+  const details = await fetchWorkflowDetailsLive(WORKER_URL, 'super-linter', { fetchImpl, storage: null });
+
+  // Assert
+  assert.strictEqual(details, null);
 });
 
-test('test_fetchCatalogLive_should_normalize_rows_and_skip_invalid_entries', async () => {
+test('test_fetchWorkflowDetailsLive_should_return_null_without_calling_the_network_when_no_endpoint_is_configured', async () => {
+  // Arrange
+  let requestCount = 0;
+  const fetchImpl = async () => {
+    requestCount++;
+    return jsonResponse({});
+  };
+
+  // Act
+  const details = await fetchWorkflowDetailsLive('', 'super-linter', { fetchImpl, storage: null });
+
+  // Assert
+  assert.strictEqual(details, null);
+  assert.strictEqual(requestCount, 0);
+});
+
+test('test_fetchWorkflowDetailsLive_should_abort_and_return_null_when_the_request_exceeds_the_timeout', async () => {
+  // Arrange
+  const fetchImpl = (url, { signal }) =>
+    new Promise((resolve, reject) => signal.addEventListener('abort', () => reject(new Error('aborted'))));
+  const startedAtMs = Date.now();
+
+  // Act
+  const details = await fetchWorkflowDetailsLive(WORKER_URL, 'super-linter', {
+    fetchImpl,
+    timeoutMs: 20,
+    storage: null,
+  });
+
+  // Assert
+  assert.strictEqual(details, null);
+  assert.ok(Date.now() - startedAtMs < 1000);
+});
+
+test('test_fetchWorkflowDetailsLive_should_serve_from_cache_when_the_entry_is_within_the_ttl', async () => {
+  // Arrange
+  let requestCount = 0;
+  const fetchImpl = async () => {
+    requestCount++;
+    return jsonResponse({ workflow_name: 'auto-release', version: '1.0.0' });
+  };
+  const options = { fetchImpl, storage: createMemoryStorage(), ttlMs: 100, now: () => 1000 };
+
+  // Act
+  await fetchWorkflowDetailsLive(WORKER_URL, 'auto-release', options);
+  await fetchWorkflowDetailsLive(WORKER_URL, 'auto-release', options);
+
+  // Assert
+  assert.strictEqual(requestCount, 1);
+});
+
+test('test_fetchWorkflowDetailsLive_should_bypass_the_cache_when_fresh_is_requested', async () => {
+  // Arrange
+  let requestCount = 0;
+  const fetchImpl = async () => {
+    requestCount++;
+    return jsonResponse({ workflow_name: 'auto-release', version: '1.0.0' });
+  };
+  const options = { fetchImpl, storage: createMemoryStorage(), ttlMs: 100, now: () => 1000 };
+  await fetchWorkflowDetailsLive(WORKER_URL, 'auto-release', options);
+
+  // Act
+  await fetchWorkflowDetailsLive(WORKER_URL, 'auto-release', { ...options, fresh: true });
+
+  // Assert
+  assert.strictEqual(requestCount, 2);
+});
+
+test('test_fetchWorkflowDetailsLive_should_request_again_when_the_cache_entry_is_older_than_the_ttl', async () => {
+  // Arrange
+  let requestCount = 0;
+  const fetchImpl = async () => {
+    requestCount++;
+    return jsonResponse({ workflow_name: 'auto-release', version: '1.0.0' });
+  };
+  let currentTimeMs = 1000;
+  const options = { fetchImpl, storage: createMemoryStorage(), ttlMs: 100, now: () => currentTimeMs };
+  await fetchWorkflowDetailsLive(WORKER_URL, 'auto-release', options);
+
+  // Act
+  currentTimeMs += 200;
+  await fetchWorkflowDetailsLive(WORKER_URL, 'auto-release', options);
+
+  // Assert
+  assert.strictEqual(requestCount, 2);
+});
+
+test('test_fetchCatalogLive_should_normalize_rows_and_skip_invalid_entries_when_the_catalog_contains_mixed_data', async () => {
+  // Arrange
   const fetchImpl = async (url) => {
-    assert.strictEqual(url, 'https://w.example/catalog');
-    return json({
+    assert.strictEqual(url, `${WORKER_URL}/catalog`);
+    return jsonResponse({
       workflows: [
         {
           workflow_name: 'super-linter',
@@ -100,37 +187,88 @@ test('test_fetchCatalogLive_should_normalize_rows_and_skip_invalid_entries', asy
           created_at: '2026-09-08T12:00:00.000Z',
           last_installed_at: null,
         },
-        { workflow_name: 'third-party', title: 'N/A', tags: [], installs: 'x' },
-        { nope: true },
+        { workflow_name: 'third-party', title: 'N/A', tags: [], installs: 'not-a-number' },
+        { unexpected: true },
         null,
       ],
     });
   };
-  const rows = await fetchCatalogLive('https://w.example', { fetchImpl, storage: null });
-  assert.deepStrictEqual(rows.map((r) => r.name), ['super-linter', 'third-party']);
-  assert.strictEqual(rows[0].version, '1.3.0');
-  assert.strictEqual(rows[0].description, undefined);
-  assert.strictEqual(rows[0].total, 12);
-  assert.match(rows[0].addedFormatted, /2026/);
-  assert.strictEqual(rows[0].lastActiveFormatted, 'None recorded');
-  assert.strictEqual(rows[1].title, undefined);
-  assert.strictEqual(rows[1].tags, undefined);
-  assert.strictEqual(rows[1].installs, 0);
-  assert.strictEqual(rows[1].addedFormatted, 'Unknown');
+
+  // Act
+  const rows = await fetchCatalogLive(WORKER_URL, { fetchImpl, storage: null });
+
+  // Assert
+  assert.deepStrictEqual(rows.map((row) => row.name), ['super-linter', 'third-party']);
+  const [superLinter, thirdParty] = rows;
+  assert.strictEqual(superLinter.version, '1.3.0');
+  assert.strictEqual(superLinter.description, undefined);
+  assert.strictEqual(superLinter.total, 12);
+  assert.match(superLinter.addedFormatted, /2026/);
+  assert.strictEqual(superLinter.lastActiveFormatted, 'None recorded');
+  assert.strictEqual(thirdParty.title, undefined);
+  assert.strictEqual(thirdParty.tags, undefined);
+  assert.strictEqual(thirdParty.installs, 0);
+  assert.strictEqual(thirdParty.addedFormatted, 'Unknown');
 });
 
-test('test_fetchCatalogLive_should_return_null_when_worker_unavailable_or_payload_malformed', async () => {
-  assert.strictEqual(await fetchCatalogLive('https://w.example', { fetchImpl: async () => json({}, 500), storage: null }), null);
-  assert.strictEqual(await fetchCatalogLive('https://w.example', { fetchImpl: async () => json({ workflows: 3 }), storage: null }), null);
-  assert.strictEqual(await fetchCatalogLive('', { storage: null }), null);
+test('test_fetchCatalogLive_should_return_null_when_the_worker_answers_with_an_error_status', async () => {
+  // Arrange
+  const fetchImpl = async () => jsonResponse({}, 500);
+
+  // Act
+  const rows = await fetchCatalogLive(WORKER_URL, { fetchImpl, storage: null });
+
+  // Assert
+  assert.strictEqual(rows, null);
 });
 
-test('test_formatRelativeTime_should_describe_elapsed_time', () => {
-  const now = Date.parse('2026-10-13T12:00:00.000Z');
-  assert.strictEqual(formatRelativeTime('2026-10-13T11:59:50.000Z', now), 'just now');
-  assert.strictEqual(formatRelativeTime('2026-10-13T11:55:00.000Z', now), '5 min ago');
-  assert.strictEqual(formatRelativeTime('2026-10-13T09:00:00.000Z', now), '3 h ago');
-  assert.strictEqual(formatRelativeTime('2026-10-11T12:00:00.000Z', now), '2 d ago');
-  assert.strictEqual(formatRelativeTime(null, now), null);
-  assert.strictEqual(formatRelativeTime('garbage', now), null);
+test('test_fetchCatalogLive_should_return_null_when_the_payload_is_malformed', async () => {
+  // Arrange
+  const fetchImpl = async () => jsonResponse({ workflows: 3 });
+
+  // Act
+  const rows = await fetchCatalogLive(WORKER_URL, { fetchImpl, storage: null });
+
+  // Assert
+  assert.strictEqual(rows, null);
+});
+
+test('test_fetchCatalogLive_should_return_null_when_no_endpoint_is_configured', async () => {
+  // Arrange
+  const options = { storage: null };
+
+  // Act
+  const rows = await fetchCatalogLive('', options);
+
+  // Assert
+  assert.strictEqual(rows, null);
+});
+
+test('test_formatRelativeTime_should_describe_the_elapsed_time_when_a_valid_timestamp_is_given', () => {
+  // Arrange
+  const nowMs = Date.parse('2026-10-13T12:00:00.000Z');
+
+  // Act
+  const descriptions = [
+    formatRelativeTime('2026-10-13T11:59:50.000Z', nowMs),
+    formatRelativeTime('2026-10-13T11:55:00.000Z', nowMs),
+    formatRelativeTime('2026-10-13T09:00:00.000Z', nowMs),
+    formatRelativeTime('2026-10-11T12:00:00.000Z', nowMs),
+  ];
+
+  // Assert
+  assert.deepStrictEqual(descriptions, ['just now', '5 min ago', '3 h ago', '2 d ago']);
+});
+
+test('test_formatRelativeTime_should_return_null_when_the_timestamp_is_missing_or_invalid', () => {
+  // Arrange
+  const nowMs = Date.parse('2026-10-13T12:00:00.000Z');
+
+  // Act
+  const missing = formatRelativeTime(null, nowMs);
+  const invalid = formatRelativeTime('garbage', nowMs);
+
+  // Assert
+  assert.strictEqual(missing, null);
+  assert.strictEqual(invalid, null);
 });

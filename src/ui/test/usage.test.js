@@ -751,107 +751,129 @@ test('test_getWorkflowDetails_should_override_NA_metadata_with_api_fields', asyn
   }
 });
 
-test('test_getTrendingWorkflows_should_list_local_workflows_missing_from_the_catalog_with_zero_installs', async () => {
+test('test_getTrendingWorkflows_should_list_local_workflows_with_zero_installs_when_the_catalog_does_not_contain_them', async () => {
+  // Arrange
+  const catalogPayload = {
+    total_workflows: 1,
+    total_installations: 5,
+    workflows: [{ workflow_name: 'third-party', title: 'Third Party', installs: 5, updates: 0, total: 5 }],
+  };
   const restore = mockFetch(async () =>
-    new Response(
-      JSON.stringify({
-        total_workflows: 1,
-        total_installations: 5,
-        workflows: [{ workflow_name: 'third-party', title: 'Third Party', installs: 5, updates: 0, total: 5 }],
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
+    new Response(JSON.stringify(catalogPayload), { status: 200, headers: { 'Content-Type': 'application/json' } })
   );
 
   try {
+    // Act
     const result = await getTrendingWorkflows('https://api.example.com');
+
+    // Assert
     assert.strictEqual(result.isConnected, true);
-    assert.ok(result.workflows.some((w) => w.name === 'third-party'));
-    for (const name of listLocalWorkflowNames()) {
-      const wf = result.workflows.find((w) => w.name === name);
-      assert.notStrictEqual(wf, undefined, `${name} should be listed`);
-      assert.strictEqual(wf?.installs, 0);
-      assert.notStrictEqual(wf?.title, 'N/A');
+    assert.ok(result.workflows.some((workflow) => workflow.name === 'third-party'));
+    for (const localName of listLocalWorkflowNames()) {
+      const listed = result.workflows.find((workflow) => workflow.name === localName);
+      assert.notStrictEqual(listed, undefined, `${localName} should be listed`);
+      assert.strictEqual(listed?.installs, 0);
+      assert.notStrictEqual(listed?.title, 'N/A');
     }
   } finally {
     restore();
   }
 });
 
-test('test_getTrendingWorkflows_should_prefer_checkout_metadata_over_catalog_for_local_workflows', async () => {
+test('test_getTrendingWorkflows_should_prefer_checkout_metadata_over_catalog_when_the_workflow_is_local', async () => {
+  // Arrange
+  const catalogPayload = {
+    total_workflows: 1,
+    total_installations: 9,
+    workflows: [
+      {
+        workflow_name: 'super-linter',
+        title: 'Stale Title',
+        description: 'Stale description',
+        tags: ['stale'],
+        version: '0.0.1',
+        installs: 9,
+        updates: 0,
+        total: 9,
+        last_installed_at: '2026-09-08T13:36:35.173Z',
+      },
+    ],
+  };
   const restore = mockFetch(async () =>
-    new Response(
-      JSON.stringify({
-        total_workflows: 1,
-        total_installations: 9,
-        workflows: [
-          {
-            workflow_name: 'super-linter',
-            title: 'Stale Title',
-            description: 'Stale description',
-            tags: ['stale'],
-            version: '0.0.1',
-            installs: 9,
-            updates: 0,
-            total: 9,
-            last_installed_at: '2026-09-08T13:36:35.173Z',
-          },
-        ],
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
+    new Response(JSON.stringify(catalogPayload), { status: 200, headers: { 'Content-Type': 'application/json' } })
   );
+  const localMetadata = resolveLocalWorkflowMetadata('super-linter');
 
   try {
+    // Act
     const result = await getTrendingWorkflows('https://api.example.com');
-    const wf = result.workflows.find((w) => w.name === 'super-linter');
-    const local = resolveLocalWorkflowMetadata('super-linter');
-    assert.strictEqual(wf?.title, local.title);
-    assert.strictEqual(wf?.description, local.description);
-    assert.strictEqual(wf?.version, local.version);
-    assert.deepStrictEqual(wf?.tags, local.tags);
+
+    // Assert
+    const listed = result.workflows.find((workflow) => workflow.name === 'super-linter');
+    assert.strictEqual(listed?.title, localMetadata.title);
+    assert.strictEqual(listed?.description, localMetadata.description);
+    assert.strictEqual(listed?.version, localMetadata.version);
+    assert.deepStrictEqual(listed?.tags, localMetadata.tags);
     // Usage numbers always come from the API.
-    assert.strictEqual(wf?.installs, 9);
+    assert.strictEqual(listed?.installs, 9);
   } finally {
     restore();
   }
 });
 
-test('test_getTrendingWorkflows_should_fill_local_gaps_from_the_catalog', async () => {
-  // A local workflow whose checkout lacks a field keeps the API value for it.
+test('test_getTrendingWorkflows_should_keep_the_catalog_source_url_when_the_workflow_is_local', async () => {
+  // Arrange
+  const catalogPayload = {
+    total_workflows: 1,
+    total_installations: 1,
+    workflows: [
+      {
+        workflow_name: 'super-linter',
+        source_url: 'https://github.com/ghwfxlab/ghwm-registry',
+        installs: 1,
+        updates: 0,
+        total: 1,
+      },
+    ],
+  };
   const restore = mockFetch(async () =>
-    new Response(
-      JSON.stringify({
-        total_workflows: 1,
-        total_installations: 1,
-        workflows: [{ workflow_name: 'super-linter', source_url: 'https://github.com/ghwfxlab/ghwm-registry', installs: 1, updates: 0, total: 1 }],
-      }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
+    new Response(JSON.stringify(catalogPayload), { status: 200, headers: { 'Content-Type': 'application/json' } })
   );
 
   try {
+    // Act
     const result = await getTrendingWorkflows('https://api.example.com');
-    const wf = result.workflows.find((w) => w.name === 'super-linter');
-    assert.strictEqual(wf?.sourceUrl, 'https://github.com/ghwfxlab/ghwm-registry');
+
+    // Assert
+    const listed = result.workflows.find((workflow) => workflow.name === 'super-linter');
+    assert.strictEqual(listed?.sourceUrl, 'https://github.com/ghwfxlab/ghwm-registry');
   } finally {
     restore();
   }
 });
 
-test('test_getWorkflowDetails_should_prefer_checkout_metadata_for_local_workflows', async () => {
+test('test_getWorkflowDetails_should_prefer_checkout_metadata_over_the_api_when_the_workflow_is_local', async () => {
+  // Arrange
+  const detailsPayload = {
+    workflow_name: 'super-linter',
+    title: 'Stale Title',
+    version: '0.0.1',
+    installs: 3,
+    updates: 1,
+    total: 4,
+  };
   const restore = mockFetch(async () =>
-    new Response(
-      JSON.stringify({ workflow_name: 'super-linter', title: 'Stale Title', version: '0.0.1', installs: 3, updates: 1, total: 4 }),
-      { status: 200, headers: { 'Content-Type': 'application/json' } }
-    )
+    new Response(JSON.stringify(detailsPayload), { status: 200, headers: { 'Content-Type': 'application/json' } })
   );
+  const localMetadata = resolveLocalWorkflowMetadata('super-linter');
 
   try {
+    // Act
     const details = await getWorkflowDetails('super-linter', 'https://api.example.com');
-    const local = resolveLocalWorkflowMetadata('super-linter');
-    assert.strictEqual(details?.title, local.title);
-    assert.strictEqual(details?.version, local.version);
+
+    // Assert
+    assert.strictEqual(details?.title, localMetadata.title);
+    assert.strictEqual(details?.version, localMetadata.version);
     assert.strictEqual(details?.installs, 3);
   } finally {
     restore();
