@@ -43,12 +43,13 @@ jobs:
       - name: Read the Super-Linter version
         id: version
         run: |
+          # The release is the version comment of the pinned upstream step, which Dependabot keeps current.
           version="$(
-            sed -n 's/^  SUPER_LINTER_VERSION: *\(v[0-9][^ ]*\).*/\1/p' .github/workflows/super-linter.yaml |
-              head -n 1
+            sed -n 's|^ *uses: super-linter/super-linter/slim@[0-9a-f]* *# *\(v[0-9][^ ]*\).*|\1|p' \
+              .github/workflows/super-linter.yaml | head -n 1
           )"
           if [ -z "${version}" ]; then
-            echo "::error::SUPER_LINTER_VERSION not found in .github/workflows/super-linter.yaml"
+            echo "::error::No 'uses: super-linter/super-linter/slim@<sha> # vX.Y.Z' step found in .github/workflows/super-linter.yaml"
             exit 1
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
