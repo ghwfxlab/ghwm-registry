@@ -28,6 +28,11 @@ env:
   SUPER_LINTER_FIX_CONFIG_PATH: .github/super-linter-fix.env
   RUN_SUPER_LINTER_SLIM: true
   RUN_SUPER_LINTER_FIXES: false
+  # Upstream Super-Linter release to run (the image tag)
+  SUPER_LINTER_VERSION: v9.0.0
+  # true: run the lean image published by the super-linter-lean workflow, whose
+  # tag is stored in the SUPER_LINTER_CUSTOM_IMAGE repository variable
+  SUPER_LINTER_CUSTOM: false
 
 jobs:
   super-linter:
@@ -59,16 +64,76 @@ jobs:
         run: |
           echo "Running custom script from ${{ env.PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH }}..."
           ${{ env.PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH }}
-      - name: Run Slim Super-Linter
-        if: ${{ env.RUN_SUPER_LINTER_SLIM == 'true' }}
-        uses: super-linter/super-linter/slim@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
+      - name: Select the Super-Linter image
         env:
+          CUSTOM_IMAGE: ${{ vars.SUPER_LINTER_CUSTOM_IMAGE }}
+        run: |
+          if [ "${SUPER_LINTER_CUSTOM}" = "true" ]; then
+            if [ -z "${CUSTOM_IMAGE}" ]; then
+              echo "::error::SUPER_LINTER_CUSTOM is true but the SUPER_LINTER_CUSTOM_IMAGE variable is empty."
+              echo "Run the super-linter-lean workflow first."
+              exit 1
+            fi
+            image="${CUSTOM_IMAGE}"
+          elif [ "${RUN_SUPER_LINTER_SLIM}" = "true" ]; then
+            image="ghcr.io/super-linter/super-linter:slim-${SUPER_LINTER_VERSION}"
+          else
+            image="ghcr.io/super-linter/super-linter:${SUPER_LINTER_VERSION}"
+          fi
+          echo "SUPER_LINTER_IMAGE=${image}" >> "$GITHUB_ENV"
+          echo "Super-Linter image: \`${image}\`" >> "$GITHUB_STEP_SUMMARY"
+      - name: Log in to the registry of the custom image
+        if: ${{ env.SUPER_LINTER_CUSTOM == 'true' }}
+        env:
+          # The workflow token is only ever sent to ghcr.io; other registries need the secrets.
+          REGISTRY_USERNAME: ${{ secrets.SUPER_LINTER_REGISTRY_USERNAME || github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.SUPER_LINTER_REGISTRY_PASSWORD }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          host="${SUPER_LINTER_IMAGE%%/*}"
+          case "${host}" in
+            *.* | *:* | localhost) ;;
+            *) host="" ;;
+          esac
+          if [ -z "${REGISTRY_PASSWORD}" ] && [ "${host}" = "ghcr.io" ]; then
+            REGISTRY_PASSWORD="${GITHUB_TOKEN}"
+          fi
+          if [ -n "${REGISTRY_PASSWORD}" ]; then
+            printf '%s' "${REGISTRY_PASSWORD}" |
+              docker login ${host:+"${host}"} --username "${REGISTRY_USERNAME}" --password-stdin
+          fi
       - name: Run Super-Linter
-        if: ${{ env.RUN_SUPER_LINTER_SLIM != 'true' }}
-        uses: super-linter/super-linter@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          # Mirror a container action: pass GITHUB_* through, mount the workspace and file commands.
+          args=(--rm --workdir /github/workspace --env-file "${SUPER_LINTER_CONFIG_PATH}")
+          if [ "${RUN_SUPER_LINTER_FIXES}" = "true" ]; then
+            args+=(--env-file "${SUPER_LINTER_FIX_CONFIG_PATH}")
+          fi
+          while IFS='=' read -r name _; do
+            case "${name}" in
+              GITHUB_ENV | GITHUB_OUTPUT | GITHUB_PATH | GITHUB_STATE | GITHUB_STEP_SUMMARY) ;;
+              GITHUB_WORKSPACE | GITHUB_EVENT_PATH) ;;
+              GITHUB_* | RUNNER_*) args+=(--env "${name}") ;;
+            esac
+          done < <(env)
+          file_commands="$(dirname "${GITHUB_OUTPUT}")"
+          args+=(
+            --env CI=true
+            --env GITHUB_ACTIONS=true
+            --env GITHUB_WORKSPACE=/github/workspace
+            --env GITHUB_EVENT_PATH="/github/workflow/$(basename "${GITHUB_EVENT_PATH}")"
+            --env GITHUB_ENV="/github/file_commands/$(basename "${GITHUB_ENV}")"
+            --env GITHUB_OUTPUT="/github/file_commands/$(basename "${GITHUB_OUTPUT}")"
+            --env GITHUB_PATH="/github/file_commands/$(basename "${GITHUB_PATH}")"
+            --env GITHUB_STATE="/github/file_commands/$(basename "${GITHUB_STATE}")"
+            --env GITHUB_STEP_SUMMARY="/github/file_commands/$(basename "${GITHUB_STEP_SUMMARY}")"
+            --volume "${GITHUB_WORKSPACE}:/github/workspace"
+            --volume "$(dirname "${GITHUB_EVENT_PATH}"):/github/workflow"
+            --volume "${file_commands}:/github/file_commands"
+          )
+          docker run "${args[@]}" "${SUPER_LINTER_IMAGE}"
       - name: Commit and push linting fixes
         # Run only on:
         # - Pull requests
