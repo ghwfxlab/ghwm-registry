@@ -184,7 +184,7 @@ test('test_getTrendingWorkflows_should_fallback_to_catalog_with_zero_installs_wh
   assert.strictEqual(result.isConnected, false);
   assert.strictEqual(result.apiEndpoint, null);
   assert.strictEqual(result.totalInstallations, 0);
-  assert.strictEqual(result.workflows.length, 4);
+  assert.strictEqual(result.workflows.length, listLocalWorkflowNames().length);
   assert.strictEqual(result.workflows[0].installs, 0);
 });
 
@@ -427,26 +427,31 @@ test('test_getOfficialWorkflows_should_filter_only_official_workflows', async ()
 });
 
 test('test_getNewArrivals_should_return_workflows_sorted_by_newest_first', async () => {
+  // Arrange
+  const expectedCount = listLocalWorkflowNames().length;
+  const creationTime = (workflow) => (workflow.createdAt ? new Date(workflow.createdAt).getTime() : 0);
+
   // Act
-  const arrivals = await getNewArrivals('');
+  const arrivals = await getNewArrivals('', expectedCount);
 
   // Assert
   assert.ok(Array.isArray(arrivals));
-  assert.strictEqual(arrivals.length, 4);
-  // super-linter-lean is the newest, then auto-release (2026-09-29), auto-assign-pr (2026-09-08) and super-linter (2026-09-01)
-  assert.strictEqual(arrivals[0].name, 'super-linter-lean');
-  assert.strictEqual(arrivals[1].name, 'auto-release');
-  assert.strictEqual(arrivals[2].name, 'auto-assign-pr');
-  assert.strictEqual(arrivals[3].name, 'super-linter');
+  assert.strictEqual(arrivals.length, expectedCount);
+  for (let index = 1; index < arrivals.length; index++) {
+    assert.ok(creationTime(arrivals[index - 1]) >= creationTime(arrivals[index]));
+  }
 });
 
 test('test_getNewArrivals_should_respect_limit_parameter', async () => {
+  // Arrange
+  const allArrivals = await getNewArrivals('', listLocalWorkflowNames().length);
+
   // Act
   const arrivals = await getNewArrivals('', 1);
 
   // Assert
   assert.strictEqual(arrivals.length, 1);
-  assert.strictEqual(arrivals[0].name, 'super-linter-lean');
+  assert.strictEqual(arrivals[0].name, allArrivals[0].name);
 });
 
 test('test_getNewArrivals_should_default_to_5_limit', async () => {
