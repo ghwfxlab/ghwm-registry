@@ -36,7 +36,7 @@ graph TD
     CheckCustomScript -->|"Path provided"| RunCustomScript["Execute Custom Pre-script"]
     CheckCustomScript -->|"None"| SelectImage{"SUPER_LINTER_CUSTOM == 'true'?"}
     RunCustomScript --> SelectImage
-    SelectImage -->|"Yes"| RunCustom["Run the image in vars.SUPER_LINTER_CUSTOM_IMAGE"]
+    SelectImage -->|"Yes"| RunCustom["Run the image in SUPER_LINTER_CUSTOM_IMAGE"]
     SelectImage -->|"No"| SelectRunner{"RUN_SUPER_LINTER_SLIM == 'true'?"}
     SelectRunner -->|"Yes (Default)"| RunSlim["Run the slim image"]
     SelectRunner -->|"No"| RunFull["Run the full image"]
@@ -86,7 +86,7 @@ graph TD
 | REQ-005 | Execution Modes                | High     | Slim, full or custom image, selected by env, with one run step                                       |
 | REQ-006 | Automated Fix Propagation      | Medium   | Automatically formats and commits lint fixes to pull request branches when autofixing is enabled     |
 | REQ-007 | Pre-lint Custom Hooks          | Low      | Executes user-defined pre-lint setup scripts when `PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH` is specified |
-| REQ-008 | Custom Image                   | Medium   | Runs the image in `vars.SUPER_LINTER_CUSTOM_IMAGE` when `SUPER_LINTER_CUSTOM` is true                |
+| REQ-008 | Custom Image                   | Medium   | Runs the image in `SUPER_LINTER_CUSTOM_IMAGE` when `SUPER_LINTER_CUSTOM` is true                |
 
 ### Security Requirements
 
@@ -118,7 +118,7 @@ SUPER_LINTER_CONFIG_PATH: string             # Path to base configuration file (
 SUPER_LINTER_FIX_CONFIG_PATH: string         # Path to auto-fix configuration file (default: .github/super-linter-fix.env)
 RUN_SUPER_LINTER_SLIM: boolean               # Toggle slim container (true) vs full container (false)
 SUPER_LINTER_VERSION: string                 # Upstream Super-Linter release, used as the image tag
-SUPER_LINTER_CUSTOM: boolean                 # true: run vars.SUPER_LINTER_CUSTOM_IMAGE instead (default: false)
+SUPER_LINTER_CUSTOM: boolean                 # true: run SUPER_LINTER_CUSTOM_IMAGE instead (default: false)
 RUN_SUPER_LINTER_FIXES: boolean              # Toggle automated fixing and pushing (default: false)
 
 # Linter Rules Configuration Directory (.github/linters/)
