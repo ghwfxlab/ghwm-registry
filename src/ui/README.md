@@ -88,6 +88,19 @@ To configure the API endpoint used for fetching workflow usage statistics, set `
   WORKER_AUTH_TOKEN=<auth-token> npm run sync-catalog
   ```
 
+## ⚡ Live Metadata
+
+Pages are built statically, but the Worker (`ghwm-deployment`) keeps D1 current with GitHub, so `/registry/` and
+`/workflows/<name>/` read it in the browser (`src/lib/liveApi.ts`) instead of waiting for a rebuild:
+
+- `/workflows/<name>/`: calls `GET {PUBLIC_API_URL}/workflows/:name`. The Worker answers from D1 and, when its metadata is older
+  than 10 minutes, refreshes the row from the workflow's own source repository (ETag-conditional, one caller per
+  workflow per interval). The page patches the version, title and description and shows a "checked N min ago" label;
+  if a refresh was triggered it reads once more after 3 seconds.
+- `/registry/`: calls `GET {PUBLIC_API_URL}/catalog` (a plain D1 read) and merges it over the build-time rows, including
+  install counts and workflows from other registries that were added after the last build.
+- If the Worker is unreachable, the build-time values stay. Responses are cached in `sessionStorage` for 60 seconds.
+
 ## 👀 Want to learn more?
 
 Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).

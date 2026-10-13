@@ -709,4 +709,59 @@ const workflowTableData = workflows.map((w) => ({
   // Initial Load
   initFromUrl();
   applyFilterAndSort();
+
+  // Merge the current catalog from the Worker (D1, kept fresh from GitHub) over the build-time rows.
+  window.addEventListener('ghwm:live-registry', (event) => {
+    const live = event.detail;
+    if (!Array.isArray(live) || live.length === 0) return;
+    const byName = new Map(allWorkflows.map((w) => [w.name, w]));
+    for (const l of live) {
+      const row = byName.get(l.name);
+      if (row) {
+        for (const key of ['title', 'description', 'version', 'tags', 'icon', 'owner']) {
+          if (l[key]) row[key] = l[key];
+        }
+        for (const key of ['installs', 'updates', 'total', 'createdAt', 'addedFormatted', 'lastInstalledAt', 'lastActiveFormatted']) {
+          row[key] = l[key];
+        }
+      } else {
+        allWorkflows.push({
+          packageName: 'N/A',
+          title: l.name,
+          description: '',
+          version: 'N/A',
+          tags: [],
+          icon: 'extension',
+          owner: 'N/A',
+          ...Object.fromEntries(Object.entries(l).filter(([, v]) => v !== undefined)),
+        });
+      }
+    }
+    // Offer tags that only exist in the live catalog in the filter dropdown too.
+    if (tagSelect) {
+      const known = new Set(Array.from(tagSelect.options).map((o) => o.value));
+      const added = new Set();
+      for (const w of allWorkflows) {
+        for (const t of w.tags) {
+          if (t && !known.has(t) && !added.has(t)) {
+            added.add(t);
+            tagSelect.add(new Option(t, t));
+          }
+        }
+      }
+    }
+    applyFilterAndSort();
+  });
+</script>
+
+<script>
+  import { fetchCatalogLive } from '../lib/liveApi.ts';
+
+  // Bundled module: runs after the inline script above has registered its listener.
+  const endpoint = import.meta.env.PUBLIC_API_URL || '';
+  if (endpoint) {
+    fetchCatalogLive(endpoint).then((live) => {
+      if (live) window.dispatchEvent(new CustomEvent('ghwm:live-registry', { detail: live }));
+    });
+  }
 </script>

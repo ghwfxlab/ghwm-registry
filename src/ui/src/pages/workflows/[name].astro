@@ -68,12 +68,18 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
 
         <div class="flex flex-col gap-xs">
           <div class="flex items-center gap-sm flex-wrap">
-            <h1 class="font-headline-lg text-headline-lg font-bold text-on-surface">
+            <h1 id="live-title" class="font-headline-lg text-headline-lg font-bold text-on-surface">
               {workflow.title}
             </h1>
-            <span class="h-[22px] inline-flex items-center font-code-sm text-code-sm bg-surface-container-high border border-outline-variant px-2 rounded text-secondary font-mono">
+            <span
+              id="live-version"
+              data-workflow={workflow.name}
+              title="Version as of the last site build"
+              class="h-[22px] inline-flex items-center font-code-sm text-code-sm bg-surface-container-high border border-outline-variant px-2 rounded text-secondary font-mono"
+            >
               {workflow.version === 'N/A' ? 'N/A' : `v${workflow.version}`}
             </span>
+            <span id="live-checked" class="font-code-sm text-[11px] text-outline hidden"></span>
             {isOfficialProvider(workflow.owner) && (
               <a
                 href={withBase('/official')}
@@ -151,7 +157,7 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
             <span class="material-symbols-outlined text-primary text-[20px]">info</span>
             Overview
           </h2>
-          <p class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
+          <p id="live-description" class="font-body-lg text-body-lg text-on-surface-variant leading-relaxed">
             {workflow.description}
           </p>
         </section>
@@ -257,7 +263,7 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
             1. Add to <code class="font-mono text-secondary">ghwm.yml</code> in your repository:
           </p>
           <div class="terminal-bg border border-outline-variant rounded-default p-sm">
-            <pre class="font-code-sm text-code-sm text-secondary select-all whitespace-pre overflow-x-auto"><code>{ghwmManifestSnippet}</code></pre>
+            <pre class="font-code-sm text-code-sm text-secondary select-all whitespace-pre overflow-x-auto"><code id="live-manifest">{ghwmManifestSnippet}</code></pre>
           </div>
 
           <p class="font-body-sm text-body-sm text-on-surface-variant mt-xs">
@@ -319,6 +325,53 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
 </Layout>
 
 <script>
+  import { fetchWorkflowDetailsLive, formatRelativeTime } from '../../lib/liveApi.ts';
+
+  // The Worker keeps D1 current with GitHub and refreshes this workflow when it is opened,
+  // so reading it here shows the latest version/metadata. Build-time values stay as the fallback.
+  const versionEl = document.getElementById('live-version');
+  const titleEl = document.getElementById('live-title');
+  const descriptionEl = document.getElementById('live-description');
+  const manifestEl = document.getElementById('live-manifest');
+  const checkedEl = document.getElementById('live-checked');
+  const endpoint = import.meta.env.PUBLIC_API_URL || '';
+  const workflowName = versionEl?.dataset.workflow;
+  const REFRESH_TTL_MS = 10 * 60 * 1000;
+
+  function apply(live) {
+    if (live.version && versionEl) {
+      versionEl.textContent = `v${live.version}`;
+      versionEl.title = 'Version from the source repository';
+      if (manifestEl?.textContent) {
+        manifestEl.textContent = manifestEl.textContent.replace(/^(\s*version:\s*).*$/m, `$1${live.version}`);
+      }
+    }
+    if (live.title && titleEl) titleEl.textContent = live.title;
+    if (live.description && descriptionEl) descriptionEl.textContent = live.description;
+    const ago = formatRelativeTime(live.metadata_refreshed_at);
+    if (ago && checkedEl) {
+      checkedEl.textContent = `checked ${ago}`;
+      checkedEl.classList.remove('hidden');
+    }
+  }
+
+  if (workflowName && endpoint) {
+    fetchWorkflowDetailsLive(endpoint, workflowName).then((live) => {
+      if (!live) return;
+      apply(live);
+      // The Worker refreshes in the background when its data is older than the TTL;
+      // read once more shortly after to pick that up.
+      const refreshedAt = live.metadata_refreshed_at ? Date.parse(live.metadata_refreshed_at) : 0;
+      if (Date.now() - refreshedAt > REFRESH_TTL_MS) {
+        setTimeout(() => {
+          fetchWorkflowDetailsLive(endpoint, workflowName, { fresh: true }).then((next) => {
+            if (next) apply(next);
+          });
+        }, 3000);
+      }
+    });
+  }
+
   // Clipboard copy interaction for CLI command
   const copyCliBtn = document.getElementById('copy-cli-btn');
   const copyCliIcon = document.getElementById('copy-cli-icon');
