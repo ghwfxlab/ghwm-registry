@@ -709,4 +709,48 @@ const workflowTableData = workflows.map((w) => ({
   // Initial Load
   initFromUrl();
   applyFilterAndSort();
+
+  // Merge live GitHub metadata over the build-time rows (installs/dates stay from the build).
+  window.addEventListener('ghwm:live-registry', (event) => {
+      const live = event.detail;
+      if (!Array.isArray(live) || live.length === 0) return;
+      const byName = new Map(allWorkflows.map((w) => [w.name, w]));
+      for (const l of live) {
+        const row = byName.get(l.name);
+        if (row) {
+          if (l.version) row.version = l.version;
+          if (l.title) row.title = l.title;
+          if (l.description) row.description = l.description;
+          if (l.tags) row.tags = l.tags;
+        } else {
+          allWorkflows.push({
+            name: l.name,
+            title: l.title ?? l.name,
+            packageName: '@ghwfxlab/' + l.name,
+            description: l.description ?? '',
+            version: l.version ?? 'N/A',
+            tags: l.tags ?? [],
+            icon: l.icon ?? 'extension',
+            installs: 0,
+            updates: 0,
+            total: 0,
+            createdAt: null,
+            addedFormatted: 'Unknown',
+            lastInstalledAt: null,
+            lastActiveFormatted: 'None recorded',
+            owner: l.owner ?? 'ghwfxlab',
+          });
+        }
+      }
+      applyFilterAndSort();
+  });
+</script>
+
+<script>
+  import { fetchRegistryLive } from '../lib/ghLive.ts';
+
+  // Bundled module: runs after the inline script above has registered its listener.
+  fetchRegistryLive({ endpoint: import.meta.env.PUBLIC_API_URL }).then((live) => {
+    if (live) window.dispatchEvent(new CustomEvent('ghwm:live-registry', { detail: live }));
+  });
 </script>

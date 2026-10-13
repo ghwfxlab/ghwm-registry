@@ -382,7 +382,7 @@ export async function getRegistryWorkflows(customEndpoint?: string): Promise<{
       workflows.push({
         name: stat.workflow_name,
         packageName: meta.packageName,
-        version: stat.version && stat.version !== 'N/A' ? stat.version : meta.version,
+        version: meta.version !== 'N/A' ? meta.version : stat.version && stat.version !== 'N/A' ? stat.version : 'N/A',
         title: stat.title && stat.title !== 'N/A' ? stat.title : meta.title,
         description: stat.description && stat.description !== 'N/A' ? stat.description : meta.description,
         tags: hasValidTags ? (stat.tags as string[]) : meta.tags,
@@ -448,7 +448,7 @@ export async function getWorkflowDetails(
     tags: hasValidTags ? (stat?.tags as string[]) : meta.tags,
     icon: stat?.icon && stat.icon !== 'N/A' ? stat.icon : meta.icon,
     owner: stat?.owner && stat.owner !== 'N/A' ? stat.owner : meta.owner,
-    version: stat?.version && stat.version !== 'N/A' ? stat.version : meta.version,
+    version: meta.version !== 'N/A' ? meta.version : stat?.version && stat.version !== 'N/A' ? stat.version : 'N/A',
     createdAt: stat?.created_at && stat.created_at !== 'N/A' ? stat.created_at : meta.createdAt,
     sourceUrl: stat?.source_url && stat.source_url !== 'N/A' ? stat.source_url : null,
     installs: stat ? Number(stat.installs) || 0 : 0,

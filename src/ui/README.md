@@ -88,6 +88,20 @@ To configure the API endpoint used for fetching workflow usage statistics, set `
   WORKER_AUTH_TOKEN=<auth-token> npm run sync-catalog
   ```
 
+## ⚡ Live Metadata
+
+The home page is static. `/registry/` and `/workflows/<name>/` hydrate version, title, description and tags in the
+browser (`src/lib/ghLive.ts`) so they never lag a release:
+
+1. `GET {PUBLIC_API_URL}/live` and `/live/:name` on the Worker (token-backed, edge-cached ~60s).
+2. Fallback: `raw.githubusercontent.com/ghwfxlab/ghwm-registry/main/workflows/...` (plus one `api.github.com` listing call on the registry page).
+3. Fallback: the values baked in at build time.
+
+Results are cached in `sessionStorage` for 2 minutes. Install and update counts always come from the build.
+
+Worker contract: `GET /live` returns `{ generated_at, workflows: [{ name, version, title, description, tags, icon, owner }] }`;
+`GET /live/:name` returns one item or 404. Send `Cache-Control: public, max-age=60` and allow CORS from the site origin.
+
 ## 👀 Want to learn more?
 
 Feel free to check [our documentation](https://docs.astro.build) or jump into our [Discord server](https://astro.build/chat).
