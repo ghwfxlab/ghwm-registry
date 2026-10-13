@@ -49,7 +49,7 @@ jobs:
               .github/workflows/super-linter.yaml | head -n 1
           )"
           if [ -z "${version}" ]; then
-            echo "::error::No 'uses: super-linter/super-linter/slim@<sha> # vX.Y.Z' step found in .github/workflows/super-linter.yaml"
+            echo "::error::No 'super-linter/super-linter/slim@<sha> # vX.Y.Z' step in super-linter.yaml"
             exit 1
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
