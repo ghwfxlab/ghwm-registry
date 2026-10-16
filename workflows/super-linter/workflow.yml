@@ -17,6 +17,8 @@ files:
     target: .github/super-linter.env
   - source: config/super-linter-fix.env
     target: .github/super-linter-fix.env
+  - source: config/super-linter-workflow.env
+    target: .github/super-linter-workflow.env
   - source: config/linters/.yaml-lint.yml
     target: .github/linters/.yaml-lint.yml
   - source: config/linters/.markdown-lint.yml
