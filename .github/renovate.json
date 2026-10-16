@@ -1,32 +1,34 @@
 {
-  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
-  "branchPrefix": "renovate-workflows/",
-  "internalChecksFilter": "strict",
-  "minimumReleaseAge": "7 days",
-  "prCreation": "immediate",
-  "dependencyDashboard": false,
-  "enabledManagers": ["github-actions", "pre-commit", "custom.regex"],
-  "labels": ["flag:dependencies"],
-  "includePaths": ["workflows/**", ".pre-commit-config.yaml", "Makefile"],
-  "github-actions": {
-    "managerFilePatterns": ["/(^|/)workflows/[^/]+/[^/]+\\.ya?ml$/"]
-  },
-  "postUpgradeTasks": {
-    "commands": ["bash scripts/bump_renovate_packages.sh \"{{{baseBranch}}}\""],
-    "fileFilters": ["workflows/**/package.json"],
-    "executionMode": "branch"
-  },
-  "customManagers": [
-    {
-      "customType": "regex",
-      "description": "Update pinned Super-Linter image references in Makefile",
-      "managerFilePatterns": ["/^Makefile$/"],
-      "matchStrings": [
-        "ghcr\\.io/super-linter/super-linter:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
-      ],
-      "depNameTemplate": "ghcr.io/super-linter/super-linter",
-      "datasourceTemplate": "docker"
-    }
-  ]
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "extends": ["config:recommended", "helpers:pinGitHubActionDigests"],
+    "branchPrefix": "renovate-workflows/",
+    "internalChecksFilter": "strict",
+    "minimumReleaseAge": "7 days",
+    "prCreation": "immediate",
+    "dependencyDashboard": false,
+    "enabledManagers": ["github-actions", "pre-commit", "custom.regex"],
+    "labels": ["flag:dependencies"],
+    "includePaths": ["workflows/**", ".pre-commit-config.yaml", "Makefile"],
+    "github-actions": {
+        "managerFilePatterns": ["/(^|/)workflows/[^/]+/[^/]+\\.ya?ml$/"]
+    },
+    "postUpgradeTasks": {
+        "commands": [
+            "bash scripts/bump_renovate_packages.sh \"{{{baseBranch}}}\""
+        ],
+        "fileFilters": ["workflows/**/package.json"],
+        "executionMode": "branch"
+    },
+    "customManagers": [
+        {
+            "customType": "regex",
+            "description": "Update pinned Super-Linter image references in Makefile",
+            "managerFilePatterns": ["/^Makefile$/"],
+            "matchStrings": [
+                "ghcr\\.io/super-linter/super-linter:(?<currentValue>[^@\\s]+)@(?<currentDigest>sha256:[a-f0-9]+)"
+            ],
+            "depNameTemplate": "ghcr.io/super-linter/super-linter",
+            "datasourceTemplate": "docker"
+        }
+    ]
 }

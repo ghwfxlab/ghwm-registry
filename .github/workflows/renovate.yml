@@ -23,6 +23,9 @@ jobs:
         # yamllint disable rule:line-length
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
         # yamllint enable rule:line-length
+        with:
+          persist-credentials: false
+
 
       - name: Run Renovate
         # v46.1.15

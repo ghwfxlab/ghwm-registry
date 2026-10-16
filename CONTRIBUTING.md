@@ -173,5 +173,6 @@ When Renovate upgrades an action dependency inside a workflow file (under `workf
 ### Repository requirements
 
 To operate Renovate in GitHub Actions:
+
 - `RENOVATE_TOKEN` repository secret configured with a personal access token (PAT) or GitHub App token that has `contents: write`, `pull-requests: write`, and `workflows: write` permissions.
 - In **Settings** → **Actions** → **General** → **Workflow permissions**, the option **"Allow GitHub Actions to create and approve pull requests"** must be enabled.
