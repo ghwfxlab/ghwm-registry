@@ -2,4 +2,7 @@
 .github/workflows/*.md
 .github/workflows/*.lock.yml
 .venv/
+.venv/**
 node_modules/
+node_modules/**
+

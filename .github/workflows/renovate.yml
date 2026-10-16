@@ -1,0 +1,38 @@
+---
+name: Renovate
+
+on:  # yamllint disable-line rule:truthy
+  schedule:
+    - cron: '0 3 * * *' # everyday at 3 am
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: renovate
+  cancel-in-progress: false
+
+jobs:
+  renovate:
+    name: Run Renovate
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout The Source Code
+        # yamllint disable rule:line-length
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1  # v7.0.1
+        # yamllint enable rule:line-length
+        with:
+          persist-credentials: false
+
+
+      - name: Run Renovate
+        # v46.1.15
+        uses: renovatebot/github-action@9fea9f0fbf80401026d11d03911d62b1f70fef1f
+        env:
+          RENOVATE_REPOSITORIES: ${{ github.repository }}
+          RENOVATE_ALLOWED_POST_UPGRADE_COMMANDS: '["^bash scripts/bump_renovate_packages\\.sh.*$"]'
+        with:
+          configurationFile: .github/renovate-config.js
+          token: ${{ secrets.RENOVATE_TOKEN }}

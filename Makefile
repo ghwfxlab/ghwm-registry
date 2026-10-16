@@ -117,19 +117,25 @@ lang-fix: check-lang-env
 	@echo "[lang-fix] Running textlint --fix..."
 	@npx textlint --config $(TEXTLINT_CONFIG) --ignore-path $(TEXTLINT_IGNORE) . --fix
 
+VENV_DIR ?= .venv
+PYTHON := $(if $(wildcard $(VENV_DIR)/bin/python3),$(VENV_DIR)/bin/python3,python3)
+
 check-script-env:
 	@echo "[check-script-env] Ensuring Python environment for helper scripts..."
 	@which python3 >/dev/null 2>&1 || (echo "[check-script-env] ❌ python3 not found; install Python" && exit 1)
-	@python3 -c "import yaml" >/dev/null 2>&1 || ( \
-		echo "[check-script-env] Installing dependencies from scripts/requirements.txt..." && \
-		python3 -m pip install -q -r scripts/requirements.txt \
-	)
+	@if ! $(PYTHON) -c "import yaml" >/dev/null 2>&1; then \
+		echo "[check-script-env] Installing dependencies from scripts/requirements.txt..."; \
+		python3 -m pip install -q -r scripts/requirements.txt 2>/dev/null || ( \
+			python3 -m venv $(VENV_DIR) && \
+			$(VENV_DIR)/bin/python3 -m pip install -q -r scripts/requirements.txt \
+		); \
+	fi
 	@echo "[check-script-env] OK"
 
 script-tests: check-script-env
 	@echo "[script-tests] Running helper script tests..."
-	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_workflow_package_versions.py -v
-	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_evaluate_release_paths.py -v
+	@PATH="$(PWD)/$(VENV_DIR)/bin:$$PATH" PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_workflow_package_versions.py -v
+	@PATH="$(PWD)/$(VENV_DIR)/bin:$$PATH" PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_evaluate_release_paths.py -v
 
 ui-tests:
 	@echo "[ui-tests] Running UI unit tests..."
@@ -137,12 +143,15 @@ ui-tests:
 
 setup-precommit: check-script-env
 	@echo "[setup-precommit] Installing pre-commit hooks..."
-	@python3 -m pip install pre-commit
-	@pre-commit install --install-hooks
+	@python3 -m pip install pre-commit 2>/dev/null || ( \
+		[ -x "$(VENV_DIR)/bin/python3" ] || python3 -m venv $(VENV_DIR); \
+		$(VENV_DIR)/bin/python3 -m pip install pre-commit \
+	)
+	@PATH="$(PWD)/$(VENV_DIR)/bin:$$PATH" pre-commit install --install-hooks
 
 precommit:
 	@echo "[precommit] Running pre-commit..."
-	@pre-commit run --all-files
+	@PATH="$(PWD)/$(VENV_DIR)/bin:$$PATH" pre-commit run --all-files
 
 super-linter:
 	@echo "[super-linter] Running super-linter via Docker..."
