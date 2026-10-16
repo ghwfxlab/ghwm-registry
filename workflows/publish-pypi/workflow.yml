@@ -1,0 +1,4 @@
+name: publish-pypi
+files:
+  - source: publish-pypi.yaml
+    target: .github/workflows/publish-pypi.yaml

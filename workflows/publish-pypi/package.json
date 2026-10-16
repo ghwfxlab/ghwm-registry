@@ -1,0 +1,12 @@
+{
+    "name": "@ghwfxlab/publish-pypi",
+    "version": "1.0.0",
+    "description": "Build a Python package and publish it to PyPI with trusted publishing.",
+    "files": [
+        "publish-pypi.yaml",
+        "workflow.yml"
+    ],
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    }
+}

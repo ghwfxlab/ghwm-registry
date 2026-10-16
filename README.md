@@ -84,6 +84,7 @@ We use a `Makefile` at the root of the repository to manage tasks across differe
 | ---------------- | -------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------- |
 | `auto-assign-pr` | Automatically add pull-request reviewers and assignees using [kentaro-m/auto-assign-action](https://github.com/kentaro-m/auto-assign-action) | [Readme](workflows/auto-assign-pr/README.md) |
 | `super-linter`   | Code linting using [Super-Linter](https://github.com/super-linter/super-linter) and pre-commit hooks                                         | [Readme](workflows/super-linter/README.md)   |
+| `publish-pypi`   | Build a Python package and publish it to PyPI with trusted publishing                                                                        | [Readme](workflows/publish-pypi/README.md)   |
 
 ---
 

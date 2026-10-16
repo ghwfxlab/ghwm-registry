@@ -1,0 +1,97 @@
+# ---
+# title: Publish to PyPI
+# description: Build a Python package and publish it to PyPI with trusted publishing, so no API token is stored.
+# tags:
+#   - python
+#   - pypi
+#   - release
+# icon: deployed_code
+# owner: ghwfxlab
+# ---
+---
+name: Publish to PyPI
+
+# Publishes a release to PyPI with trusted publishing (OIDC, no stored token).
+#
+#   release: published   starts when a release is created with a GitHub App or
+#                        personal token. A release created with GITHUB_TOKEN
+#                        does not start other workflows.
+#   workflow_dispatch    publish an existing release by tag, for example v1.2.3.
+#
+# The build job has read-only access. Only the publish job gets id-token: write,
+# and it runs in the pypi environment so a required reviewer can gate it.
+
+on: # yamllint disable-line rule:truthy
+  release:
+    types:
+      - published
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: Release tag to publish, for example v1.2.3
+        required: true
+
+permissions: {}
+
+concurrency:
+  group: publish-pypi
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build Distributions
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout The Source Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.release.tag_name || inputs.tag }}
+          fetch-depth: 0 # version tools such as hatch-vcs read the tags
+          persist-credentials: false
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        with:
+          enable-cache: false # avoid cache poisoning in a release-triggered publish
+
+      - name: Build sdist and wheel
+        run: uv build
+
+      - name: Check that the build is the release version
+        env:
+          TAG: ${{ github.event.release.tag_name || inputs.tag }}
+        run: |
+          ls dist
+          version="${TAG#v}"
+          if ! ls dist | grep -qE -- "-${version//./\\.}(\\.|-)"; then
+            echo "::error::dist does not contain version ${version}; refusing to publish a development build."
+            exit 1
+          fi
+
+      - name: Upload distributions
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: Publish to PyPI
+    runs-on: ubuntu-24.04
+    needs: build
+    permissions:
+      id-token: write # PyPI trusted publishing (OIDC)
+    environment:
+      name: pypi
+      url: https://pypi.org/project/${{ github.event.repository.name }}/
+    steps:
+      - name: Download distributions
+        uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+
+      - name: Publish package distributions to PyPI
+        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
