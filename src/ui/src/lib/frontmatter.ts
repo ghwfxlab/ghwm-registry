@@ -364,7 +364,17 @@ export function listLocalWorkflowNames(workflowsDir = getDefaultWorkflowsDir()):
   try {
     const entries = fs.readdirSync(workflowsDir, { withFileTypes: true });
     return entries
-      .filter((entry) => entry.isDirectory())
+      .filter((entry) => {
+        if (!entry.isDirectory()) return false;
+        const dirPath = path.join(workflowsDir, entry.name);
+        return [
+          'package.json',
+          `${entry.name}.yaml`,
+          `${entry.name}.yml`,
+          'workflow.yml',
+          'workflow.yaml',
+        ].some((file) => fs.existsSync(path.join(dirPath, file)));
+      })
       .map((entry) => entry.name)
       .sort();
   } catch {
