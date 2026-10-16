@@ -28,6 +28,8 @@ env:
   SUPER_LINTER_FIX_CONFIG_PATH: .github/super-linter-fix.env
   RUN_SUPER_LINTER_SLIM: true
   RUN_SUPER_LINTER_FIXES: false
+  # Settings of this workflow: SUPER_LINTER_CUSTOM_IMAGE and RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK
+  SUPER_LINTER_WORKFLOW_CONFIG_PATH: .github/super-linter-workflow.env
 
 jobs:
   super-linter:
@@ -45,6 +47,12 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
+      - name: Load workflow configuration
+        run: |
+          if [ -f "${SUPER_LINTER_WORKFLOW_CONFIG_PATH}" ]; then
+            echo "Loading workflow configuration from ${SUPER_LINTER_WORKFLOW_CONFIG_PATH}"
+            grep -Ev '^[[:space:]]*(#|$)' "${SUPER_LINTER_WORKFLOW_CONFIG_PATH}" >> "$GITHUB_ENV" || true
+          fi
       - name: Load Super-Linter configuration
         run: |
           echo "Loading Super-Linter configuration from ${{ env.SUPER_LINTER_CONFIG_PATH }}"
@@ -60,15 +68,89 @@ jobs:
           echo "Running custom script from ${{ env.PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH }}..."
           ${{ env.PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH }}
       - name: Run Slim Super-Linter
-        if: ${{ env.RUN_SUPER_LINTER_SLIM == 'true' }}
+        if: ${{ env.SUPER_LINTER_CUSTOM_IMAGE == '' && env.RUN_SUPER_LINTER_SLIM == 'true' }}
         uses: super-linter/super-linter/slim@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run Super-Linter
-        if: ${{ env.RUN_SUPER_LINTER_SLIM != 'true' }}
+        if: ${{ env.SUPER_LINTER_CUSTOM_IMAGE == '' && env.RUN_SUPER_LINTER_SLIM != 'true' }}
         uses: super-linter/super-linter@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      - name: Install uv for the drift check
+        if: >
+          env.SUPER_LINTER_CUSTOM_IMAGE != '' && env.RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK == 'true' &&
+          github.event_name == 'pull_request'
+        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+      - name: Check the changed files against the lean image
+        if: >
+          env.SUPER_LINTER_CUSTOM_IMAGE != '' && env.RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK == 'true' &&
+          github.event_name == 'pull_request'
+        env:
+          BASE_REF: ${{ github.base_ref }}
+        run: |
+          # The lean image only has the linters the env file enables; fail when a changed file needs another one.
+          report="${RUNNER_TEMP}/drift.md"
+          status=0
+          uvx --from "superlint-lean==0.0.9" superlint-lean drift \
+            --env "${SUPER_LINTER_CONFIG_PATH}" --root . --base "origin/${BASE_REF}" --report "${report}" || status=$?
+          cat "${report}" >> "$GITHUB_STEP_SUMMARY"
+          exit "${status}"
+      # A plain docker run, not a `uses: docker://` step: the runner pulls the image of every action step when the
+      # job starts, before any login, so an action step cannot use a private registry and the image cannot come from
+      # a file. The login uses a temporary Docker config so a stale token never stays on a self-hosted runner.
+      - name: Run the custom Super-Linter image
+        if: ${{ env.SUPER_LINTER_CUSTOM_IMAGE != '' }}
+        env:
+          # The workflow token is only ever sent to ghcr.io; other registries need the secrets.
+          REGISTRY_USERNAME: ${{ secrets.SUPER_LINTER_REGISTRY_USERNAME || github.actor }}
+          REGISTRY_PASSWORD: ${{ secrets.SUPER_LINTER_REGISTRY_PASSWORD }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}
+        run: |
+          DOCKER_CONFIG="$(mktemp -d)"
+          export DOCKER_CONFIG
+          trap 'rm -rf "${DOCKER_CONFIG}"' EXIT
+          host="${SUPER_LINTER_CUSTOM_IMAGE%%/*}"
+          case "${host}" in
+            *.* | *:* | localhost) ;;
+            *) host="" ;;
+          esac
+          if [ -z "${REGISTRY_PASSWORD}" ] && [ "${host}" = "ghcr.io" ]; then
+            REGISTRY_PASSWORD="${GITHUB_TOKEN}"
+          fi
+          if [ -n "${REGISTRY_PASSWORD}" ]; then
+            printf '%s' "${REGISTRY_PASSWORD}" |
+              docker login ${host:+"${host}"} --username "${REGISTRY_USERNAME}" --password-stdin
+          fi
+          echo "Super-Linter image: \`${SUPER_LINTER_CUSTOM_IMAGE}\`" >> "$GITHUB_STEP_SUMMARY"
+          # Mirror a container action: pass GITHUB_* through, mount the workspace and the file commands.
+          args=(--rm --workdir /github/workspace --env-file "${SUPER_LINTER_CONFIG_PATH}")
+          if [ "${RUN_SUPER_LINTER_FIXES}" = "true" ]; then
+            args+=(--env-file "${SUPER_LINTER_FIX_CONFIG_PATH}")
+          fi
+          while IFS='=' read -r name _; do
+            case "${name}" in
+              GITHUB_ENV | GITHUB_OUTPUT | GITHUB_PATH | GITHUB_STATE | GITHUB_STEP_SUMMARY) ;;
+              GITHUB_WORKSPACE | GITHUB_EVENT_PATH) ;;
+              GITHUB_* | RUNNER_* | DEFAULT_BRANCH) args+=(--env "${name}") ;;
+            esac
+          done < <(env)
+          args+=(
+            --env CI=true
+            --env GITHUB_ACTIONS=true
+            --env GITHUB_WORKSPACE=/github/workspace
+            --env GITHUB_EVENT_PATH="/github/workflow/$(basename "${GITHUB_EVENT_PATH}")"
+            --env GITHUB_ENV="/github/file_commands/$(basename "${GITHUB_ENV}")"
+            --env GITHUB_OUTPUT="/github/file_commands/$(basename "${GITHUB_OUTPUT}")"
+            --env GITHUB_PATH="/github/file_commands/$(basename "${GITHUB_PATH}")"
+            --env GITHUB_STATE="/github/file_commands/$(basename "${GITHUB_STATE}")"
+            --env GITHUB_STEP_SUMMARY="/github/file_commands/$(basename "${GITHUB_STEP_SUMMARY}")"
+            --volume "${GITHUB_WORKSPACE}:/github/workspace"
+            --volume "$(dirname "${GITHUB_EVENT_PATH}"):/github/workflow"
+            --volume "$(dirname "${GITHUB_OUTPUT}"):/github/file_commands"
+          )
+          docker run "${args[@]}" "${SUPER_LINTER_CUSTOM_IMAGE}"
       - name: Commit and push linting fixes
         # Run only on:
         # - Pull requests
