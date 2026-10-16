@@ -30,7 +30,7 @@ Depending on your configuration, Super-Linter can run in one of three modes:
 
 1. **Slim Mode (Default)**: Uses the lightweight `super-linter/super-linter/slim` image. It is faster to pull and start, and is ideal for projects that do not need heavier, platform-specific tooling.
 2. **Standard/Full Mode**: Uses the full `super-linter/super-linter` image. This includes all supported linters, adding coverage for languages like **Rust** (Rustfmt/Clippy), **PowerShell** (PSScriptAnalyzer), **.NET** (dotnet tools), and **Azure Resource Manager** (arm-ttk).
-3. **Custom Mode**: Runs a lean image published by the `super-linter-lean` workflow, which contains only the linters your `.github/super-linter.env` enables, so the linting itself starts and runs faster. The upstream steps are skipped, but the runner still pulls their images at job start. See [Run the lean image](#example-run-the-lean-image).
+3. **Custom Mode**: Runs a lean image published by the [`super-linter-lean`](../super-linter-lean/README.md) workflow, which contains only the linters your `.github/super-linter.env` enables, so the linting itself starts and runs faster. The upstream steps are skipped, but the runner still pulls their images at job start. See [Run the lean image](#example-run-the-lean-image).
 
 | Job | Environment Controls | Description |
 | --- | --- | --- |
