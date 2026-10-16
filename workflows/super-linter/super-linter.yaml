@@ -28,8 +28,12 @@ env:
   SUPER_LINTER_FIX_CONFIG_PATH: .github/super-linter-fix.env
   RUN_SUPER_LINTER_SLIM: true
   RUN_SUPER_LINTER_FIXES: false
-  # true: run the lean image in the "Run the lean Super-Linter image" step
-  SUPER_LINTER_CUSTOM: false
+  # true: run your own Super-Linter image (may be a lean one) in the
+  # "Run the custom Super-Linter image" step instead of the upstream images
+  RUN_SUPER_LINTER_CUSTOM: false
+  # true: on pull requests, fail when a changed file needs a linter that
+  # SUPER_LINTER_CONFIG_PATH does not enable. Only useful for a lean image.
+  RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK: false
 
 jobs:
   super-linter:
@@ -62,20 +66,24 @@ jobs:
           echo "Running custom script from ${{ env.PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH }}..."
           ${{ env.PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH }}
       - name: Run Slim Super-Linter
-        if: ${{ env.SUPER_LINTER_CUSTOM != 'true' && env.RUN_SUPER_LINTER_SLIM == 'true' }}
+        if: ${{ env.RUN_SUPER_LINTER_CUSTOM != 'true' && env.RUN_SUPER_LINTER_SLIM == 'true' }}
         uses: super-linter/super-linter/slim@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Run Super-Linter
-        if: ${{ env.SUPER_LINTER_CUSTOM != 'true' && env.RUN_SUPER_LINTER_SLIM != 'true' }}
+        if: ${{ env.RUN_SUPER_LINTER_CUSTOM != 'true' && env.RUN_SUPER_LINTER_SLIM != 'true' }}
         uses: super-linter/super-linter@2da136927bd4a73596db63044b504547c62cb854 # v9.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Install uv for the drift check
-        if: ${{ env.SUPER_LINTER_CUSTOM == 'true' && github.event_name == 'pull_request' }}
+        if: >
+          env.RUN_SUPER_LINTER_CUSTOM == 'true' && env.RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK == 'true' &&
+          github.event_name == 'pull_request'
         uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
       - name: Check the changed files against the lean image
-        if: ${{ env.SUPER_LINTER_CUSTOM == 'true' && github.event_name == 'pull_request' }}
+        if: >
+          env.RUN_SUPER_LINTER_CUSTOM == 'true' && env.RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK == 'true' &&
+          github.event_name == 'pull_request'
         env:
           BASE_REF: ${{ github.base_ref }}
         run: |
@@ -86,9 +94,9 @@ jobs:
             --env "${SUPER_LINTER_CONFIG_PATH}" --root . --base "origin/${BASE_REF}" --report "${report}" || status=$?
           cat "${report}" >> "$GITHUB_STEP_SUMMARY"
           exit "${status}"
-      - name: Run the lean Super-Linter image
-        if: ${{ env.SUPER_LINTER_CUSTOM == 'true' }}
-        # Replace the image with your lean image; the default is the upstream slim image.
+      - name: Run the custom Super-Linter image
+        if: ${{ env.RUN_SUPER_LINTER_CUSTOM == 'true' }}
+        # Replace the image with your own; the default is the upstream slim image.
         uses: docker://ghcr.io/super-linter/super-linter:slim-v9.0.0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
