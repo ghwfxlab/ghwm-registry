@@ -1,12 +1,12 @@
 {
-  "name": "@ghwfxlab/ghwm-update",
-  "version": "1.0.0",
-  "description": "Update GitHub Workflows Marketplace workflows to the latest version",
-  "files": [
-    "ghwm-update.yaml",
-    "workflow.yml"
-  ],
-  "publishConfig": {
-    "registry": "https://npm.pkg.github.com"
-  }
+    "name": "@ghwfxlab/ghwm-update",
+    "version": "1.0.0",
+    "description": "Update GitHub Workflows Marketplace workflows to the latest version",
+    "files": [
+        "ghwm-update.yaml",
+        "workflow.yml"
+    ],
+    "publishConfig": {
+        "registry": "https://npm.pkg.github.com"
+    }
 }

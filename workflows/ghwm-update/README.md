@@ -164,4 +164,3 @@ remaining manifest entries.
   `ghwm.yml`.
 - The `ghwm` CLI is installed via `uv tool install git+https://github.com/ghwfxlab/ghwm.git@<tag>`
   (pinned via `env.GHWM_VERSION`, currently `v1.10.0`), which pins the CLI to a release tag.
-
