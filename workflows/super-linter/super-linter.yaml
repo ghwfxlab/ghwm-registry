@@ -32,8 +32,11 @@ env:
   RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK: false
 
 jobs:
+  # Every job reads its runner from the SUPER_LINTER_RUNS_ON repository (or organisation) variable, as JSON:
+  # unset runs on GitHub-hosted ubuntu-24.04, "my-runner" or ["self-hosted", "linux"] runs on your own runners.
+  # It is a variable, not an env value, because runs-on cannot read the workflow env.
   setup:
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
     outputs:
       run_slim: ${{ env.RUN_SUPER_LINTER_SLIM }}
       run_custom: ${{ env.SUPER_LINTER_CUSTOM_IMAGE }}
@@ -44,7 +47,7 @@ jobs:
     name: Run Super-Linter
     needs: setup
     if: needs.setup.outputs.run_slim != 'true' && needs.setup.outputs.run_custom == ''
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
     permissions:
       contents: write
       issues: write
@@ -98,7 +101,7 @@ jobs:
     name: Run Super-Linter Slim
     needs: setup
     if: needs.setup.outputs.run_slim == 'true' && needs.setup.outputs.run_custom == ''
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
     permissions:
       contents: write
       issues: write
@@ -152,7 +155,7 @@ jobs:
     name: Run Super-Linter Custom Image
     needs: setup
     if: needs.setup.outputs.run_custom != ''
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
     permissions:
       contents: write
       issues: write
@@ -259,6 +262,15 @@ jobs:
             --volume "$(dirname "${GITHUB_OUTPUT}"):/github/file_commands"
           )
           docker run "${args[@]}" "${SUPER_LINTER_CUSTOM_IMAGE}"
+
+      # The container runs as root and leaves super-linter-output/ in the workspace. A runner that is not root cannot
+      # clean it up, so the next checkout would fail. Best effort: a missing chown only warns.
+      - name: Return the workspace files to the runner user
+        if: ${{ always() && env.SUPER_LINTER_CUSTOM_IMAGE != '' }}
+        run: |
+          docker run --rm --entrypoint chown --volume "${GITHUB_WORKSPACE}:/github/workspace" \
+            "${SUPER_LINTER_CUSTOM_IMAGE}" -R "$(id -u):$(id -g)" /github/workspace/super-linter-output ||
+            echo "::warning::Could not return the workspace files to the runner user"
 
       - name: Commit and push linting fixes
         # Run only on:

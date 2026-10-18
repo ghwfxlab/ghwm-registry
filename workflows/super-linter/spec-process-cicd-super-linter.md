@@ -21,7 +21,7 @@ tags:
 
 **Purpose**: Execute automated static analysis, security scanning, syntax verification, and optional autoformatting across the codebase on pull requests and branch pushes.
 **Trigger Events**: `pull_request` targeting `main`, `push` to `main`
-**Target Environments**: GitHub Actions Runner (`ubuntu-24.04` / Linux container) across consumer repositories
+**Target Environments**: GitHub Actions Runner (`ubuntu-24.04` by default, or any Linux runner with Docker set in `SUPER_LINTER_RUNS_ON`) across consumer repositories
 
 ## Execution Flow Diagram
 
@@ -69,9 +69,9 @@ graph TD
 
 ## Jobs & Dependencies
 
-| Job Name     | Purpose                                                                                                  | Dependencies          | Execution Context                     |
-| ------------ | -------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------- |
-| super-linter | Executes multi-language static code analysis, security scanning, and optional automated formatting fixes | None (standalone job) | GitHub-hosted runner (`ubuntu-24.04`) |
+| Job Name     | Purpose                                                                                                  | Dependencies          | Execution Context                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------- |
+| super-linter | Executes multi-language static code analysis, security scanning, and optional automated formatting fixes | None (standalone job) | Runner from `SUPER_LINTER_RUNS_ON` (default `ubuntu-24.04`) |
 
 ## Requirements Matrix
 
@@ -169,7 +169,7 @@ commit_message: string # "chore[BOT]: fix linter issues"
 
 ### Environmental Constraints
 
-- **Runner Requirements**: `ubuntu-24.04` (Linux x86_64 host environment with Docker daemon support)
+- **Runner Requirements**: Linux x86_64 host with a Docker daemon; `ubuntu-24.04` unless `SUPER_LINTER_RUNS_ON` names another runner
 - **Network Access**: Outbound HTTPS (port 443) to `ghcr.io`, `docker.io`, and `api.github.com`
 - **Permissions**: Write access to contents, pull requests, issues, and commit statuses
 

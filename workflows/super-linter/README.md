@@ -111,6 +111,7 @@ The installed config files are a starting point. Adjust them to your project's n
   - `RUN_SUPER_LINTER_FIXES` — set to `true` to enable automatic linting fixes (default: `false`). If enabled, fixes will be automatically committed and pushed to your PR branch.
   - `SUPER_LINTER_CUSTOM_IMAGE` — a custom Super-Linter image to run instead of the upstream one (default: empty). See [Run a custom image](#example-run-a-custom-image).
   - `RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK` — set to `true` to fail pull requests whose changed files need a linter that `.github/super-linter.env` does not enable (default: `false`).
+- **`SUPER_LINTER_RUNS_ON`** (repository or organisation variable, not a file) — the runner for every job. See [Run on self-hosted runners](#example-run-on-self-hosted-runners).
 
 #### Example: Run Standard/Full Super-Linter (e.g. for Rust or .NET projects)
 
@@ -124,6 +125,20 @@ env:
   RUN_SUPER_LINTER_SLIM: false # Disable slim mode to run the full runner
   RUN_SUPER_LINTER_FIXES: false
 ```
+
+#### Example: Run on self-hosted runners
+
+Every job (`setup` and the three lint jobs) runs on GitHub-hosted `ubuntu-24.04` unless the `SUPER_LINTER_RUNS_ON` variable is set. Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level to cover many repositories. The value is JSON:
+
+| Value | Runs on |
+| --- | --- |
+| unset | `ubuntu-24.04` (GitHub-hosted) |
+| `"my-runner"` | a runner with that label |
+| `["self-hosted", "linux"]` | a runner with all of those labels |
+
+It is a variable, not an `env` value, because `runs-on` cannot read the workflow `env`. A repository that cannot start GitHub-hosted jobs (for example a spent minutes limit) needs it set, because even the small `setup` job runs on the configured runner.
+
+The runner needs Docker, Linux and outbound access to the registry of the image (and to PyPI when the drift check is on, which installs `uv`). A runner that itself runs in a container needs the Docker socket and a workspace path the host can mount. Apart from the runner, nothing about the three modes changes.
 
 #### Example: Run a custom image
 
@@ -155,7 +170,7 @@ Things to know:
 
 - A lean image is faster on a cold pull, such as a GitHub-hosted runner (about 42 s against 110 s for slim). A runner that already caches the 6 GB slim image gains nothing (35 s against 28 s measured on a self-hosted runner).
 - Only the selected job starts, so the runner pulls only the custom image. The `setup` job adds a few seconds.
-- The container leaves files owned by root in the workspace (`super-linter-output/`). A self-hosted runner has to clean them up.
+- The container runs as root and leaves `super-linter-output/` in the workspace. A final step returns it to the runner user (best effort, a warning if the image has no `chown`), so a runner that is not root can check out again.
 - Changing the linter flags in a pull request does not change the image that pull request is linted with, because the image is rebuilt only after the change is merged. Expect the first run after merging a flag change to use the previous image.
 
 #### Example: Enable Automatic Linting Fixes
@@ -221,6 +236,7 @@ The CLI leaves config files such as `.github/super-linter.env`, `.github/super-l
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
+| The jobs never start ("recent account payments have failed", or they queue forever) | The jobs wait for `ubuntu-24.04` and the account has no hosted minutes, or no runner has the label | Set the `SUPER_LINTER_RUNS_ON` variable to your runner label(s) |
 | Custom image cannot be pulled | The image is private or the tag does not exist | Use a public image or a `ghcr.io` package the runner can read |
 | Super-Linter fails on YAML files | yamllint config too strict | Adjust rules in `.github/linters/.yaml-lint.yml` |
 | Super-Linter fails on Markdown files | markdownlint config mismatch | Adjust rules in `.github/linters/.markdown-lint.yml` |
