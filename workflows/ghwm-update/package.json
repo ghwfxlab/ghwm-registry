@@ -1,6 +1,6 @@
 {
     "name": "@ghwfxlab/ghwm-update",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "description": "Update GitHub Workflows Marketplace workflows to the latest version",
     "files": [
         "ghwm-update.yaml",
