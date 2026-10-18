@@ -9,6 +9,9 @@ SHELL := /usr/bin/env bash
 PROD_API_URL ?= https://ghwm-deployment-prd.ghwfxlab.workers.dev
 TEST_API_URL ?= https://ghwm-deployment-tst.ghwfxlab.workers.dev
 TARGET_API ?= prod
+VENV_DIR ?= .venv
+PYTHON ?= $(if $(VIRTUAL_ENV),python3,$(VENV_DIR)/bin/python3)
+PRE_COMMIT ?= $(if $(shell command -v pre-commit 2>/dev/null),pre-commit,"$(PYTHON)" -m pre_commit)
 
 .PHONY: help setup dev dev-prod-api dev-test-api build build-prod-api build-test-api preview clean lang lang-fix check-script-env script-tests ui-tests setup-precommit precommit super-linter super-linter-fix
 
@@ -102,6 +105,7 @@ clean:
 	rm -rf $(UI_DIR)/.astro
 	rm -rf $(UI_DIR)/node_modules
 	rm -rf node_modules
+	rm -rf $(VENV_DIR)
 
 check-lang-env:
 	@echo "[check-lang-env] Ensuring Node.js environment for textlint..."
@@ -120,16 +124,24 @@ lang-fix: check-lang-env
 check-script-env:
 	@echo "[check-script-env] Ensuring Python environment for helper scripts..."
 	@which python3 >/dev/null 2>&1 || (echo "[check-script-env] ❌ python3 not found; install Python" && exit 1)
-	@python3 -c "import yaml" >/dev/null 2>&1 || ( \
+	@if ! command -v "$(PYTHON)" >/dev/null 2>&1; then \
+		if [ -z "$${VIRTUAL_ENV:-}" ] && [ "$(PYTHON)" = "$(VENV_DIR)/bin/python3" ]; then \
+			echo "[check-script-env] Creating virtual environment in $(VENV_DIR)..."; \
+			python3 -m venv "$(VENV_DIR)"; \
+		else \
+			echo "[check-script-env] ❌ Python interpreter '$(PYTHON)' not found" && exit 1; \
+		fi; \
+	fi
+	@"$(PYTHON)" -c "import yaml" >/dev/null 2>&1 || ( \
 		echo "[check-script-env] Installing dependencies from scripts/requirements.txt..." && \
-		python3 -m pip install -q -r scripts/requirements.txt \
+		"$(PYTHON)" -m pip install -q -r scripts/requirements.txt \
 	)
 	@echo "[check-script-env] OK"
 
 script-tests: check-script-env
 	@echo "[script-tests] Running helper script tests..."
-	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_workflow_package_versions.py -v
-	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_evaluate_release_paths.py -v
+	@PYTHONDONTWRITEBYTECODE=1 "$(PYTHON)" scripts/test_workflow_package_versions.py -v
+	@PYTHONDONTWRITEBYTECODE=1 "$(PYTHON)" scripts/test_evaluate_release_paths.py -v
 
 ui-tests: setup
 	@echo "[ui-tests] Running UI unit tests..."
@@ -137,12 +149,15 @@ ui-tests: setup
 
 setup-precommit: check-script-env
 	@echo "[setup-precommit] Installing pre-commit hooks..."
-	@python3 -m pip install pre-commit
-	@pre-commit install --install-hooks
+	@command -v pre-commit >/dev/null 2>&1 || "$(PYTHON)" -c "import pre_commit" >/dev/null 2>&1 || ( \
+		echo "[setup-precommit] Installing pre-commit via $(PYTHON)..." && \
+		"$(PYTHON)" -m pip install -q pre-commit \
+	)
+	@$(PRE_COMMIT) install --install-hooks
 
 precommit:
 	@echo "[precommit] Running pre-commit..."
-	@pre-commit run --all-files
+	@$(PRE_COMMIT) run --all-files
 
 super-linter:
 	@echo "[super-linter] Running super-linter via Docker..."
