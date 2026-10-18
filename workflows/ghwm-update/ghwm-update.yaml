@@ -8,6 +8,7 @@
 # icon: deployed_code
 # owner: ghwfxlab
 # ---
+---
 name: Update ghwm packages
 
 on: # yamllint disable-line rule:truthy
@@ -153,7 +154,9 @@ jobs:
             [[ -z "${name}" ]] && continue
 
             lookup_total=$((lookup_total + 1))
-            current_version="$(name="${name}" yq '.workflows[] | select(.name == strenv(name)) | .version' "${MANIFEST}")"
+            current_version="$(
+              name="${name}" yq '.workflows[] | select(.name == strenv(name)) | .version' "${MANIFEST}"
+            )"
             package="@${owner}/${name}"
 
             if ! latest_version="$(
@@ -184,7 +187,8 @@ jobs:
               continue
             fi
 
-            name="${name}" version="${latest_version}" yq -i '(.workflows[] | select(.name == strenv(name)) | .version) = strenv(version)' "${MANIFEST}"
+            name="${name}" version="${latest_version}" \
+              yq -i '(.workflows[] | select(.name == strenv(name)) | .version) = strenv(version)' "${MANIFEST}"
 
             updates_table+="| \`${name}\` | ${current_version} | ${latest_version} |"$'\n'
             update_count=$((update_count + 1))
