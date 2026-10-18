@@ -1,6 +1,6 @@
 {
     "name": "@ghwfxlab/super-linter",
-    "version": "1.1.0",
+    "version": "1.1.1",
     "description": "Code linting workflow using Super-Linter",
     "files": [
         "super-linter.yaml",
