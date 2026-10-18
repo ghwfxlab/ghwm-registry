@@ -36,7 +36,7 @@ graph TD
     CheckCustomScript -->|"Path provided"| RunCustomScript["Execute Custom Pre-script"]
     CheckCustomScript -->|"None"| SelectImage{"SUPER_LINTER_CUSTOM_IMAGE set?"}
     RunCustomScript --> SelectImage
-    SelectImage -->|"Yes"| RunCustom["Run the custom image action step"]
+    SelectImage -->|"Yes"| RunCustom["Run the custom image job (docker run)"]
     SelectImage -->|"No"| SelectRunner{"RUN_SUPER_LINTER_SLIM == 'true'?"}
     SelectRunner -->|"Yes (Default)"| RunSlim["Run the slim image"]
     SelectRunner -->|"No"| RunFull["Run the full image"]
@@ -118,9 +118,8 @@ PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH: string  # Optional path to executable scrip
 SUPER_LINTER_CONFIG_PATH: string             # Path to base configuration file (default: .github/super-linter.env)
 SUPER_LINTER_FIX_CONFIG_PATH: string         # Path to auto-fix configuration file (default: .github/super-linter-fix.env)
 RUN_SUPER_LINTER_SLIM: boolean               # Toggle slim container (true) vs full container (false)
-SUPER_LINTER_WORKFLOW_CONFIG_PATH: string    # Path to the workflow settings file (default: .github/super-linter-workflow.env)
 
-# Workflow settings (.github/super-linter-workflow.env)
+# Custom image settings (Workflow Level)
 SUPER_LINTER_CUSTOM_IMAGE: string            # Image to run instead of upstream; empty runs upstream (default: empty)
 RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK: boolean # true: fail PRs whose files need linters the env file disables (default: false)
 RUN_SUPER_LINTER_FIXES: boolean              # Toggle automated fixing and pushing (default: false)

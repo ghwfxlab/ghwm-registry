@@ -14,7 +14,6 @@ After running `ghwm install`, the consumer repository gets:
 - `.github/workflows/super-linter.yaml`
 - `.github/super-linter.env`
 - `.github/super-linter-fix.env`
-- `.github/super-linter-workflow.env`
 - `.github/linters/actionlint.yml`
 - `.github/linters/.gitleaks.toml`
 - `.github/linters/.markdown-lint.yml`
@@ -25,19 +24,19 @@ After running `ghwm install`, the consumer repository gets:
 
 ## How it works
 
-The workflow triggers on pull requests and pushes to `main`, running the `super-linter` job.
+The workflow triggers on pull requests and pushes to `main`. A `setup` job reads the settings in the workflow `env`, and then exactly one of three lint jobs runs, so the runner pulls only one Super-Linter image.
 
 Depending on your configuration, Super-Linter can run in one of three modes:
 
 1. **Slim Mode (Default)**: Uses the lightweight `super-linter/super-linter/slim` image. It is faster to pull and start, and is ideal for projects that do not need heavier, platform-specific tooling.
 2. **Standard/Full Mode**: Uses the full `super-linter/super-linter` image. This includes all supported linters, adding coverage for languages like **Rust** (Rustfmt/Clippy), **PowerShell** (PSScriptAnalyzer), **.NET** (dotnet tools), and **Azure Resource Manager** (arm-ttk).
-3. **Custom Mode**: Runs a custom Super-Linter image of your choice, set in `.github/super-linter-workflow.env`. It can be a lean image that contains only the linters your `.github/super-linter.env` enables, so the linting itself starts and runs faster, or any other image. The upstream steps are skipped, but the runner still pulls their images at job start. See [Run a custom image](#example-run-a-custom-image).
+3. **Custom Mode**: Runs a custom Super-Linter image of your choice, set with `SUPER_LINTER_CUSTOM_IMAGE` in the `env` section of `.github/workflows/super-linter.yaml`. It can be a lean image that contains only the linters your `.github/super-linter.env` enables, so the linting itself starts and runs faster, or any other image. The slim and full jobs are skipped, so their images are never pulled. See [Run a custom image](#example-run-a-custom-image).
 
-| Job | Environment Controls | Description |
-| --- | --- | --- |
-| `super-linter` | `RUN_SUPER_LINTER_SLIM: true` (default) | Runs the slim variant of Super-Linter for fast validation of common web/dev files (YAML, MD, JSON, Actions, text, etc.). |
-| `super-linter` | `RUN_SUPER_LINTER_SLIM: false` | Runs the standard/full variant of Super-Linter to include heavier linters like Rustfmt, Clippy, .NET, PowerShell, and ARM templates. |
-| `super-linter` | `SUPER_LINTER_CUSTOM_IMAGE=<image>` in `.github/super-linter-workflow.env` | Runs the image in the `Run the custom Super-Linter image` step and skips both upstream steps. It takes precedence over `RUN_SUPER_LINTER_SLIM`, which can stay `true`. |
+| Job | Check name | Environment Controls | Description |
+| --- | --- | --- | --- |
+| `super-linter-slim` | `Run Super-Linter Slim` | `RUN_SUPER_LINTER_SLIM: true` (default) | Runs the slim variant of Super-Linter for fast validation of common web/dev files (YAML, MD, JSON, Actions, text, etc.). |
+| `super-linter` | `Run Super-Linter` | `RUN_SUPER_LINTER_SLIM: false` | Runs the standard/full variant of Super-Linter to include heavier linters like Rustfmt, Clippy, .NET, PowerShell, and ARM templates. |
+| `super-linter-custom` | `Run Super-Linter Custom Image` | `SUPER_LINTER_CUSTOM_IMAGE: <image>` | Runs the image with a login and `docker run`. It takes precedence over `RUN_SUPER_LINTER_SLIM`, which can stay `true`. |
 
 ### Linters enabled by default
 
@@ -90,7 +89,6 @@ Commit these files:
 - `.github/workflows/super-linter.yaml`
 - `.github/super-linter.env`
 - `.github/super-linter-fix.env`
-- `.github/super-linter-workflow.env`
 - `.github/linters/` (all config files)
 - `ghwm.lock`
 
@@ -103,7 +101,6 @@ The installed config files are a starting point. Adjust them to your project's n
 
 - **`.github/super-linter.env`** — enable or disable validators by adding `VALIDATE_<LANG>=true/false`
 - **`.github/super-linter-fix.env`** — enable or disable autofix for validators by adding `FIX_<LANG>=true/false`
-- **`.github/super-linter-workflow.env`** — run a custom Super-Linter image (`SUPER_LINTER_CUSTOM_IMAGE`) and switch the optional drift check
 - **`.github/linters/.yaml-lint.yml`** — yamllint rules
 - **`.github/linters/.markdown-lint.yml`** — markdownlint rules
 - **`.github/linters/.textlintrc`** — natural language terminology rules
@@ -112,7 +109,8 @@ The installed config files are a starting point. Adjust them to your project's n
   - `PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH` — path to an optional custom script to run before linting.
   - `RUN_SUPER_LINTER_SLIM` — set to `true` (default) to run the slim version of Super-Linter, or `false` for the full version.
   - `RUN_SUPER_LINTER_FIXES` — set to `true` to enable automatic linting fixes (default: `false`). If enabled, fixes will be automatically committed and pushed to your PR branch.
-  - `SUPER_LINTER_WORKFLOW_CONFIG_PATH` — path to the file with the settings of the workflow (default: `.github/super-linter-workflow.env`).
+  - `SUPER_LINTER_CUSTOM_IMAGE` — a custom Super-Linter image to run instead of the upstream one (default: empty). See [Run a custom image](#example-run-a-custom-image).
+  - `RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK` — set to `true` to fail pull requests whose changed files need a linter that `.github/super-linter.env` does not enable (default: `false`).
 
 #### Example: Run Standard/Full Super-Linter (e.g. for Rust or .NET projects)
 
@@ -129,13 +127,14 @@ env:
 
 #### Example: Run a custom image
 
-Set the image in `.github/super-linter-workflow.env`, the file with the settings of the workflow itself. You do not edit the workflow, so a workflow update never overwrites your setting:
+Set the image in the `env` section of `.github/workflows/super-linter.yaml`:
 
-```sh
-SUPER_LINTER_CUSTOM_IMAGE=ghcr.io/my-org/my-repo/super-linter-lean:v9.0.0
+```yaml
+env:
+  SUPER_LINTER_CUSTOM_IMAGE: ghcr.io/my-org/my-repo/super-linter-lean:v9.0.0
 ```
 
-An empty value (the default) runs the upstream image chosen by `RUN_SUPER_LINTER_SLIM`. With an image set, both upstream steps are skipped and the `Run the custom Super-Linter image` step runs it.
+An empty value (the default) runs the upstream image chosen by `RUN_SUPER_LINTER_SLIM`. With an image set, only the `Run Super-Linter Custom Image` job runs.
 
 The image may be a lean one, for example built by the `super-linter-lean` workflow or generated by [superlint-lean](https://github.com/ghwfxlab/superlint-lean), or any other image. It must be a Super-Linter image: it keeps the upstream entrypoint (`/action/lib/linter.sh`) and has the linters your `VALIDATE_*` flags enable.
 
@@ -150,12 +149,12 @@ Registry access:
 | Any other registry, public image | Nothing. |
 | Any other private registry | Add the `SUPER_LINTER_REGISTRY_USERNAME` and `SUPER_LINTER_REGISTRY_PASSWORD` secrets. The workflow token is never sent to a registry other than `ghcr.io`. |
 
-With a lean image you can also set `RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK=true` in the same file. On pull requests the workflow then runs `superlint-lean drift`, which fails the check when a changed file needs a linter that `.github/super-linter.env` does not enable (the lean image would skip it). Leave it off if you skip some file types on purpose. When it fails, add the missing `VALIDATE_*` flag, or exclude the file type with `FILTER_REGEX_EXCLUDE`.
+With a lean image you can also set `RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK: true` in the same `env` section. On pull requests the workflow then runs `superlint-lean drift`, which fails the check when a changed file needs a linter that `.github/super-linter.env` does not enable (the lean image would skip it). Leave it off if you skip some file types on purpose. When it fails, add the missing `VALIDATE_*` flag, or exclude the file type with `FILTER_REGEX_EXCLUDE`.
 
 Things to know:
 
 - A lean image is faster on a cold pull, such as a GitHub-hosted runner (about 42 s against 110 s for slim). A runner that already caches the 6 GB slim image gains nothing (35 s against 28 s measured on a self-hosted runner).
-- The upstream steps are skipped, but the runner still pulls their images at job start, even when skipped. That pull makes a custom image no faster on a cold runner than the default. To get the full speed up, remove the two upstream steps from your copy of the workflow.
+- Only the selected job starts, so the runner pulls only the custom image. The `setup` job adds a few seconds.
 - The container leaves files owned by root in the workspace (`super-linter-output/`). A self-hosted runner has to clean them up.
 - Changing the linter flags in a pull request does not change the image that pull request is linted with, because the image is rebuilt only after the change is merged. Expect the first run after merging a flag change to use the previous image.
 
@@ -195,7 +194,7 @@ To change the trigger branches, edit `.github/workflows/super-linter.yaml` and u
 
 Version 2.0 adds the custom mode. What changes for you:
 
-- New: `.github/super-linter-workflow.env` with `SUPER_LINTER_CUSTOM_IMAGE` (a custom image, optionally lean) and the optional `RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK`. With the default empty image nothing changes: same upstream steps, config files and variables. Add the new file to your repository when you update.
+- New: `SUPER_LINTER_CUSTOM_IMAGE` (a custom image, optionally lean) and the optional `RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK` in the workflow `env`. With the default empty image the behaviour is the same, but the lint now runs in separate jobs (`setup`, then one of three). The slim job is named `Run Super-Linter Slim`, so update a required status check named `Run Super-Linter` if you use the default slim mode.
 
 Update `ghwm.yml` with a new version, then:
 
