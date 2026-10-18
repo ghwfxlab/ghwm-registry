@@ -31,3 +31,7 @@ files:
     target: .github/linters/.textlintrc
   - source: config/linters/.textlintignore
     target: .github/linters/.textlintignore
+  - source: actions/prepare/action.yml
+    target: .github/actions/super-linter-prepare/action.yml
+  - source: actions/commit-fixes/action.yml
+    target: .github/actions/super-linter-commit-fixes/action.yml

@@ -1,0 +1,42 @@
+---
+name: Prepare Super-Linter
+description: Load the Super-Linter configuration into the job environment and run the optional pre-lint script.
+inputs:
+  config-path:
+    description: Path to the Super-Linter env file.
+    required: true
+  fix-config-path:
+    description: Path to the Super-Linter fix env file.
+    required: true
+  run-fixes:
+    description: true to load the fix env file.
+    default: "false"
+  pre-script-path:
+    description: Optional script to run before linting.
+    default: ""
+runs:
+  using: composite
+  steps:
+    - name: Load Super-Linter configuration
+      shell: bash
+      env:
+        CONFIG_PATH: ${{ inputs.config-path }}
+      run: |
+        echo "Loading Super-Linter configuration from ${CONFIG_PATH}"
+        grep -v '^#' "${CONFIG_PATH}" >> "$GITHUB_ENV"
+    - name: Load Super-Linter Fix configuration
+      if: ${{ inputs.run-fixes == 'true' }}
+      shell: bash
+      env:
+        FIX_CONFIG_PATH: ${{ inputs.fix-config-path }}
+      run: |
+        echo "Loading Super-Linter Fix configuration from ${FIX_CONFIG_PATH}"
+        grep -v '^#' "${FIX_CONFIG_PATH}" >> "$GITHUB_ENV"
+    - name: Run custom scripts before linting
+      if: ${{ inputs.pre-script-path != '' }}
+      shell: bash
+      env:
+        PRE_SCRIPT_PATH: ${{ inputs.pre-script-path }}
+      run: |
+        echo "Running custom script from ${PRE_SCRIPT_PATH}..."
+        "${PRE_SCRIPT_PATH}"

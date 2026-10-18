@@ -27,22 +27,24 @@ tags:
 
 ```mermaid
 graph TD
-    TriggerNode["Trigger: push | pull_request (main)"] --> Checkout["Checkout Repository (fetch-depth: 0)"]
+    TriggerNode["Trigger: push | pull_request (main)"] --> Setup["setup job: read .github/super-linter-workflow.env"]
+    Setup --> SelectImage{"SUPER_LINTER_CUSTOM_IMAGE set?"}
+    SelectImage -->|"Yes"| RunCustom["super-linter-custom: login and docker run"]
+    SelectImage -->|"No"| SelectRunner{"RUN_SUPER_LINTER_SLIM == 'true'?"}
+    SelectRunner -->|"Yes (Default)"| RunSlim["super-linter-slim: slim image"]
+    SelectRunner -->|"No"| RunFull["super-linter: full image"]
+    RunCustom --> Checkout["Selected job: checkout (fetch-depth: 0)"]
+    RunSlim --> Checkout
+    RunFull --> Checkout
     Checkout --> LoadConfig["Load Base Config (.github/super-linter.env)"]
     LoadConfig --> CheckFixConfig{"RUN_SUPER_LINTER_FIXES == 'true'?"}
     CheckFixConfig -->|"Yes"| LoadFixConfig["Load Fix Config (.github/super-linter-fix.env)"]
     CheckFixConfig -->|"No"| CheckCustomScript{"Custom Pre-script Configured?"}
     LoadFixConfig --> CheckCustomScript
     CheckCustomScript -->|"Path provided"| RunCustomScript["Execute Custom Pre-script"]
-    CheckCustomScript -->|"None"| SelectImage{"SUPER_LINTER_CUSTOM_IMAGE set?"}
-    RunCustomScript --> SelectImage
-    SelectImage -->|"Yes"| RunCustom["Run the custom image action step"]
-    SelectImage -->|"No"| SelectRunner{"RUN_SUPER_LINTER_SLIM == 'true'?"}
-    SelectRunner -->|"Yes (Default)"| RunSlim["Run the slim image"]
-    SelectRunner -->|"No"| RunFull["Run the full image"]
-    RunCustom --> EvalResults{"Lint Violations Detected?"}
-    RunSlim --> EvalResults
-    RunFull --> EvalResults
+    CheckCustomScript -->|"None"| RunLinter["Run the selected image"]
+    RunCustomScript --> RunLinter
+    RunLinter --> EvalResults{"Lint Violations Detected?"}
     EvalResults -->|"Violations found without fixes"| FailureNode["Workflow Failed: Lint Errors"]
     EvalResults -->|"No violations"| SuccessNode["Workflow Completed: Pass"]
     EvalResults -->|"Fixes available"| CheckAutoCommit{"Event is PR & Not Default Branch & Fixes Enabled?"}
@@ -50,13 +52,12 @@ graph TD
     CheckAutoCommit -->|"No"| FailureNode
     CommitFixes --> SuccessNode
     Checkout -.->|"Git Fetch Failure"| FailureNode
-    RunCustom -.->|"Runtime Failure"| FailureNode
-    RunSlim -.->|"Runtime Failure"| FailureNode
-    RunFull -.->|"Runtime Failure"| FailureNode
+    RunLinter -.->|"Runtime Failure"| FailureNode
 
     style TriggerNode fill:#e1f5fe
     style SuccessNode fill:#e8f5e8
     style FailureNode fill:#ffebee
+    style Setup fill:#f3e5f5
     style Checkout fill:#f3e5f5
     style LoadConfig fill:#f3e5f5
     style LoadFixConfig fill:#f3e5f5
@@ -64,14 +65,20 @@ graph TD
     style RunCustom fill:#f3e5f5
     style RunSlim fill:#f3e5f5
     style RunFull fill:#f3e5f5
+    style RunLinter fill:#f3e5f5
     style CommitFixes fill:#f3e5f5
 ```
 
 ## Jobs & Dependencies
 
-| Job Name     | Purpose                                                                                                  | Dependencies          | Execution Context                     |
-| ------------ | -------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------- |
-| super-linter | Executes multi-language static code analysis, security scanning, and optional automated formatting fixes | None (standalone job) | GitHub-hosted runner (`ubuntu-24.04`) |
+| Job Name            | Purpose                                                                          | Dependencies | Execution Context                     |
+| ------------------- | -------------------------------------------------------------------------------- | ------------ | ------------------------------------- |
+| setup               | Reads the workflow settings and exposes which lint job runs                      | None         | GitHub-hosted runner (`ubuntu-24.04`) |
+| super-linter-slim   | Runs the slim image: static analysis, security scanning and optional fixes       | setup        | GitHub-hosted runner (`ubuntu-24.04`) |
+| super-linter        | Runs the full image: static analysis, security scanning and optional fixes       | setup        | GitHub-hosted runner (`ubuntu-24.04`) |
+| super-linter-custom | Runs the custom image with a login and `docker run`, optional drift check, fixes | setup        | GitHub-hosted runner (`ubuntu-24.04`) |
+
+Only one lint job runs; the others are skipped by their `if:` and never start, so their images are not pulled.
 
 ## Requirements Matrix
 

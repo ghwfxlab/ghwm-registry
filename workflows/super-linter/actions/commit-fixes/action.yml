@@ -1,0 +1,22 @@
+---
+name: Commit Super-Linter fixes
+description: Commit and push linting fixes to the pull request branch.
+inputs:
+  run-fixes:
+    description: true when Super-Linter fixes are enabled.
+    default: "false"
+runs:
+  using: composite
+  steps:
+    - name: Commit and push linting fixes
+      # Run only on:
+      # - Pull requests
+      # - Not on the default branch
+      if: >
+        github.event_name == 'pull_request' &&
+        github.ref_name != github.event.repository.default_branch && inputs.run-fixes == 'true'
+      uses: stefanzweifel/git-auto-commit-action@04702edda442b2e678b25b537cec683a1493fcb9 # v7.1.0
+      with:
+        branch: ${{ github.event.pull_request.head.ref || github.head_ref || github.ref }}
+        commit_message: "chore[BOT]: fix linter issues"
+        commit_user_email: github-actions[bot]@users.noreply.github.com

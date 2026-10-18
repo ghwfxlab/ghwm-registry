@@ -5,7 +5,8 @@
     "files": [
         "super-linter.yaml",
         "workflow.yml",
-        "config/"
+        "config/",
+        "actions/"
     ],
     "publishConfig": {
         "registry": "https://npm.pkg.github.com"
