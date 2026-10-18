@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import os
 import subprocess
+import sys
 import tempfile
 import unittest
 from pathlib import Path
@@ -37,8 +38,11 @@ class EvaluateReleasePathsTests(unittest.TestCase):
         output_file = repo_dir / "github_output.txt"
         if output_file.exists():
             output_file.unlink()
+        python_bin_dir = str(Path(sys.executable).parent)
+        current_path = os.environ.get("PATH", "")
         env = {
             **os.environ,
+            "PATH": f"{python_bin_dir}:{current_path}" if current_path else python_bin_dir,
             "GITHUB_OUTPUT": str(output_file),
             "EVENT_BEFORE": before,
             "EVENT_SHA": sha,
