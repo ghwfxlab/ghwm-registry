@@ -131,7 +131,7 @@ script-tests: check-script-env
 	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_workflow_package_versions.py -v
 	@PYTHONDONTWRITEBYTECODE=1 python3 scripts/test_evaluate_release_paths.py -v
 
-ui-tests:
+ui-tests: setup
 	@echo "[ui-tests] Running UI unit tests..."
 	@npm test --prefix $(UI_DIR)
 

@@ -26,3 +26,9 @@ yarn-error.log*
 # Astro build output and cache
 dist/
 .astro/
+
+# Python virtual environment and cache
+.venv/
+__pycache__/
+*.py[cod]
+

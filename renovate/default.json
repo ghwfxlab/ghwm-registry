@@ -1,0 +1,15 @@
+{
+    "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+    "customManagers": [
+        {
+            "customType": "regex",
+            "managerFilePatterns": ["/(^|/)ghwm\\.ya?ml$/"],
+            "matchStrings": [
+                "-\\s+name:\\s+(?<depName>[\\w-]+)(?:\\n\\s{4}[^\\n]+)*?\\n\\s{4}version:\\s+[\"']?(?<currentValue>\\d+\\.\\d+\\.\\d+(?:[-+][A-Za-z0-9.-]+)?)[\"']?(?:\\s+#.*)?"
+            ],
+            "datasourceTemplate": "npm",
+            "packageNameTemplate": "@ghwfxlab/{{{depName}}}",
+            "registryUrlTemplate": "https://npm.pkg.github.com"
+        }
+    ]
+}

@@ -153,3 +153,26 @@ Use semantic versioning:
 - **Patch** — bugfixes, documentation corrections, no behaviour change
 - **Minor** — new optional inputs, additive features, new packaged config files
 - **Major** — breaking changes (renamed files, removed inputs, permission changes, changed default triggers)
+
+---
+
+## Dependency maintenance with Renovate
+
+The repository runs an automated [Renovate workflow](.github/workflows/renovate.yml) daily at 03:00 UTC (and on manual trigger via `workflow_dispatch`).
+
+### What Renovate manages
+
+- Pinned GitHub Actions digests in `workflows/**`
+- Dependencies in `.pre-commit-config.yaml`
+- Pinned Docker image digests in `Makefile` (such as Super-Linter)
+
+### Automated package version bumps
+
+When Renovate upgrades an action dependency inside a workflow file (under `workflows/<name>/`), a post-upgrade task automatically runs [`scripts/bump_renovate_packages.sh`](scripts/bump_renovate_packages.sh) to bump the patch version in the corresponding workflow package's `package.json`. This ensures that downstream consumers receive the updated workflow dependencies when merged to `main`.
+
+### Repository requirements
+
+To operate Renovate in GitHub Actions:
+
+- `RENOVATE_TOKEN` repository secret configured with a personal access token (PAT) or GitHub App token that has `contents: write`, `pull-requests: write`, and `workflows: write` permissions.
+- In **Settings** → **Actions** → **General** → **Workflow permissions**, the option **"Allow GitHub Actions to create and approve pull requests"** must be enabled.
