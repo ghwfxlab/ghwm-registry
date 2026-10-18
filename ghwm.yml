@@ -5,3 +5,5 @@ workflows:
     version: "1.1.0"
   - name: auto-assign-pr
     version: "1.0.2"
+  - name: ghwm-update
+    version: "1.0.0"

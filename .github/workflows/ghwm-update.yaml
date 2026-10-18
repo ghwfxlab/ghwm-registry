@@ -1,0 +1,279 @@
+# Managed by ghwm (ghwm-update@1.0.0)
+# Source: @ghwfxlab/ghwm-update:ghwm-update.yaml
+# Hash: sha256:73a33acddf8878b5404f4f0c01cfa0b198b9d9075468fe4813904edb4fc229e4
+# Re-run `ghwm install` to refresh this file.
+
+# ---
+# title: Update ghwm packages
+# description: Update ghwm package pins on a schedule and open a pull request
+# tags:
+#   - automation
+#   - ghwm
+#   - pr
+# icon: deployed_code
+# owner: ghwfxlab
+# ---
+---
+name: Update ghwm packages
+
+on: # yamllint disable-line rule:truthy
+  schedule:
+    - cron: "0 6 * * *" # daily at 6 am
+  workflow_dispatch:
+
+permissions: {}
+
+concurrency:
+  group: ghwm-update
+  cancel-in-progress: false
+
+env:
+  GHWM_VERSION: "v1.10.0" # Pinned ghwm CLI release tag installed by this workflow
+
+jobs:
+  update-ghwm:
+    name: Update ghwm packages
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Generate GH App token
+        id: app-token
+        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        with:
+          client-id: ${{ secrets.GH_APP_CLIENT_ID || secrets.GH_APP_ID }}
+          private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
+          permission-contents: write
+          permission-workflows: write
+          permission-pull-requests: write
+
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          persist-credentials: false
+
+      - name: Get GitHub App User ID
+        id: get-user-id
+        env:
+          GH_TOKEN: ${{ steps.app-token.outputs.token }}
+          APP_SLUG: ${{ steps.app-token.outputs.app-slug }}
+        run: echo "user-id=$(gh api "/users/${APP_SLUG}[bot]" --jq .id)" >> "$GITHUB_OUTPUT"
+
+      - name: Check for ghwm package updates
+        id: check
+        env:
+          GHWM_PAT: ${{ secrets.GHWM_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          semver_max() {
+            local a="$1" b="$2"
+            [[ "${a}" == "${b}" ]] && { printf '%s\n' "${a}"; return; }
+
+            local a_core="${a%%-*}" b_core="${b%%-*}"
+            local a_pre="" b_pre=""
+            [[ "${a}" == *-* ]] && a_pre="${a#*-}"
+            [[ "${b}" == *-* ]] && b_pre="${b#*-}"
+
+            local a_ma a_mi a_pa b_ma b_mi b_pa
+            IFS='.' read -r a_ma a_mi a_pa <<< "${a_core}"
+            IFS='.' read -r b_ma b_mi b_pa <<< "${b_core}"
+
+            if (( a_ma != b_ma )); then (( a_ma > b_ma )) && printf '%s\n' "${a}" || printf '%s\n' "${b}"; return; fi
+            if (( a_mi != b_mi )); then (( a_mi > b_mi )) && printf '%s\n' "${a}" || printf '%s\n' "${b}"; return; fi
+            if (( a_pa != b_pa )); then (( a_pa > b_pa )) && printf '%s\n' "${a}" || printf '%s\n' "${b}"; return; fi
+
+            # Core versions match. A release (no pre-release) outranks a pre-release.
+            if [[ -z "${a_pre}" && -n "${b_pre}" ]]; then printf '%s\n' "${a}"; return; fi
+            if [[ -n "${a_pre}" && -z "${b_pre}" ]]; then printf '%s\n' "${b}"; return; fi
+            if [[ -z "${a_pre}" && -z "${b_pre}" ]]; then printf '%s\n' "${a}"; return; fi
+
+            # Both are pre-releases: compare dot-separated identifiers per semver
+            # precedence rules (numeric identifiers compare numerically and always
+            # rank lower than alphanumeric identifiers).
+            local -a a_fields b_fields
+            IFS='.' read -r -a a_fields <<< "${a_pre}"
+            IFS='.' read -r -a b_fields <<< "${b_pre}"
+
+            local i max=${#a_fields[@]}
+            (( ${#b_fields[@]} > max )) && max=${#b_fields[@]}
+
+            for (( i = 0; i < max; i++ )); do
+              local af="${a_fields[i]-}" bf="${b_fields[i]-}"
+              [[ -z "${af}" ]] && { printf '%s\n' "${b}"; return; }
+              [[ -z "${bf}" ]] && { printf '%s\n' "${a}"; return; }
+              [[ "${af}" == "${bf}" ]] && continue
+
+              if [[ "${af}" =~ ^[0-9]+$ && "${bf}" =~ ^[0-9]+$ ]]; then
+                (( af > bf )) && printf '%s\n' "${a}" || printf '%s\n' "${b}"
+              elif [[ "${af}" =~ ^[0-9]+$ ]]; then
+                printf '%s\n' "${b}"
+              elif [[ "${bf}" =~ ^[0-9]+$ ]]; then
+                printf '%s\n' "${a}"
+              elif [[ "${af}" > "${bf}" ]]; then
+                printf '%s\n' "${a}"
+              else
+                printf '%s\n' "${b}"
+              fi
+              return
+            done
+
+            printf '%s\n' "${a}"
+          }
+
+          MANIFEST="ghwm.yml"
+          BODY_FILE="/tmp/ghwm-pr-body.md"
+          NPM_ERR_FILE="$(mktemp)"
+
+          registry_source="$(yq '.source' "${MANIFEST}")"
+          owner="${registry_source%%/*}"
+
+          if [[ -n "${GHWM_PAT}" ]]; then
+            package_token="${GHWM_PAT}"
+          elif [[ "${registry_source,,}" == "${GITHUB_REPOSITORY,,}" ]]; then
+            package_token="${GITHUB_TOKEN}"
+          else
+            echo "::error::GHWM_PAT is required when ghwm.yml references packages from another repository" >&2
+            exit 1
+          fi
+
+          npmrc="$(mktemp)"
+          cat > "${npmrc}" <<EOF
+          @${owner}:registry=https://npm.pkg.github.com
+          //npm.pkg.github.com/:_authToken=\${NODE_AUTH_TOKEN}
+          EOF
+          trap 'rm -f "${npmrc}" "${NPM_ERR_FILE}"' EXIT
+
+          names="$(yq '.workflows[].name' "${MANIFEST}")"
+
+          updates_table=""
+          update_count=0
+          first_name=""
+          first_to=""
+          lookup_total=0
+          lookup_failed=0
+
+          while IFS= read -r name; do
+            [[ -z "${name}" ]] && continue
+
+            lookup_total=$((lookup_total + 1))
+            current_version="$(
+              name="${name}" yq '.workflows[] | select(.name == strenv(name)) | .version' "${MANIFEST}"
+            )"
+            package="@${owner}/${name}"
+
+            if ! latest_version="$(
+              NODE_AUTH_TOKEN="${package_token}" npm view "${package}" version \
+                --userconfig "${npmrc}" 2>"${NPM_ERR_FILE}"
+            )"; then
+              npm_err="$(head -n1 "${NPM_ERR_FILE}")"
+              hint=""
+              if [[ "${npm_err}" == *E403* ]]; then
+                hint=" (the package token likely lacks read:packages scope or repo access)"
+              fi
+              echo "::warning::Could not resolve latest version for ${package}: ${npm_err}${hint}" >&2
+              lookup_failed=$((lookup_failed + 1))
+              continue
+            fi
+
+            if [[ "${latest_version}" == "${current_version}" ]]; then
+              continue
+            fi
+
+            if [[ ! "${current_version}" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+              echo "::warning::Skipping ${package}: unsupported pinned version '${current_version}'" >&2
+              continue
+            fi
+
+            highest="$(semver_max "${current_version}" "${latest_version}")"
+            if [[ "${highest}" != "${latest_version}" ]]; then
+              continue
+            fi
+
+            name="${name}" version="${latest_version}" \
+              yq -i '(.workflows[] | select(.name == strenv(name)) | .version) = strenv(version)' "${MANIFEST}"
+
+            updates_table+="| \`${name}\` | ${current_version} | ${latest_version} |"$'\n'
+            update_count=$((update_count + 1))
+            if [[ -z "${first_name}" ]]; then
+              first_name="${name}"
+              first_to="${latest_version}"
+            fi
+          done <<< "${names}"
+
+          if [[ "${lookup_total}" -gt 0 && "${lookup_failed}" -eq "${lookup_total}" ]]; then
+            echo "::error::Could not resolve the latest version for any of the" \
+              "${lookup_total} package(s) in ${MANIFEST}" >&2
+            exit 1
+          fi
+
+          if [[ "${update_count}" -eq 0 ]]; then
+            {
+              echo "has_updates=false"
+            } >> "${GITHUB_OUTPUT}"
+            exit 0
+          fi
+
+          if [[ "${update_count}" -eq 1 ]]; then
+            title="chore(ci): update ghwm package \`${first_name}\` to ${first_to}"
+          else
+            title="chore(ci): update ${update_count} ghwm packages"
+          fi
+
+          {
+            echo "Bumps the following managed workflow packages from \`${registry_source}\`:"
+            echo
+            echo "| Package | From | To |"
+            echo "| --- | --- | --- |"
+            printf '%s' "${updates_table}"
+            echo
+            echo "_Versions bumped in \`${MANIFEST}\` and installed via \`ghwm update\`, refreshing \`ghwm.lock\`._"
+          } > "${BODY_FILE}"
+
+          {
+            echo "has_updates=true"
+            echo "update_count=${update_count}"
+            echo "title=${title}"
+            echo "body_path=${BODY_FILE}"
+          } >> "${GITHUB_OUTPUT}"
+
+      - name: Set up uv
+        if: steps.check.outputs.has_updates == 'true'
+        uses: astral-sh/setup-uv@669c22c13fae566d281d918b2b01699db14a0aa3 # v10.3.2
+        with:
+          prune-cache: true
+
+      - name: Install ghwm CLI
+        if: steps.check.outputs.has_updates == 'true'
+        run: uv tool install git+https://github.com/ghwfxlab/ghwm.git@${{ env.GHWM_VERSION }}
+
+      - name: Update workflow templates
+        if: steps.check.outputs.has_updates == 'true'
+        env:
+          GHWM_PAT: ${{ secrets.GHWM_PAT }}
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          package_token="${GHWM_PAT:-${GITHUB_TOKEN}}"
+          GH_TOKEN="${package_token}" ghwm update
+
+      - name: Create pull request
+        if: steps.check.outputs.has_updates == 'true'
+        uses: peter-evans/create-pull-request@5f6978faf089d4d20b00c7766989d076bb2fc7f1 # v8.1.1
+        # yamllint disable rule:line-length
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          committer: >-
+            ${{ steps.app-token.outputs.app-slug }}[bot]
+            <${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
+          author: >-
+            ${{ steps.app-token.outputs.app-slug }}[bot]
+            <${{ steps.get-user-id.outputs.user-id }}+${{ steps.app-token.outputs.app-slug }}[bot]@users.noreply.github.com>
+          commit-message: "${{ steps.check.outputs.title }}"
+          title: "${{ steps.check.outputs.title }}"
+          body-path: "${{ steps.check.outputs.body_path }}"
+          branch: chore/ghwm-update
+          labels: flag:dependencies
+          delete-branch: true
+          # yamllint enable rule:line-length

@@ -13,6 +13,17 @@
       "version": "1.0.2"
     },
     {
+      "name": "ghwm-update",
+      "source": "@ghwfxlab/ghwm-update",
+      "files": [
+        {
+          "target": ".github/workflows/ghwm-update.yaml",
+          "source_hash": "sha256:73a33acddf8878b5404f4f0c01cfa0b198b9d9075468fe4813904edb4fc229e4"
+        }
+      ],
+      "version": "1.0.0"
+    },
+    {
       "name": "super-linter",
       "source": "@ghwfxlab/super-linter",
       "files": [
