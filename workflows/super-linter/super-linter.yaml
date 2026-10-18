@@ -30,7 +30,6 @@ env:
   RUN_SUPER_LINTER_FIXES: false
   SUPER_LINTER_CUSTOM_IMAGE: ""
   RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK: false
-  SUPER_LINTER_WORKFLOW_CONFIG_PATH: .github/super-linter-workflow.env
 
 jobs:
   setup:
@@ -150,8 +149,9 @@ jobs:
           commit_user_email: github-actions[bot]@users.noreply.github.com
 
   super-linter-custom:
-    name: Run Super-Linter
+    name: Run Super-Linter Custom Image
     needs: setup
+    if: needs.setup.outputs.run_custom != ''
     runs-on: ubuntu-24.04
     permissions:
       contents: write
@@ -165,13 +165,6 @@ jobs:
         with:
           fetch-depth: 0
           persist-credentials: false
-
-      - name: Load workflow configuration
-        run: |
-          if [ -f "${SUPER_LINTER_WORKFLOW_CONFIG_PATH}" ]; then
-            echo "Loading workflow configuration from ${SUPER_LINTER_WORKFLOW_CONFIG_PATH}"
-            grep -Ev '^[[:space:]]*(#|$)' "${SUPER_LINTER_WORKFLOW_CONFIG_PATH}" >> "$GITHUB_ENV" || true
-          fi
 
       - name: Load Super-Linter configuration
         run: |
