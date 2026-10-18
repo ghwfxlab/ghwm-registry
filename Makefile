@@ -133,6 +133,8 @@ script-tests: check-script-env
 
 ui-tests:
 	@echo "[ui-tests] Running UI unit tests..."
+	@command -v npm >/dev/null || { echo "[ui-tests] npm not found: install Node.js 22.12 or newer."; exit 1; }
+	@test -d $(UI_DIR)/node_modules || { echo "[ui-tests] Installing dependencies in $(UI_DIR)..."; npm ci --prefix $(UI_DIR); }
 	@npm test --prefix $(UI_DIR)
 
 setup-precommit: check-script-env
