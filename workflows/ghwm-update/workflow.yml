@@ -1,0 +1,5 @@
+---
+name: ghwm-update
+files:
+  - source: ghwm-update.yaml
+    target: .github/workflows/ghwm-update.yaml
