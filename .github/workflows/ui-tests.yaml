@@ -1,0 +1,39 @@
+---
+name: UI Tests
+
+on: # yamllint disable-line rule:truthy
+  pull_request:
+    branches:
+      - main
+    # The tests read the UI sources, the local workflow packages (workflows/) and CONTRIBUTING.md (the docs page).
+    paths:
+      - 'src/ui/**'
+      - 'workflows/**'
+      - 'CONTRIBUTING.md'
+      - '.github/workflows/ui-tests.yaml'
+
+permissions: {}
+
+jobs:
+  ui-tests:
+    name: Run UI Unit Tests
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+    steps:
+      - name: Checkout The Source Code
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@949feb2413d6458794dcd2491c4babbbce0c15c1 # v7.1.0
+        with:
+          node-version: '22'
+
+      # npm ci never rewrites the lockfile, unlike npm install
+      - name: Install UI dependencies
+        run: npm ci --prefix src/ui
+
+      - name: Run UI unit tests
+        run: npm test --prefix src/ui
