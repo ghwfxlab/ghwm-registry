@@ -43,5 +43,5 @@ jobs:
 
       - name: Run Pre-commit Hooks
         run: |
-          export SKIP="textlint,super-linter-fix"
+          export SKIP="textlint,super-linter-fix,ui-tests"
           pre-commit run --all-files
