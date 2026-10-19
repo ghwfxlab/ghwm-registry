@@ -21,7 +21,7 @@ tags:
 
 **Purpose**: Execute automated static analysis, security scanning, syntax verification, and optional autoformatting across the codebase on pull requests and branch pushes.
 **Trigger Events**: `pull_request` targeting `main`, `push` to `main`
-**Target Environments**: GitHub Actions Runner (`ubuntu-24.04` / Linux container) across consumer repositories
+**Target Environments**: GitHub Actions Runner (`ubuntu-24.04` by default, or any Linux runner with Docker set in `SUPER_LINTER_RUNS_ON`) across consumer repositories
 
 ## Execution Flow Diagram
 
@@ -34,11 +34,14 @@ graph TD
     CheckFixConfig -->|"No"| CheckCustomScript{"Custom Pre-script Configured?"}
     LoadFixConfig --> CheckCustomScript
     CheckCustomScript -->|"Path provided"| RunCustomScript["Execute Custom Pre-script"]
-    CheckCustomScript -->|"None"| SelectRunner{"RUN_SUPER_LINTER_SLIM == 'true'?"}
-    RunCustomScript --> SelectRunner
-    SelectRunner -->|"Yes (Default)"| RunSlim["Execute Super-Linter Slim Engine"]
-    SelectRunner -->|"No"| RunFull["Execute Super-Linter Full Engine"]
-    RunSlim --> EvalResults{"Lint Violations Detected?"}
+    CheckCustomScript -->|"None"| SelectImage{"SUPER_LINTER_CUSTOM_IMAGE set?"}
+    RunCustomScript --> SelectImage
+    SelectImage -->|"Yes"| RunCustom["Run the custom image job (docker run)"]
+    SelectImage -->|"No"| SelectRunner{"RUN_SUPER_LINTER_SLIM == 'true'?"}
+    SelectRunner -->|"Yes (Default)"| RunSlim["Run the slim image"]
+    SelectRunner -->|"No"| RunFull["Run the full image"]
+    RunCustom --> EvalResults{"Lint Violations Detected?"}
+    RunSlim --> EvalResults
     RunFull --> EvalResults
     EvalResults -->|"Violations found without fixes"| FailureNode["Workflow Failed: Lint Errors"]
     EvalResults -->|"No violations"| SuccessNode["Workflow Completed: Pass"]
@@ -47,6 +50,7 @@ graph TD
     CheckAutoCommit -->|"No"| FailureNode
     CommitFixes --> SuccessNode
     Checkout -.->|"Git Fetch Failure"| FailureNode
+    RunCustom -.->|"Runtime Failure"| FailureNode
     RunSlim -.->|"Runtime Failure"| FailureNode
     RunFull -.->|"Runtime Failure"| FailureNode
 
@@ -57,6 +61,7 @@ graph TD
     style LoadConfig fill:#f3e5f5
     style LoadFixConfig fill:#f3e5f5
     style RunCustomScript fill:#f3e5f5
+    style RunCustom fill:#f3e5f5
     style RunSlim fill:#f3e5f5
     style RunFull fill:#f3e5f5
     style CommitFixes fill:#f3e5f5
@@ -64,9 +69,9 @@ graph TD
 
 ## Jobs & Dependencies
 
-| Job Name     | Purpose                                                                                                  | Dependencies          | Execution Context                     |
-| ------------ | -------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------- |
-| super-linter | Executes multi-language static code analysis, security scanning, and optional automated formatting fixes | None (standalone job) | GitHub-hosted runner (`ubuntu-24.04`) |
+| Job Name     | Purpose                                                                                                  | Dependencies          | Execution Context                                           |
+| ------------ | -------------------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------- |
+| super-linter | Executes multi-language static code analysis, security scanning, and optional automated formatting fixes | None (standalone job) | Runner from `SUPER_LINTER_RUNS_ON` (default `ubuntu-24.04`) |
 
 ## Requirements Matrix
 
@@ -78,9 +83,11 @@ graph TD
 | REQ-002 | Secret Leak Prevention         | High     | Scans Git commit history and working tree using Gitleaks to detect exposed credentials               |
 | REQ-003 | Action Security Auditing       | High     | Analyzes GitHub Actions workflows using actionlint and zizmor for security antipatterns              |
 | REQ-004 | Prose Terminology Verification | Medium   | Enforces natural language consistency and project terminology using textlint                         |
-| REQ-005 | Dual Execution Modes           | High     | Supports lightweight slim container for rapid feedback and full container for deep language coverage |
+| REQ-005 | Execution Modes                | High     | Slim, full or custom image, selected by env                                                          |
 | REQ-006 | Automated Fix Propagation      | Medium   | Automatically formats and commits lint fixes to pull request branches when autofixing is enabled     |
 | REQ-007 | Pre-lint Custom Hooks          | Low      | Executes user-defined pre-lint setup scripts when `PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH` is specified |
+| REQ-008 | Custom Image                   | Medium   | Runs the image in `SUPER_LINTER_CUSTOM_IMAGE` (maybe lean) with a login and `docker run`             |
+| REQ-009 | Lean Image Drift Check         | Medium   | Optional, off by default: fails a PR when a changed file needs a linter the env file disables        |
 
 ### Security Requirements
 
@@ -111,6 +118,10 @@ PRE_SUPER_LINTER_CUSTOM_SCRIPT_PATH: string  # Optional path to executable scrip
 SUPER_LINTER_CONFIG_PATH: string             # Path to base configuration file (default: .github/super-linter.env)
 SUPER_LINTER_FIX_CONFIG_PATH: string         # Path to auto-fix configuration file (default: .github/super-linter-fix.env)
 RUN_SUPER_LINTER_SLIM: boolean               # Toggle slim container (true) vs full container (false)
+
+# Custom image settings (Workflow Level)
+SUPER_LINTER_CUSTOM_IMAGE: string            # Image to run instead of upstream; empty runs upstream (default: empty)
+RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK: boolean # true: fail PRs whose files need linters the env file disables (default: false)
 RUN_SUPER_LINTER_FIXES: boolean              # Toggle automated fixing and pushing (default: false)
 
 # Linter Rules Configuration Directory (.github/linters/)
@@ -158,7 +169,7 @@ commit_message: string # "chore[BOT]: fix linter issues"
 
 ### Environmental Constraints
 
-- **Runner Requirements**: `ubuntu-24.04` (Linux x86_64 host environment with Docker daemon support)
+- **Runner Requirements**: Linux x86_64 host with a Docker daemon; `ubuntu-24.04` unless `SUPER_LINTER_RUNS_ON` names another runner
 - **Network Access**: Outbound HTTPS (port 443) to `ghcr.io`, `docker.io`, and `api.github.com`
 - **Permissions**: Write access to contents, pull requests, issues, and commit statuses
 
