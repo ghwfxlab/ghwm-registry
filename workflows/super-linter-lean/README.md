@@ -24,7 +24,7 @@ The workflow runs on pushes to `main` that change `.github/super-linter.env`, `.
 
 1. Reads the upstream release from the version comment of the `super-linter/super-linter/slim` step in `.github/workflows/super-linter.yaml`.
 2. Builds the image with the superlint-lean action and smoke-tests it: for every enabled linter it runs the image on Super-Linter's own good and bad fixtures and requires that the good files pass and the bad files fail.
-3. Scans the image with Trivy. HIGH and CRITICAL findings that have a fix are listed in the job summary; a CRITICAL finding with a fix stops the build (`TRIVY_BLOCKING_SEVERITY`).
+3. Scans the image with Trivy once. HIGH and CRITICAL findings that have a fix are listed in the job summary; a CRITICAL finding with a fix stops the build (`TRIVY_BLOCKING_SEVERITY`).
 4. Pushes `ghcr.io/<owner>/<repo>/super-linter-lean` with three tags: `latest`, `<version>` and `<version>-<short sha>` (immutable).
 5. Writes the immutable tag to the `SUPER_LINTER_CUSTOM_IMAGE` repository variable.
 
@@ -92,7 +92,7 @@ ghwm update --prune
 ## Notes and limits
 
 - The image is rebuilt after a change reaches `main`. A pull request that changes `.github/super-linter.env` is still linted with the previous image.
-- The superlint-lean action is pinned to a commit. Update the pin in the workflow to take a newer generator.
+- The workflow's actions, including superlint-lean, are pinned to a commit with the release in a trailing comment (`# v0.0.13`), so Dependabot's `github-actions` ecosystem proposes a pull request for each new release. Merge it to take a newer generator.
 - Only linters that superlint-lean maps can be selected. An unknown `VALIDATE_*` flag fails the build with a message naming it.
 
 ## Troubleshooting

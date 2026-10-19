@@ -36,7 +36,7 @@ jobs:
       packages: write
     steps:
       - name: Checkout Code
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
@@ -56,39 +56,51 @@ jobs:
 
       - name: Build the image and smoke-test it
         id: lean
-        uses: ghwfxlab/superlint-lean@58cc76bc4b1188fc2bed69f95423204a95f6d445 # composite action (superlint-lean#46)
+        uses: ghwfxlab/superlint-lean@a70a3f84cc3d92be8364fda5e5d4666d8c19080b # v0.0.13
         with:
           upstream-tag: ${{ steps.version.outputs.version }}
           env-files: ${{ env.SUPER_LINTER_CONFIG_PATH }}
 
-      - name: Scan the image (report)
+      - name: Scan the image
         uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
         with:
           image-ref: ${{ steps.lean.outputs.image }}
           severity: HIGH,CRITICAL
           ignore-unfixed: true
-          format: table
-          output: trivy-report.txt
+          format: json
+          output: trivy-report.json
           exit-code: "0"
 
-      - name: Add the scan to the summary
+      - name: Report the scan and stop on blocking findings
         run: |
+          # One scan feeds both the report and the gate: list every HIGH and CRITICAL finding that has a fix,
+          # then fail when one has the blocking severity.
+          findings="$(
+            jq -r '
+              [.Results[]? | .Target as $t | .Vulnerabilities[]?
+                | [$t, .PkgName, .VulnerabilityID, .Severity, .InstalledVersion, .FixedVersion]]
+              | sort_by(.[3], .[0]) | .[] | "| " + join(" | ") + " |"
+            ' trivy-report.json
+          )"
           {
             echo "### Trivy (HIGH and CRITICAL with a fix)"
             echo
-            echo '```text'
-            cat trivy-report.txt
-            echo '```'
+            if [ -z "${findings}" ]; then
+              echo "No findings."
+            else
+              echo "| Target | Package | Vulnerability | Severity | Installed | Fixed |"
+              echo "| --- | --- | --- | --- | --- | --- |"
+              echo "${findings}"
+            fi
           } >> "${GITHUB_STEP_SUMMARY}"
-
-      - name: Scan the image (gate)
-        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25 # v0.36.0
-        with:
-          image-ref: ${{ steps.lean.outputs.image }}
-          severity: ${{ env.TRIVY_BLOCKING_SEVERITY }}
-          ignore-unfixed: true
-          format: table
-          exit-code: "1"
+          blocking="$(
+            jq --arg severity "${TRIVY_BLOCKING_SEVERITY}" \
+              '[.Results[]? | .Vulnerabilities[]? | select(.Severity == $severity)] | length' trivy-report.json
+          )"
+          if [ "${blocking}" -gt 0 ]; then
+            echo "::error::${blocking} ${TRIVY_BLOCKING_SEVERITY} finding(s) with a fix; see the job summary."
+            exit 1
+          fi
 
       - name: Log in to GHCR
         uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
@@ -127,7 +139,7 @@ jobs:
       - name: Generate GitHub App token
         id: app-token
         if: steps.app.outputs.configured == 'true'
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }} # zizmor: ignore[secrets-outside-env]
