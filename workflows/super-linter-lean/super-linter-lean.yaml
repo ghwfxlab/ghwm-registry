@@ -4,7 +4,7 @@ name: Super-Linter lean image
 # Builds a Super-Linter image that contains only the linters enabled in
 # .github/super-linter.env, scans it, pushes it to GHCR and records its tag in
 # the SUPER_LINTER_CUSTOM_IMAGE repository variable. The super-linter workflow
-# runs that image when SUPER_LINTER_CUSTOM is true.
+# runs that image when its SUPER_LINTER_CUSTOM_IMAGE env points at the variable.
 
 on: # yamllint disable-line rule:truthy
   push:
