@@ -1,6 +1,6 @@
 # ---
 # title: Super-Linter lean image
-# description: Builds and scans a custom Super-Linter image containing only the linters enabled in a GitHub Actions environment file.
+# description: Builds and scans a custom Super-Linter image containing only the enabled linters.
 # tags:
 #   - lint
 #   - actions
