@@ -21,6 +21,7 @@ on: # yamllint disable-line rule:truthy
       - main
     paths:
       - .github/super-linter.env
+      - .github/workflows/super-linter.yaml
       - .github/workflows/super-linter-lean.yaml
   workflow_dispatch:
 
@@ -28,23 +29,37 @@ permissions: {}
 
 env:
   SUPER_LINTER_CONFIG_PATH: .github/super-linter.env
-  # Findings of this severity that have a fix stop the build; everything else is only reported
-  TRIVY_BLOCKING_SEVERITY: CRITICAL
 
 concurrency:
   group: super-linter-lean
   cancel-in-progress: false
 
 jobs:
+  # The runner comes from the SUPER_LINTER_RUNS_ON repository (or organisation) variable, as JSON, like the
+  # super-linter workflow: unset runs on GitHub-hosted ubuntu-24.04, "my-runner" or ["self-hosted", "linux"]
+  # runs on your own runners. It is a variable, not an env value, because runs-on cannot read the workflow env.
   build:
     name: Build lean image
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
     permissions:
       contents: read
       packages: write
     steps:
+      - name: Check for GitHub App credentials
+        id: app
+        env:
+          GH_APP_ID: ${{ secrets.GH_APP_ID }}
+          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
+        run: |
+          if [ -n "${GH_APP_ID}" ] && [ -n "${GH_APP_PRIVATE_KEY}" ]; then
+            echo "configured=true" >> "${GITHUB_OUTPUT}"
+          else
+            echo "configured=false" >> "${GITHUB_OUTPUT}"
+          fi
+
       - name: Generate GitHub App token
         id: app-token
+        if: steps.app.outputs.configured == 'true'
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
@@ -63,6 +78,11 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Keep the smoke test files where the Docker daemon sees them
+        # The smoke test mounts a temporary directory into the linter containers. On a self-hosted runner
+        # the Docker daemon does not always see /tmp, so every linter would show as not-linted.
+        run: echo "TMPDIR=${RUNNER_TEMP}" >> "${GITHUB_ENV}"
 
       - name: Read the Super-Linter version
         id: version
@@ -97,7 +117,6 @@ jobs:
           severity: "CRITICAL,HIGH"
           version: v0.75.0
           output: trivy-result.txt
-          trivy-config: trivy.yaml
 
       - name: Report Trivy scan result
         env:
@@ -143,5 +162,18 @@ jobs:
           GH_REPO: ${{ github.repository }}
           IMAGE: ${{ steps.push.outputs.image }}
         run: |
+          if [ -z "${GH_TOKEN}" ]; then
+            {
+              echo "The GitHub App credentials (GH_APP_ID, GH_APP_PRIVATE_KEY) are not available,"
+              echo "so the variable was not updated."
+              echo "Set it yourself:"
+              echo
+              echo '```sh'
+              echo "gh variable set SUPER_LINTER_CUSTOM_IMAGE --body ${IMAGE}"
+              echo '```'
+            } >> "${GITHUB_STEP_SUMMARY}"
+            echo "::warning::SUPER_LINTER_CUSTOM_IMAGE was not updated; see the job summary."
+            exit 0
+          fi
           gh variable set SUPER_LINTER_CUSTOM_IMAGE --body "${IMAGE}"
           echo "SUPER_LINTER_CUSTOM_IMAGE is now \`${IMAGE}\`" >> "${GITHUB_STEP_SUMMARY}"

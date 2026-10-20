@@ -24,7 +24,7 @@ The workflow runs on pushes to `main` that change `.github/super-linter.env`, `.
 
 1. Reads the upstream release from the version comment of the `super-linter/super-linter/slim` step in `.github/workflows/super-linter.yaml`.
 2. Builds the image with the superlint-lean action and smoke-tests it: for every enabled linter it runs the image on Super-Linter's own good and bad fixtures and requires that the good files pass and the bad files fail.
-3. Scans the image with Trivy once. HIGH and CRITICAL findings that have a fix are listed in the job summary; a CRITICAL finding with a fix stops the build (`TRIVY_BLOCKING_SEVERITY`).
+3. Scans the image with Trivy once and prints the HIGH and CRITICAL findings that have a fix. The scan is report-only: only a failure of the scan step itself stops the build.
 4. Pushes `ghcr.io/<owner>/<repo>/super-linter-lean` with three tags: `latest`, `<version>` and `<version>-<short sha>` (immutable).
 5. Writes the immutable tag to the `SUPER_LINTER_CUSTOM_IMAGE` repository variable.
 
@@ -49,7 +49,7 @@ Then run `ghwm install` and commit the files.
 
 A workflow token cannot write repository variables. The workflow uses a GitHub App token for it, with the same `GH_APP_ID` and `GH_APP_PRIVATE_KEY` secrets as the `auto-release` workflow. Give the App the repository permission **Variables: read and write**, and make sure the secrets are available to the repository.
 
-Without the secrets the build still succeeds. The job summary then prints the command to set the variable yourself:
+The credentials are optional. Without the secrets the token step is skipped and the build still succeeds. The job summary then prints the command to set the variable yourself:
 
 ```sh
 gh variable set SUPER_LINTER_CUSTOM_IMAGE --body ghcr.io/<owner>/<repo>/super-linter-lean:<version>-<short sha>
@@ -57,7 +57,13 @@ gh variable set SUPER_LINTER_CUSTOM_IMAGE --body ghcr.io/<owner>/<repo>/super-li
 
 You can also set the variable once to the moving tag (`...:latest` or `...:<version>`) and skip the App: every rebuild is then picked up without a variable update.
 
-### 3. Switch the lint job to the lean image
+### 3. Choose the runner
+
+Like the `super-linter` workflow, the build job runs on GitHub-hosted `ubuntu-24.04` unless the `SUPER_LINTER_RUNS_ON` variable is set. Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level. The value is JSON, for example `"my-runner"` or `["self-hosted", "linux"]`. Set the same variable for both workflows, and see [Run on self-hosted runners](../super-linter/README.md#example-run-on-self-hosted-runners).
+
+The runner needs Linux, Docker and outbound access to GHCR and to the Super-Linter release. The workflow sets `TMPDIR` to `RUNNER_TEMP` before the build, so the smoke test's work directory is one the runner's Docker daemon can mount (some self-hosted runners do not share `/tmp` with the daemon).
+
+### 4. Switch the lint job to the lean image
 
 The `super-linter` workflow reads the image from its `env` section, not from the repository variable. In `.github/workflows/super-linter.yaml` point the env value at the variable:
 
@@ -68,7 +74,7 @@ env:
 
 Run the `super-linter-lean` workflow once first (manual dispatch). While the variable is empty, the `super-linter` workflow runs the upstream image chosen by `RUN_SUPER_LINTER_SLIM`. With the variable set, only the `Run Super-Linter Custom Image` job runs. You can also paste an image tag into the env value instead of using the variable; then the variable is not needed and step 2 can be skipped.
 
-### 4. Package access
+### 5. Package access
 
 The image is pushed with the label that links the package to the repository, so the lint job can pull it with its own token. For a private package outside the repository's access list, grant the repository read access to the package.
 
@@ -101,5 +107,6 @@ ghwm update --prune
 | --- | --- | --- |
 | `No 'uses: super-linter/super-linter/slim@<sha> # vX.Y.Z' step found` | The slim step or its version comment was removed or reformatted | Restore the step as installed by `super-linter` 2.0.0 or later |
 | Smoke test reports `FAIL (not-linted)` for a linter | The image lacks that linter or the fixtures do not match the version | Check the generated `plan.json` and the pinned superlint-lean version |
-| Trivy gate fails | A CRITICAL finding with a fix in the image | Rebuild after upstream releases a fixed version, or lower `TRIVY_BLOCKING_SEVERITY` |
+| Every linter shows `not-linted` in the smoke test on a self-hosted runner | The Docker daemon cannot see the runner temp directory (`RUNNER_TEMP`) | Make `RUNNER_TEMP` a path the daemon can mount, for example one on the host when the runner itself runs in a container |
+| The jobs never start | No runner has the label `ubuntu-24.04` (or the account has no hosted minutes) | Set `SUPER_LINTER_RUNS_ON` to your runner label(s) |
 | `SUPER_LINTER_CUSTOM_IMAGE was not updated` | App credentials not available | Set the variable as shown in the job summary |
