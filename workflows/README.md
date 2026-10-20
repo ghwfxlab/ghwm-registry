@@ -30,3 +30,4 @@ Each workflow package can install:
 | `auto-assign-pr` | Automatically add pull-request reviewers and assignees using [kentaro-m/auto-assign-action](https://github.com/kentaro-m/auto-assign-action) | [Readme](auto-assign-pr/README.md) |
 | `super-linter` | Code linting using [Super-Linter](https://github.com/super-linter/super-linter) and pre-commit hooks | [Readme](super-linter/README.md) |
 | `publish-pypi` | Build a Python package and publish it to PyPI with trusted publishing | [Readme](publish-pypi/README.md) |
+| `super-linter-lean` | Build, scan and publish a Super-Linter image with only the linters a repository enables | [Readme](super-linter-lean/README.md) |
