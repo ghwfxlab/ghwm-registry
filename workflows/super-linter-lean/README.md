@@ -47,7 +47,7 @@ Then run `ghwm install` and commit the files.
 
 ### 2. Let the workflow update the variable
 
-A workflow token cannot write repository variables. The workflow uses a GitHub App token for it, with the same `GH_APP_ID` and `GH_APP_PRIVATE_KEY` secrets as the `auto-release` workflow. Give the App the repository permission **Variables: read and write**, and make sure the secrets are available to the repository.
+A workflow token cannot write repository variables. The workflow uses a GitHub App token for it, with the same `GH_APP_ID` and `GH_APP_PRIVATE_KEY` secrets as the `auto-release` workflow. Give the App the repository permission **Variables: read and write**, and make sure the secrets are available to the repository. The token gets whatever the App is granted (the token action cannot narrow it to variables), so grant the App no more than it needs.
 
 The credentials are optional. Without the secrets the token step is skipped and the build still succeeds. The job summary then prints the command to set the variable yourself:
 

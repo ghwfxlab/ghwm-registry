@@ -57,6 +57,8 @@ jobs:
             echo "configured=false" >> "${GITHUB_OUTPUT}"
           fi
 
+      # The token has the permissions the App was granted on the repository (Variables: read and write).
+      # create-github-app-token has no input to narrow it to variables.
       - name: Generate GitHub App token
         id: app-token
         if: steps.app.outputs.configured == 'true'
@@ -64,7 +66,6 @@ jobs:
         with:
           client-id: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }} # zizmor: ignore[secrets-outside-env]
-          permission-variables: write
 
       - name: Checkout Code
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
