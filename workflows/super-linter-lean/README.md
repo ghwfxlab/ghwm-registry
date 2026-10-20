@@ -45,17 +45,15 @@ workflows:
 
 Then run `ghwm install` and commit the files.
 
-### 2. Let the workflow update the variable
+### 2. Set up the GitHub App
 
-A workflow token cannot write repository variables. The workflow uses a GitHub App token for it, with the same `GH_APP_ID` and `GH_APP_PRIVATE_KEY` secrets as the `auto-release` workflow. Give the App the repository permission **Variables: read and write**, and make sure the secrets are available to the repository. The token gets whatever the App is granted (the token action cannot narrow it to variables), so grant the App no more than it needs.
+The GitHub App credentials are required. A workflow token cannot write repository variables, so the workflow uses a GitHub App token to record the image in `SUPER_LINTER_CUSTOM_IMAGE`, with the same `GH_APP_ID` and `GH_APP_PRIVATE_KEY` secrets as the `auto-release` workflow.
 
-The credentials are optional. Without the secrets the token step is skipped and the build still succeeds. The job summary then prints the command to set the variable yourself:
+1. Create a GitHub App (or reuse the one of `auto-release`) with the repository permission **Variables: read and write**. The token gets whatever the App is granted (the token action cannot narrow it to variables), so grant the App no more than it needs.
+2. Install the App on the repository and accept any updated permissions on the installation.
+3. Make the secrets `GH_APP_ID` and `GH_APP_PRIVATE_KEY` available to the repository.
 
-```sh
-gh variable set SUPER_LINTER_CUSTOM_IMAGE --body ghcr.io/<owner>/<repo>/super-linter-lean:<version>-<short sha>
-```
-
-You can also set the variable once to the moving tag (`...:latest` or `...:<version>`) and skip the App: every rebuild is then picked up without a variable update.
+Without the secrets, the first step of the job fails with a message naming them, before anything is built.
 
 ### 3. Choose the runner
 
@@ -109,4 +107,5 @@ ghwm update --prune
 | Smoke test reports `FAIL (not-linted)` for a linter | The image lacks that linter or the fixtures do not match the version | Check the generated `plan.json` and the pinned superlint-lean version |
 | Every linter shows `not-linted` in the smoke test on a self-hosted runner | The Docker daemon cannot see the runner temp directory (`RUNNER_TEMP`) | Make `RUNNER_TEMP` a path the daemon can mount, for example one on the host when the runner itself runs in a container |
 | The jobs never start | No runner has the label `ubuntu-24.04` (or the account has no hosted minutes) | Set `SUPER_LINTER_RUNS_ON` to your runner label(s) |
-| `SUPER_LINTER_CUSTOM_IMAGE was not updated` | App credentials not available | Set the variable as shown in the job summary |
+| `The secrets GH_APP_ID and GH_APP_PRIVATE_KEY are required …` | The App secrets are not available to the repository | Add them as described in step 2 |
+| `HTTP 403: Resource not accessible by integration` when recording the image | The App lacks the Variables permission, or the installation has not accepted it | Grant **Variables: read and write** and accept the updated permissions on the installation |

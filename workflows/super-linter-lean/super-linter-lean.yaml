@@ -46,22 +46,19 @@ jobs:
       packages: write
     steps:
       - name: Check for GitHub App credentials
-        id: app
         env:
           GH_APP_ID: ${{ secrets.GH_APP_ID }}
           GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
         run: |
-          if [ -n "${GH_APP_ID}" ] && [ -n "${GH_APP_PRIVATE_KEY}" ]; then
-            echo "configured=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "configured=false" >> "${GITHUB_OUTPUT}"
+          if [ -z "${GH_APP_ID}" ] || [ -z "${GH_APP_PRIVATE_KEY}" ]; then
+            echo "::error::The secrets GH_APP_ID and GH_APP_PRIVATE_KEY are required to record the image in SUPER_LINTER_CUSTOM_IMAGE; see the readme of the super-linter-lean workflow."
+            exit 1
           fi
 
       # The token has the permissions the App was granted on the repository (Variables: read and write).
       # create-github-app-token has no input to narrow it to variables.
       - name: Generate GitHub App token
         id: app-token
-        if: steps.app.outputs.configured == 'true'
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
@@ -163,18 +160,5 @@ jobs:
           GH_REPO: ${{ github.repository }}
           IMAGE: ${{ steps.push.outputs.image }}
         run: |
-          if [ -z "${GH_TOKEN}" ]; then
-            {
-              echo "The GitHub App credentials (GH_APP_ID, GH_APP_PRIVATE_KEY) are not available,"
-              echo "so the variable was not updated."
-              echo "Set it yourself:"
-              echo
-              echo '```sh'
-              echo "gh variable set SUPER_LINTER_CUSTOM_IMAGE --body ${IMAGE}"
-              echo '```'
-            } >> "${GITHUB_STEP_SUMMARY}"
-            echo "::warning::SUPER_LINTER_CUSTOM_IMAGE was not updated; see the job summary."
-            exit 0
-          fi
           gh variable set SUPER_LINTER_CUSTOM_IMAGE --body "${IMAGE}"
           echo "SUPER_LINTER_CUSTOM_IMAGE is now \`${IMAGE}\`" >> "${GITHUB_STEP_SUMMARY}"
