@@ -45,23 +45,10 @@ jobs:
       contents: read
       packages: write
     steps:
-      - name: Check for GitHub App credentials
-        id: app
-        env:
-          GH_APP_ID: ${{ secrets.GH_APP_ID }}
-          GH_APP_PRIVATE_KEY: ${{ secrets.GH_APP_PRIVATE_KEY }}
-        run: |
-          if [ -n "${GH_APP_ID}" ] && [ -n "${GH_APP_PRIVATE_KEY}" ]; then
-            echo "configured=true" >> "${GITHUB_OUTPUT}"
-          else
-            echo "configured=false" >> "${GITHUB_OUTPUT}"
-          fi
-
       # The token has the permissions the App was granted on the repository (Variables: read and write).
       # create-github-app-token has no input to narrow it to variables.
       - name: Generate GitHub App token
         id: app-token
-        if: steps.app.outputs.configured == 'true'
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
@@ -87,14 +74,21 @@ jobs:
 
       - name: Read the Super-Linter version
         id: version
+        env:
+          CONFIGURED_VERSION: ${{ vars.SUPER_LINTER_VERSION }}
         run: |
-          # The release is the version comment of the pinned upstream step, which Dependabot keeps current.
-          version="$(
-            sed -n 's|^ *uses: super-linter/super-linter/slim@[0-9a-f]* *# *\(v[0-9][^ ]*\).*|\1|p' \
-              .github/workflows/super-linter.yaml | head -n 1
-          )"
+          # SUPER_LINTER_VERSION wins. Without it, the release is the version comment of the pinned upstream
+          # step of the super-linter workflow, which Dependabot keeps current.
+          version="${CONFIGURED_VERSION}"
+          if [ -z "${version}" ] && [ -f .github/workflows/super-linter.yaml ]; then
+            version="$(
+              sed -n 's|^ *uses: super-linter/super-linter/slim@[0-9a-f]* *# *\(v[0-9][^ ]*\).*|\1|p' \
+                .github/workflows/super-linter.yaml | head -n 1
+            )"
+          fi
           if [ -z "${version}" ]; then
-            echo "::error::No 'super-linter/super-linter/slim@<sha> # vX.Y.Z' step in super-linter.yaml"
+            echo "::error::Set the SUPER_LINTER_VERSION variable (for example v9.0.0)" \
+              "or keep the super-linter/super-linter/slim step in super-linter.yaml"
             exit 1
           fi
           echo "version=${version}" >> "${GITHUB_OUTPUT}"
@@ -163,18 +157,5 @@ jobs:
           GH_REPO: ${{ github.repository }}
           IMAGE: ${{ steps.push.outputs.image }}
         run: |
-          if [ -z "${GH_TOKEN}" ]; then
-            {
-              echo "The GitHub App credentials (GH_APP_ID, GH_APP_PRIVATE_KEY) are not available,"
-              echo "so the variable was not updated."
-              echo "Set it yourself:"
-              echo
-              echo '```sh'
-              echo "gh variable set SUPER_LINTER_CUSTOM_IMAGE --body ${IMAGE}"
-              echo '```'
-            } >> "${GITHUB_STEP_SUMMARY}"
-            echo "::warning::SUPER_LINTER_CUSTOM_IMAGE was not updated; see the job summary."
-            exit 0
-          fi
           gh variable set SUPER_LINTER_CUSTOM_IMAGE --body "${IMAGE}"
           echo "SUPER_LINTER_CUSTOM_IMAGE is now \`${IMAGE}\`" >> "${GITHUB_STEP_SUMMARY}"

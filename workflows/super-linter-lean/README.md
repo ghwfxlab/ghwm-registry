@@ -16,13 +16,13 @@ After running `ghwm install`, the consumer repository gets:
 - `.github/workflows/super-linter-lean.yaml`
 - An entry in `ghwm.lock`
 
-It reads `.github/super-linter.env` and `.github/workflows/super-linter.yaml`, so install it together with the `super-linter` workflow (2.0.0 or later).
+It reads `.github/super-linter.env`. It also reads the Super-Linter release from `.github/workflows/super-linter.yaml` unless you set the `SUPER_LINTER_VERSION` repository variable, so you can use it without the `super-linter` workflow.
 
 ## How it works
 
 The workflow runs on pushes to `main` that change `.github/super-linter.env`, `.github/workflows/super-linter.yaml` or the workflow itself, and on manual dispatch. It then:
 
-1. Reads the upstream release from the version comment of the `super-linter/super-linter/slim` step in `.github/workflows/super-linter.yaml`.
+1. Takes the upstream release from the `SUPER_LINTER_VERSION` repository variable (for example `v9.0.0`) or, when it is not set, from the version comment of the `super-linter/super-linter/slim` step in `.github/workflows/super-linter.yaml`.
 2. Builds the image with the superlint-lean action and smoke-tests it: for every enabled linter it runs the image on Super-Linter's own good and bad fixtures and requires that the good files pass and the bad files fail.
 3. Scans the image with Trivy once and prints the HIGH and CRITICAL findings that have a fix. The scan is report-only: only a failure of the scan step itself stops the build.
 4. Pushes `ghcr.io/<owner>/<repo>/super-linter-lean` with three tags: `latest`, `<version>` and `<version>-<short sha>` (immutable).
@@ -49,13 +49,7 @@ Then run `ghwm install` and commit the files.
 
 A workflow token cannot write repository variables. The workflow uses a GitHub App token for it, with the same `GH_APP_ID` and `GH_APP_PRIVATE_KEY` secrets as the `auto-release` workflow. Give the App the repository permission **Variables: read and write**, and make sure the secrets are available to the repository. The token gets whatever the App is granted (the token action cannot narrow it to variables), so grant the App no more than it needs.
 
-The credentials are optional. Without the secrets the token step is skipped and the build still succeeds. The job summary then prints the command to set the variable yourself:
-
-```sh
-gh variable set SUPER_LINTER_CUSTOM_IMAGE --body ghcr.io/<owner>/<repo>/super-linter-lean:<version>-<short sha>
-```
-
-You can also set the variable once to the moving tag (`...:latest` or `...:<version>`) and skip the App: every rebuild is then picked up without a variable update.
+The credentials are required: the job starts by creating the token and fails if the secrets are missing, wrong or expired, or if the App lacks the Variables permission.
 
 ### 3. Choose the runner
 
@@ -105,8 +99,9 @@ ghwm update --prune
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| `No 'uses: super-linter/super-linter/slim@<sha> # vX.Y.Z' step found` | The slim step or its version comment was removed or reformatted | Restore the step as installed by `super-linter` 2.0.0 or later |
+| `Set the SUPER_LINTER_VERSION repository variable …` | No `SUPER_LINTER_VERSION` variable, and the slim step or its version comment is missing from `super-linter.yaml` | Set the variable, or restore the step as installed by `super-linter` 2.0.0 or later |
 | Smoke test reports `FAIL (not-linted)` for a linter | The image lacks that linter or the fixtures do not match the version | Check the generated `plan.json` and the pinned superlint-lean version |
 | Every linter shows `not-linted` in the smoke test on a self-hosted runner | The Docker daemon cannot see the runner temp directory (`RUNNER_TEMP`) | Make `RUNNER_TEMP` a path the daemon can mount, for example one on the host when the runner itself runs in a container |
 | The jobs never start | No runner has the label `ubuntu-24.04` (or the account has no hosted minutes) | Set `SUPER_LINTER_RUNS_ON` to your runner label(s) |
-| `SUPER_LINTER_CUSTOM_IMAGE was not updated` | App credentials not available | Set the variable as shown in the job summary |
+| `Generate GitHub App token` fails | `GH_APP_ID` or `GH_APP_PRIVATE_KEY` is missing, wrong or expired | Add or correct the secrets |
+| `Record the image …` fails with 403 | The App lacks Variables: read and write, or the installation has not accepted the updated permissions | Grant the permission and accept it on the installation |
