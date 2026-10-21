@@ -1,0 +1,6 @@
+---
+rules:
+  github-app:
+    ignore:
+      # create-github-app-token has no input to limit a token to repository variables
+      - super-linter-lean.yaml

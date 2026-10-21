@@ -1,6 +1,6 @@
 # Managed by ghwm (super-linter@2.0.1)
 # Source: @ghwfxlab/super-linter:super-linter.yaml
-# Hash: sha256:1d75c10a3efdb786124990d5c2d08c5024d1f5abb262c085e8ca3f81b98ccb5e
+# Hash: sha256:414f3c4901483698cc4fd49c6e5b44537cffdbb9bc40976bb5f4b7b16cff02a4
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -33,6 +33,8 @@ env:
   SUPER_LINTER_FIX_CONFIG_PATH: .github/super-linter-fix.env
   RUN_SUPER_LINTER_SLIM: true
   RUN_SUPER_LINTER_FIXES: false
+  SUPER_LINTER_CUSTOM_IMAGE: ${{ vars.SUPER_LINTER_CUSTOM_IMAGE }}
+  RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK: false
 
 jobs:
   # Every job reads its runner from the SUPER_LINTER_RUNS_ON repository (or organisation) variable, as JSON:

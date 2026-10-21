@@ -7,3 +7,5 @@ workflows:
     version: "1.0.2"
   - name: ghwm-update
     version: "1.0.1"
+  - name: super-linter-lean
+    version: "1.0.0"
