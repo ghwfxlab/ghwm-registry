@@ -94,14 +94,19 @@ We use a `Makefile` at the root of the repository to manage tasks across differe
 ### 1. Install the CLI
 
 ```sh
-uv tool install git+https://github.com/ghwfxlab/ghwm.git
+uv tool install ghwm
 ```
 
-Or pin the CLI to a specific tag:
+Or pin the CLI to a specific version:
 
 ```sh
-uv tool install git+https://github.com/ghwfxlab/ghwm.git@vX.Y.Z
+uv tool install ghwm==X.Y.Z
 ```
+
+> [!IMPORTANT]
+> `ghwm` downloads workflow packages from GitHub Packages, which requires a GitHub token with the
+> `read:packages` scope even when the registry is public. Run `gh auth login` and
+> `gh auth refresh -s read:packages`, or export a `GH_TOKEN` with that scope.
 
 ### 2. Create `ghwm.yml` in your repository root
 
@@ -109,9 +114,9 @@ uv tool install git+https://github.com/ghwfxlab/ghwm.git@vX.Y.Z
 source: ghwfxlab/ghwm-registry
 workflows:
   - name: super-linter
-    version: 1.0.0
+    version: 2.0.1
   - name: auto-assign-pr
-    version: 1.0.0
+    version: 1.0.2
     update-triggers: true
     update-config-files: true
 ```

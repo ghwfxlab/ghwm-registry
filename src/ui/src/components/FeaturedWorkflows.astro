@@ -7,7 +7,7 @@ const { workflows } = await getTrendingWorkflows(apiEndpoint);
 // Top up to 10 featured workflows (ordered by installs, but counts are not shown on the homepage)
 const featuredWorkflows = workflows.slice(0, 10);
 ---
-<!-- Featured Workflows Section (10 items, 5 per row max on desktop, 2 per row on mobile) -->
+<!-- Featured Workflows Section (10 items, 5 per row max on desktop, 1 per row on phones, 2 on small tablets) -->
 <section class="flex flex-col gap-md">
   <div class="flex justify-between items-end border-b border-outline-variant pb-sm mb-xs">
     <h2 class="font-headline-lg text-headline-lg flex items-center gap-sm">
@@ -19,7 +19,7 @@ const featuredWorkflows = workflows.slice(0, 10);
     </div>
   </div>
 
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-gutter" id="featured-workflows-grid">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-gutter" id="featured-workflows-grid">
     {featuredWorkflows.map((workflow) => {
       const lastActive = formatLastInstalled(workflow.lastInstalledAt);
       return (
