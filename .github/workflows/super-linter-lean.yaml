@@ -1,6 +1,6 @@
 # Managed by ghwm (super-linter-lean@1.0.1)
 # Source: @ghwfxlab/super-linter-lean:super-linter-lean.yaml
-# Hash: sha256:a6469a8c76c51deef8581bd0a8e18cb57b18271d3d432befdd5d5407147c6715
+# Hash: sha256:9724f5803a8231f2928af2eaee56b2c2cbab5ceeaeaad505360aa8637f89b7be
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -54,6 +54,7 @@ jobs:
       # create-github-app-token has no input to narrow it to variables.
       - name: Generate GitHub App token
         id: app-token
+        # yamllint disable-line rule:line-length
         uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0 # zizmor: ignore[github-app]
         with:
           client-id: ${{ secrets.GH_APP_ID }} # zizmor: ignore[secrets-outside-env]
