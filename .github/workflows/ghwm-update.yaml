@@ -1,6 +1,6 @@
-# Managed by ghwm (ghwm-update@1.0.1)
+# Managed by ghwm (ghwm-update@1.0.2)
 # Source: @ghwfxlab/ghwm-update:ghwm-update.yaml
-# Hash: sha256:a3a427ff57e91ded056647426807917ef3ccce89e5ddc29d36ace2f9ad6593bd
+# Hash: sha256:0f3433a0a7b439100c7efd631c287b54658f86901fab41765a9b6f5cbe0209bf
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -40,7 +40,7 @@ jobs:
     steps:
       - name: Generate GH App token
         id: app-token
-        uses: actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1 # v3.2.0
+        uses: actions/create-github-app-token@64ab729a6294000f5aa4a4bc0b73d1f32bc45510 # v3.3.0
         with:
           client-id: ${{ secrets.GH_APP_CLIENT_ID || secrets.GH_APP_ID }}
           private-key: ${{ secrets.GH_APP_PRIVATE_KEY }}
