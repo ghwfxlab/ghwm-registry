@@ -1,9 +1,9 @@
 ---
-import { fetchLatestGhwmTag, getInstallCommands, DEFAULT_GHWM_REPO } from '../lib/github';
+import { fetchLatestGhwmVersion, getInstallCommands, GHWM_PYPI_PACKAGE, GHWM_PYPI_URL } from '../lib/github';
+import { withBase } from '../lib/paths';
 
-// Fetch the latest tag directly from GitHub at build time (with graceful fallback)
-const latestTag = await fetchLatestGhwmTag();
-const installCommands = getInstallCommands(latestTag);
+const latestVersion = await fetchLatestGhwmVersion();
+const installCommands = getInstallCommands(latestVersion);
 ---
 
 <!-- Get Started Installation Section -->
@@ -17,7 +17,7 @@ const installCommands = getInstallCommands(latestTag);
   <div class="flex flex-col gap-sm w-full">
     <!-- Button Group Wrapper (Relative to hold badge) -->
     <div class="relative w-full mt-4">
-      <!-- Small Recommended badge above "uv (pinned)" button -->
+      <!-- Small Recommended badge above "uv" button -->
       <div class="absolute -top-5 left-2 font-mono uppercase font-bold tracking-wider text-[9px] text-primary select-none px-1.5">
         ★ RECOMMENDED
       </div>
@@ -25,17 +25,18 @@ const installCommands = getInstallCommands(latestTag);
       <!-- Button Group (Top) - Parent holds common styles for clean simplicity -->
       <div class="flex items-center w-full border border-outline-variant rounded-default bg-surface [&_button]:flex-1 [&_button]:py-2 [&_button]:font-mono [&_button]:text-xs [&_button]:hover:bg-surface-container [&_button]:transition-all [&_button]:cursor-pointer [&_button]:whitespace-nowrap [&_button]:text-center [&_button]:border-r [&_button]:border-outline-variant [&_button:last-child]:border-r-0 [&_button:first-child]:rounded-l-default [&_button:last-child]:rounded-r-default h-[36px] overflow-hidden" id="method-button-group">
         <button
-          data-method="uv-pinned"
-          class="method-btn bg-surface-container-low text-primary font-bold"
-          title={`Install latest tagged release (${latestTag})`}
-        >
-          uv (pinned)
-        </button>
-        <button
           data-method="uv"
-          class="method-btn text-on-surface-variant"
+          class="method-btn bg-surface-container-low text-primary font-bold"
+          title="Install the latest release with uv"
         >
           uv
+        </button>
+        <button
+          data-method="uv-pinned"
+          class="method-btn text-on-surface-variant"
+          title={latestVersion ? `Pin to the latest release (${latestVersion})` : 'Install the latest release'}
+        >
+          uv (pinned)
         </button>
         <button
           data-method="pipx"
@@ -56,7 +57,7 @@ const installCommands = getInstallCommands(latestTag);
     <div class="w-full terminal-bg border border-outline-variant rounded-default px-sm py-2 flex items-center justify-between shadow-sm min-h-[42px] gap-sm group">
       <div class="flex-1 text-left pr-2 flex items-center">
         <code id="install-command" class="font-code-md text-code-md text-secondary select-all whitespace-normal break-all">
-          {installCommands['uv-pinned']}
+          {installCommands['uv']}
         </code>
       </div>
 
@@ -68,10 +69,15 @@ const installCommands = getInstallCommands(latestTag);
         <span id="copy-icon" class="material-symbols-outlined text-[16px] select-none">content_copy</span>
       </button>
     </div>
+
+    <p class="font-body-sm text-[12px] leading-[16px] text-on-surface-variant text-center">
+      <code class="font-mono">ghwm install</code> needs a GitHub token with <code class="font-mono">read:packages</code>.
+      <a class="text-primary hover:underline" href={withBase('/docs/quickstart/#authenticate')}>Setup &rarr;</a>
+    </p>
   </div>
 </div>
 
-<script define:vars={{ installCommands, repo: DEFAULT_GHWM_REPO }}>
+<script define:vars={{ installCommands, pypiPackage: GHWM_PYPI_PACKAGE, pypiUrl: GHWM_PYPI_URL }}>
   // Select selectors
   const buttons = document.querySelectorAll('.method-btn');
   const codeDisplay = document.getElementById('install-command');
@@ -96,64 +102,27 @@ const installCommands = getInstallCommands(latestTag);
     });
   });
 
-  // Client-side fetch to ensure the pinned version is always the latest even if published after build
+  // Client-side fetch so the pinned version is always the latest on PyPI, even if published after build
   (async () => {
     try {
-      const isValidCliTag = (tag) => {
-        if (!tag) return false;
-        const clean = String(tag).trim().replace(/^@+/, '');
-        if (clean.startsWith('ui-') || clean.startsWith('registry-')) return false;
-        return /^v?\d+(\.\d+)*(-[a-zA-Z0-9.]+)?$/.test(clean);
-      };
+      const res = await fetch(pypiUrl);
+      if (!res.ok) return;
+      const version = (await res.json())?.info?.version;
+      if (typeof version !== 'string' || !/^\d+(\.\d+)*$/.test(version)) return;
 
-      let freshTag = null;
-      const res = await fetch(`https://api.github.com/repos/${repo}/releases?per_page=5`, {
-        headers: { Accept: 'application/vnd.github+json' }
-      });
-      if (res.ok) {
-        const releases = await res.json();
-        if (Array.isArray(releases)) {
-          for (const rel of releases) {
-            if (rel && typeof rel.tag_name === 'string' && isValidCliTag(rel.tag_name)) {
-              freshTag = rel.tag_name.trim().replace(/^@+/, '');
-              break;
-            }
-          }
-        }
+      const freshCommand = `uv tool install ${pypiPackage}==${version}`;
+      installCommands['uv-pinned'] = freshCommand;
+
+      // If uv (pinned) is currently active, update the code display immediately
+      const pinnedBtn = document.querySelector('.method-btn[data-method="uv-pinned"]');
+      if (pinnedBtn && pinnedBtn.classList.contains('font-bold') && codeDisplay) {
+        codeDisplay.textContent = freshCommand;
       }
-
-      if (!freshTag) {
-        const tagsRes = await fetch(`https://api.github.com/repos/${repo}/tags?per_page=10`, {
-          headers: { Accept: 'application/vnd.github+json' }
-        });
-        if (tagsRes.ok) {
-          const tags = await tagsRes.json();
-          if (Array.isArray(tags)) {
-            for (const t of tags) {
-              if (t && typeof t.name === 'string' && isValidCliTag(t.name)) {
-                freshTag = t.name.trim().replace(/^@+/, '');
-                break;
-              }
-            }
-          }
-        }
-      }
-
-      if (freshTag) {
-        const freshCommand = `uv tool install git+https://github.com/${repo}.git@${freshTag}`;
-        installCommands['uv-pinned'] = freshCommand;
-
-        // If uv-pinned is currently active, update the code display immediately
-        const pinnedBtn = document.querySelector('.method-btn[data-method="uv-pinned"]');
-        if (pinnedBtn && pinnedBtn.classList.contains('font-bold') && codeDisplay) {
-          codeDisplay.textContent = freshCommand;
-        }
-        if (pinnedBtn) {
-          pinnedBtn.setAttribute('title', `Install latest tagged release (${freshTag})`);
-        }
+      if (pinnedBtn) {
+        pinnedBtn.setAttribute('title', `Pin to the latest release (${version})`);
       }
     } catch {
-      // Offline or rate-limited: graceful fallback to build-time tag
+      // Offline or blocked: graceful fallback to the build-time version
     }
   })();
 

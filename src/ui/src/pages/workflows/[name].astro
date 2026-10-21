@@ -8,6 +8,7 @@ import {
   isOfficialProvider,
 } from '../../lib/usage';
 import { withBase } from '../../lib/paths';
+import { resolveLocalWorkflowPermissions, PERMISSION_DESCRIPTIONS } from '../../lib/permissions';
 
 export async function getStaticPaths() {
   const apiEndpoint = getApiEndpoint();
@@ -34,6 +35,8 @@ workflows:
   - name: ${workflow.name}
     version: ${versionStr}
     update-config-files: true`;
+
+const permissions = resolveLocalWorkflowPermissions(name ?? '');
 
 const installCliCommand = 'ghwm install';
 const badgeUrl = `${apiEndpoint || 'https://ghwm-deployment-tst.ghwfxlab.workers.dev'}/v1/badges/${workflow.name}/installs`;
@@ -198,31 +201,38 @@ const badgeMarkdown = `![Installs](${badgeUrl})`;
         <section class="card-surface rounded-lg p-lg flex flex-col gap-md">
           <h2 class="font-headline-md text-headline-md font-semibold text-on-surface flex items-center gap-sm">
             <span class="material-symbols-outlined text-primary text-[20px]">settings</span>
-            Permissions & Triggers
+            Permissions
           </h2>
-          <div class="overflow-x-auto">
-            <table class="w-full font-body-sm text-body-sm text-left border-collapse">
-              <thead>
-                <tr class="border-b border-outline-variant text-on-surface font-semibold">
-                  <th class="py-sm pr-md">Scope</th>
-                  <th class="py-sm pr-md">Access</th>
-                  <th class="py-sm">Description</th>
-                </tr>
-              </thead>
-              <tbody class="divide-y divide-outline-variant text-on-surface-variant font-code-sm text-[12px]">
-                <tr>
-                  <td class="py-sm pr-md text-on-surface font-mono">contents</td>
-                  <td class="py-sm pr-md text-secondary font-mono">write</td>
-                  <td class="py-sm">Allows workflow to write fixes or trigger downstream actions</td>
-                </tr>
-                <tr>
-                  <td class="py-sm pr-md text-on-surface font-mono">pull-requests</td>
-                  <td class="py-sm pr-md text-secondary font-mono">write</td>
-                  <td class="py-sm">Assigns reviewers, PR triage comments, and metadata</td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
+          {permissions === null ? (
+            <p class="font-body-sm text-body-sm text-on-surface-variant">
+              Permissions are declared in the workflow file; review it before installing.
+            </p>
+          ) : permissions.length === 0 ? (
+            <p class="font-body-sm text-body-sm text-on-surface-variant">
+              This workflow requests no <code class="font-mono text-secondary">GITHUB_TOKEN</code> permissions.
+            </p>
+          ) : (
+            <div class="overflow-x-auto">
+              <table class="w-full font-body-sm text-body-sm text-left border-collapse">
+                <thead>
+                  <tr class="border-b border-outline-variant text-on-surface font-semibold">
+                    <th class="py-sm pr-md">Scope</th>
+                    <th class="py-sm pr-md">Access</th>
+                    <th class="py-sm">Description</th>
+                  </tr>
+                </thead>
+                <tbody class="divide-y divide-outline-variant text-on-surface-variant font-code-sm text-[12px]">
+                  {permissions.map(({ scope, access }) => (
+                    <tr>
+                      <td class="py-sm pr-md text-on-surface font-mono">{scope}</td>
+                      <td class="py-sm pr-md text-secondary font-mono">{access}</td>
+                      <td class="py-sm">{PERMISSION_DESCRIPTIONS[scope] ?? 'See the workflow file for how this scope is used'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </section>
 
         <!-- Endpoint Badge Integration -->

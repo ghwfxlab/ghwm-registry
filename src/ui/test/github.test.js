@@ -3,6 +3,8 @@ import assert from 'node:assert/strict';
 import {
   fetchLatestGhwmTag,
   getInstallCommands,
+  fetchLatestGhwmVersion,
+  parsePypiVersion,
   getGitHubToken,
   isValidCliTag,
   DEFAULT_GHWM_REPO,
@@ -20,53 +22,59 @@ function mockFetch(handler) {
   };
 }
 
-test('test_getInstallCommands_should_generate_commands_with_default_tag_and_repo', () => {
+test('test_getInstallCommands_should_pin_the_given_version', () => {
   // Act
-  const commands = getInstallCommands();
+  const commands = getInstallCommands('1.10.0');
 
   // Assert
-  assert.strictEqual(
-    commands['uv-pinned'],
-    `uv tool install git+https://github.com/${DEFAULT_GHWM_REPO}.git@${DEFAULT_GHWM_TAG}`
-  );
-  assert.strictEqual(
-    commands['uv'],
-    `uv tool install git+https://github.com/${DEFAULT_GHWM_REPO}.git`
-  );
-  assert.strictEqual(
-    commands['pipx'],
-    `pipx install git+https://github.com/${DEFAULT_GHWM_REPO}.git`
-  );
-  assert.strictEqual(
-    commands['pip'],
-    `pip install git+https://github.com/${DEFAULT_GHWM_REPO}.git`
-  );
+  assert.deepStrictEqual(commands, {
+    uv: 'uv tool install ghwm',
+    'uv-pinned': 'uv tool install ghwm==1.10.0',
+    pipx: 'pipx install ghwm',
+    pip: 'pip install ghwm',
+  });
 });
 
-test('test_getInstallCommands_should_support_custom_tag_and_strip_leading_at', () => {
-  // Act
-  const commands = getInstallCommands('@v2.0.0', 'custom-org/my-tool');
-
-  // Assert
-  assert.strictEqual(
-    commands['uv-pinned'],
-    'uv tool install git+https://github.com/custom-org/my-tool.git@v2.0.0'
-  );
-  assert.strictEqual(
-    commands['uv'],
-    'uv tool install git+https://github.com/custom-org/my-tool.git'
-  );
+test('test_getInstallCommands_should_fall_back_to_unpinned_when_version_unknown', () => {
+  // Act / Assert
+  assert.strictEqual(getInstallCommands(null)['uv-pinned'], 'uv tool install ghwm');
+  assert.strictEqual(getInstallCommands()['uv-pinned'], 'uv tool install ghwm');
 });
 
-test('test_getInstallCommands_should_fallback_to_default_tag_when_empty_string_provided', () => {
+test('test_parsePypiVersion_should_accept_release_versions_only', () => {
+  assert.strictEqual(parsePypiVersion({ info: { version: ' 1.10.0 ' } }), '1.10.0');
+  assert.strictEqual(parsePypiVersion({ info: { version: '2.0.0rc1' } }), null);
+  assert.strictEqual(parsePypiVersion({ info: { version: 'x; rm -rf /' } }), null);
+  assert.strictEqual(parsePypiVersion({}), null);
+  assert.strictEqual(parsePypiVersion(null), null);
+});
+
+test('test_fetchLatestGhwmVersion_should_return_the_version_published_on_pypi', async () => {
+  // Arrange
+  let requested = '';
+  const fetchFn = async (url) => {
+    requested = url.toString();
+    return { ok: true, json: async () => ({ info: { version: '1.11.0' } }) };
+  };
+
   // Act
-  const commands = getInstallCommands('');
+  const version = await fetchLatestGhwmVersion({ fetchFn });
 
   // Assert
-  assert.strictEqual(
-    commands['uv-pinned'],
-    `uv tool install git+https://github.com/${DEFAULT_GHWM_REPO}.git@${DEFAULT_GHWM_TAG}`
-  );
+  assert.strictEqual(requested, 'https://pypi.org/pypi/ghwm/json');
+  assert.strictEqual(version, '1.11.0');
+});
+
+test('test_fetchLatestGhwmVersion_should_return_null_when_pypi_fails', async () => {
+  // Arrange
+  const failing = async () => {
+    throw new Error('offline');
+  };
+  const notFound = async () => ({ ok: false, status: 404 });
+
+  // Act / Assert
+  assert.strictEqual(await fetchLatestGhwmVersion({ fetchFn: failing }), null);
+  assert.strictEqual(await fetchLatestGhwmVersion({ fetchFn: notFound }), null);
 });
 
 test('test_getGitHubToken_should_read_from_process_env', () => {

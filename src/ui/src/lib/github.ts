@@ -7,6 +7,8 @@
 
 export const DEFAULT_GHWM_REPO = 'ghwfxlab/ghwm';
 export const DEFAULT_GHWM_TAG = 'v1.4.0';
+export const GHWM_PYPI_PACKAGE = 'ghwm';
+export const GHWM_PYPI_URL = `https://pypi.org/pypi/${GHWM_PYPI_PACKAGE}/json`;
 
 export interface FetchLatestTagOptions {
   repo?: string;
@@ -137,18 +139,48 @@ export async function fetchLatestGhwmTag(options: FetchLatestTagOptions = {}): P
 }
 
 /**
- * Builds the map of installation commands for the Get Started component.
+ * Returns the version string from a PyPI JSON API response, or null if it is missing or malformed.
  */
-export function getInstallCommands(
-  tag: string = DEFAULT_GHWM_TAG,
-  repo: string = DEFAULT_GHWM_REPO
-): Record<string, string> {
-  const cleanTag = tag.trim().replace(/^@+/, '') || DEFAULT_GHWM_TAG;
-  const repoUrl = `git+https://github.com/${repo}.git`;
+export function parsePypiVersion(data: unknown): string | null {
+  const version = (data as { info?: { version?: unknown } } | null)?.info?.version;
+  return typeof version === 'string' && /^\d+(\.\d+)*$/.test(version.trim()) ? version.trim() : null;
+}
+
+/**
+ * Fetches the latest version of the ghwm CLI published to PyPI.
+ * Returns null if the request times out, fails, or returns an unexpected payload.
+ */
+export async function fetchLatestGhwmVersion(
+  options: { timeoutMs?: number; fetchFn?: typeof fetch } = {}
+): Promise<string | null> {
+  const fetchImpl = options.fetchFn || fetch;
+  try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), options.timeoutMs ?? 4000);
+    const res = await fetchImpl(GHWM_PYPI_URL, { signal: controller.signal });
+    clearTimeout(timeoutId);
+    if (res.ok) {
+      return parsePypiVersion(await res.json());
+    }
+    console.warn(`[pypi] Warning: Received status ${res.status} for ${GHWM_PYPI_PACKAGE}`);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(`[pypi] Warning: Error fetching latest ${GHWM_PYPI_PACKAGE} version: ${msg}`);
+  }
+  return null;
+}
+
+/**
+ * Builds the map of installation commands for the Get Started component.
+ * The CLI is installed from PyPI; without a version every command resolves to the latest release,
+ * and `uv-pinned` pins the given version (or falls back to unpinned when it is unknown).
+ */
+export function getInstallCommands(latestVersion?: string | null): Record<string, string> {
+  const uv = `uv tool install ${GHWM_PYPI_PACKAGE}`;
   return {
-    'uv-pinned': `uv tool install ${repoUrl}@${cleanTag}`,
-    'uv': `uv tool install ${repoUrl}`,
-    'pipx': `pipx install ${repoUrl}`,
-    'pip': `pip install ${repoUrl}`,
+    'uv': uv,
+    'uv-pinned': latestVersion ? `${uv}==${latestVersion}` : uv,
+    'pipx': `pipx install ${GHWM_PYPI_PACKAGE}`,
+    'pip': `pip install ${GHWM_PYPI_PACKAGE}`,
   };
 }

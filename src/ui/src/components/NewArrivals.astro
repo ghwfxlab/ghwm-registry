@@ -20,7 +20,7 @@ const newArrivals = await getNewArrivals(apiEndpoint, 5);
     </div>
   </div>
 
-  <div class="grid grid-cols-2 md:grid-cols-5 gap-gutter" id="new-arrivals-grid">
+  <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-5 gap-gutter" id="new-arrivals-grid">
     {newArrivals.map((workflow) => {
       const dateStr = formatLastInstalled(workflow.createdAt || workflow.lastInstalledAt);
       return (
