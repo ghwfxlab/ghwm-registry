@@ -31,3 +31,11 @@ Each workflow package can install:
 | `super-linter` | Code linting using [Super-Linter](https://github.com/super-linter/super-linter) and pre-commit hooks | [Readme](super-linter/README.md) |
 | `publish-pypi` | Build a Python package and publish it to PyPI with trusted publishing | [Readme](publish-pypi/README.md) |
 | `super-linter-lean` | Build, scan and publish a Super-Linter image with only the linters a repository enables | [Readme](super-linter-lean/README.md) |
+
+## Self-hosted runners
+
+Every workflow picks its runner from a repository (or organisation) variable holding JSON, for example
+`"my-runner"` or `["self-hosted", "linux"]`. Each workflow reads its own variable first
+(`AUTO_ASSIGN_PR_RUNS_ON`, `AUTO_RELEASE_RUNS_ON`, `GHWM_UPDATE_RUNS_ON`, `PUBLISH_PYPI_RUNS_ON`,
+`SUPER_LINTER_RUNS_ON`, which both super-linter workflows share) and then the shared `RUNS_ON`.
+With neither set, the workflow runs on its GitHub-hosted default. Each workflow README has the details.

@@ -70,6 +70,18 @@ a person approves each upload; PyPI never accepts the same version twice.
 - **Manually:** run the workflow from the Actions tab and enter an existing tag, for example
   `v1.2.3`.
 
+## Run on self-hosted runners
+
+Every job runs on GitHub-hosted `ubuntu-24.04` unless a runner variable is set. Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level to cover many repositories. The workflow reads `PUBLISH_PYPI_RUNS_ON` first and falls back to `RUNS_ON`, so one `RUNS_ON` variable can move all your ghwm workflows and `PUBLISH_PYPI_RUNS_ON` overrides it for this one. The value is JSON:
+
+| Value | Runs on |
+| --- | --- |
+| unset | `ubuntu-24.04` (GitHub-hosted) |
+| `"my-runner"` | a runner with that label |
+| `["self-hosted", "linux"]` | a runner with all of those labels |
+
+It is a variable, not an `env` value, because `runs-on` cannot read the workflow `env`. The runner needs outbound access to PyPI, and the `publish` job needs OIDC trusted publishing, which self-hosted runners support. Use self-hosted runners on public repositories with care, because pull requests from forks can run code on them.
+
 ## Update and remove
 
 - Update: bump `version` in `ghwm.yml` and run `ghwm update`.

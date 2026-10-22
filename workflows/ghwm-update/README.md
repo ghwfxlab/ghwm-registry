@@ -123,6 +123,18 @@ The workflow runs automatically on its schedule.
 
 To run it manually, open **Actions → Update ghwm packages → Run workflow**.
 
+## Run on self-hosted runners
+
+Every job runs on GitHub-hosted `ubuntu-24.04` unless a runner variable is set. Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level to cover many repositories. The workflow reads `GHWM_UPDATE_RUNS_ON` first and falls back to `RUNS_ON`, so one `RUNS_ON` variable can move all your ghwm workflows and `GHWM_UPDATE_RUNS_ON` overrides it for this one. The value is JSON:
+
+| Value | Runs on |
+| --- | --- |
+| unset | `ubuntu-24.04` (GitHub-hosted) |
+| `"my-runner"` | a runner with that label |
+| `["self-hosted", "linux"]` | a runner with all of those labels |
+
+It is a variable, not an `env` value, because `runs-on` cannot read the workflow `env`. The runner needs `uv`-installable Python, `git` and outbound access to GitHub and GitHub Packages. Use self-hosted runners on public repositories with care, because pull requests from forks can run code on them.
+
 ## Update
 
 Update `ghwm.yml` with a new version, then:
@@ -156,6 +168,7 @@ remaining manifest entries.
 | `ghwm update` fails to rewrite workflow files | The checkout token cannot modify `.github/workflows/*.yaml` | Confirm the GitHub App has `workflows: write` and that `GH_APP_PRIVATE_KEY` / `GH_APP_CLIENT_ID` or `GH_APP_ID` are correct |
 | No pull request is created | All pinned versions in `ghwm.yml` already match the registry, or the run failed before the PR step | Review the `Check for ghwm package updates` step and confirm newer package versions exist |
 | The workflow updates the manifest but misses installed files | `ghwm update` cannot authenticate to GitHub Packages | Verify `packages: read` for same-repository packages, or `GHWM_PAT` for another package source |
+| The jobs never start or queue forever | No runner has the label `ubuntu-24.04` (or the account has no hosted minutes) | Set `GHWM_UPDATE_RUNS_ON` or `RUNS_ON` to your runner label(s) |
 
 ## Current Limitations
 

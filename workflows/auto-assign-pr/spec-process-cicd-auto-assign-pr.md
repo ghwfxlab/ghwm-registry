@@ -140,7 +140,7 @@ triage_status: string # Outcome summary ('assigned' | 'skipped' | 'no-op')
 
 ### Environmental Constraints
 
-- **Runner Requirements**: `ubuntu-slim` (or standard Linux x86_64 runner)
+- **Runner Requirements**: `ubuntu-slim` by default; any standard Linux x86_64 runner named in `AUTO_ASSIGN_PR_RUNS_ON` or `RUNS_ON`
 - **Network Access**: Outbound HTTPS (port 443) to `api.github.com`
 - **Permissions**: `contents: write`, `pull-requests: write` at job scope
 
