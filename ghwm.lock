@@ -18,10 +18,10 @@
       "files": [
         {
           "target": ".github/workflows/ghwm-update.yaml",
-          "source_hash": "sha256:a3a427ff57e91ded056647426807917ef3ccce89e5ddc29d36ace2f9ad6593bd"
+          "source_hash": "sha256:0f3433a0a7b439100c7efd631c287b54658f86901fab41765a9b6f5cbe0209bf"
         }
       ],
-      "version": "1.0.1"
+      "version": "1.0.2"
     },
     {
       "name": "super-linter",
