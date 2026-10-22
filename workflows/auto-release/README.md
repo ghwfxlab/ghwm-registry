@@ -142,6 +142,18 @@ By listing only code and release-critical directories under `paths:`, updates to
 
 ---
 
+## Run on self-hosted runners
+
+Every job runs on GitHub-hosted `ubuntu-24.04` unless a runner variable is set. Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level to cover many repositories. The workflow reads `AUTO_RELEASE_RUNS_ON` first and falls back to `RUNS_ON`, so one `RUNS_ON` variable can move all your ghwm workflows and `AUTO_RELEASE_RUNS_ON` overrides it for this one. The value is JSON:
+
+| Value | Runs on |
+| --- | --- |
+| unset | `ubuntu-24.04` (GitHub-hosted) |
+| `"my-runner"` | a runner with that label |
+| `["self-hosted", "linux"]` | a runner with all of those labels |
+
+It is a variable, not an `env` value, because `runs-on` cannot read the workflow `env`. Use self-hosted runners on public repositories with care, because pull requests from forks can run code on them.
+
 ## Version Bumping Strategy
 
 Version bumping follows semantic versioning (`MAJOR.MINOR.PATCH`):

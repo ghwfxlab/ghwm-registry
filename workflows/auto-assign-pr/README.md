@@ -93,6 +93,18 @@ If you later want workflow updates to replace the packaged config file, set
 
 Open a pull request or mark a draft pull request as **Ready for review**.
 
+## Run on self-hosted runners
+
+Every job runs on GitHub-hosted `ubuntu-slim` unless a runner variable is set. Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level to cover many repositories. The workflow reads `AUTO_ASSIGN_PR_RUNS_ON` first and falls back to `RUNS_ON`, so one `RUNS_ON` variable can move all your ghwm workflows and `AUTO_ASSIGN_PR_RUNS_ON` overrides it for this one. The value is JSON:
+
+| Value | Runs on |
+| --- | --- |
+| unset | `ubuntu-slim` (GitHub-hosted) |
+| `"my-runner"` | a runner with that label |
+| `["self-hosted", "linux"]` | a runner with all of those labels |
+
+It is a variable, not an `env` value, because `runs-on` cannot read the workflow `env`. Use self-hosted runners on public repositories with care, because pull requests from forks can run code on them.
+
 ## Update
 
 Update `ghwm.yml` with a new version, then:
@@ -130,6 +142,7 @@ from the consumer repository.
 | No assignee is added | `addAssignees` is `false`, or no assignees are configured | Use `addAssignees: author` or configure `assignees` / `assigneeGroups` |
 | Workflow is skipped for WIP PRs | The PR title or body matches `skipKeywords` | Remove the keyword or adjust `skipKeywords` |
 | Fork or Dependabot PRs are not handled | The workflow uses `pull_request` | Switch to `pull_request_target` only after reviewing the security implications |
+| The jobs never start or queue forever | No runner has the label `ubuntu-slim` (or the account has no hosted minutes) | Set `AUTO_ASSIGN_PR_RUNS_ON` or `RUNS_ON` to your runner label(s) |
 
 ## Current Limitations
 

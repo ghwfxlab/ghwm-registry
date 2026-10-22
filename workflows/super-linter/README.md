@@ -111,7 +111,7 @@ The installed config files are a starting point. Adjust them to your project's n
   - `RUN_SUPER_LINTER_FIXES` — set to `true` to enable automatic linting fixes (default: `false`). If enabled, fixes will be automatically committed and pushed to your PR branch.
   - `SUPER_LINTER_CUSTOM_IMAGE` — a custom Super-Linter image to run instead of the upstream one (default: empty). See [Run a custom image](#example-run-a-custom-image).
   - `RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK` — set to `true` to fail pull requests whose changed files need a linter that `.github/super-linter.env` does not enable (default: `false`).
-- **`SUPER_LINTER_RUNS_ON`** (repository or organisation variable, not a file) — the runner for every job. See [Run on self-hosted runners](#example-run-on-self-hosted-runners).
+- **`SUPER_LINTER_RUNS_ON`** (repository or organisation variable, not a file) — the runner for every job. Falls back to `RUNS_ON`, the variable shared by all ghwm workflows. See [Run on self-hosted runners](#example-run-on-self-hosted-runners).
 
 #### Example: Run Standard/Full Super-Linter (e.g. for Rust or .NET projects)
 
@@ -128,7 +128,7 @@ env:
 
 #### Example: Run on self-hosted runners
 
-Every job (`setup` and the three lint jobs) runs on GitHub-hosted `ubuntu-24.04` unless the `SUPER_LINTER_RUNS_ON` variable is set. Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level to cover many repositories. The value is JSON:
+Every job (`setup` and the three lint jobs) runs on GitHub-hosted `ubuntu-24.04` unless the `SUPER_LINTER_RUNS_ON` or `RUNS_ON` variable is set (`SUPER_LINTER_RUNS_ON` wins, and `RUNS_ON` is shared by all ghwm workflows). Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level to cover many repositories. The value is JSON:
 
 | Value | Runs on |
 | --- | --- |
@@ -236,7 +236,7 @@ The CLI leaves config files such as `.github/super-linter.env`, `.github/super-l
 
 | Symptom | Likely cause | Fix |
 | --- | --- | --- |
-| The jobs never start ("recent account payments have failed", or they queue forever) | The jobs wait for `ubuntu-24.04` and the account has no hosted minutes, or no runner has the label | Set the `SUPER_LINTER_RUNS_ON` variable to your runner label(s) |
+| The jobs never start ("recent account payments have failed", or they queue forever) | The jobs wait for `ubuntu-24.04` and the account has no hosted minutes, or no runner has the label | Set the `SUPER_LINTER_RUNS_ON` or `RUNS_ON` variable to your runner label(s) |
 | Custom image cannot be pulled | The image is private or the tag does not exist | Use a public image or a `ghcr.io` package the runner can read |
 | Super-Linter fails on YAML files | yamllint config too strict | Adjust rules in `.github/linters/.yaml-lint.yml` |
 | Super-Linter fails on Markdown files | markdownlint config mismatch | Adjust rules in `.github/linters/.markdown-lint.yml` |

@@ -53,7 +53,7 @@ The credentials are required: the job starts by creating the token and fails if 
 
 ### 3. Choose the runner
 
-Like the `super-linter` workflow, the build job runs on GitHub-hosted `ubuntu-24.04` unless the `SUPER_LINTER_RUNS_ON` variable is set. Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level. The value is JSON, for example `"my-runner"` or `["self-hosted", "linux"]`. Set the same variable for both workflows, and see [Run on self-hosted runners](../super-linter/README.md#example-run-on-self-hosted-runners).
+Like the `super-linter` workflow, the build job runs on GitHub-hosted `ubuntu-24.04` unless the `SUPER_LINTER_RUNS_ON` or `RUNS_ON` variable is set (`SUPER_LINTER_RUNS_ON` wins). Add it under Settings, Secrets and variables, Actions, Variables (repository), or at organisation level. The value is JSON, for example `"my-runner"` or `["self-hosted", "linux"]`. Set the same variable for both workflows, and see [Run on self-hosted runners](../super-linter/README.md#example-run-on-self-hosted-runners).
 
 The runner needs Linux, Docker and outbound access to GHCR and to the Super-Linter release. The workflow sets `TMPDIR` to `RUNNER_TEMP` before the build, so the smoke test's work directory is one the runner's Docker daemon can mount (some self-hosted runners do not share `/tmp` with the daemon).
 
@@ -102,6 +102,6 @@ ghwm update --prune
 | `Set the SUPER_LINTER_VERSION repository variable …` | No `SUPER_LINTER_VERSION` variable, and the slim step or its version comment is missing from `super-linter.yaml` | Set the variable, or restore the step as installed by `super-linter` 2.0.0 or later |
 | Smoke test reports `FAIL (not-linted)` for a linter | The image lacks that linter or the fixtures do not match the version | Check the generated `plan.json` and the pinned superlint-lean version |
 | Every linter shows `not-linted` in the smoke test on a self-hosted runner | The Docker daemon cannot see the runner temp directory (`RUNNER_TEMP`) | Make `RUNNER_TEMP` a path the daemon can mount, for example one on the host when the runner itself runs in a container |
-| The jobs never start | No runner has the label `ubuntu-24.04` (or the account has no hosted minutes) | Set `SUPER_LINTER_RUNS_ON` to your runner label(s) |
+| The jobs never start | No runner has the label `ubuntu-24.04` (or the account has no hosted minutes) | Set `SUPER_LINTER_RUNS_ON` or `RUNS_ON` to your runner label(s) |
 | `Generate GitHub App token` fails | `GH_APP_ID` or `GH_APP_PRIVATE_KEY` is missing, wrong or expired | Add or correct the secrets |
 | `Record the image …` fails with 403 | The App lacks Variables: read and write, or the installation has not accepted the updated permissions | Grant the permission and accept it on the installation |

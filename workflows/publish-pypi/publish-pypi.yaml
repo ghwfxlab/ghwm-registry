@@ -38,9 +38,13 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
+  # Every job reads its runner from the PUBLISH_PYPI_RUNS_ON repository (or organisation) variable, then from
+  # the RUNS_ON variable, as JSON:
+  # unset runs on GitHub-hosted ubuntu-24.04, "my-runner" or ["self-hosted", "linux"] runs on your own runners.
+  # It is a variable, not an env value, because runs-on cannot read the workflow env.
   build:
     name: Build Distributions
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.PUBLISH_PYPI_RUNS_ON || vars.RUNS_ON || '"ubuntu-24.04"') }}
     permissions:
       contents: read
     steps:
@@ -79,7 +83,7 @@ jobs:
 
   publish:
     name: Publish to PyPI
-    runs-on: ubuntu-24.04
+    runs-on: ${{ fromJSON(vars.PUBLISH_PYPI_RUNS_ON || vars.RUNS_ON || '"ubuntu-24.04"') }}
     needs: build
     permissions:
       id-token: write # PyPI trusted publishing (OIDC)

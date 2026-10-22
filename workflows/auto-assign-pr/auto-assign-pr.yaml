@@ -20,9 +20,13 @@ on: # yamllint disable-line rule:truthy
 permissions: {}
 
 jobs:
+  # Every job reads its runner from the AUTO_ASSIGN_PR_RUNS_ON repository (or organisation) variable, then from
+  # the RUNS_ON variable, as JSON:
+  # unset runs on GitHub-hosted ubuntu-slim, "my-runner" or ["self-hosted", "linux"] runs on your own runners.
+  # It is a variable, not an env value, because runs-on cannot read the workflow env.
   add-reviews:
     name: Add PR Reviewers and Assignees
-    runs-on: ubuntu-slim
+    runs-on: ${{ fromJSON(vars.AUTO_ASSIGN_PR_RUNS_ON || vars.RUNS_ON || '"ubuntu-slim"') }}
     permissions:
       contents: write
       pull-requests: write
