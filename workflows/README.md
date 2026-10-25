@@ -34,6 +34,6 @@ Each workflow package can install:
 
 ## Runners
 
-Every workflow runs on `ubuntu-24.04`. To use your own runner, edit `runs-on` in the installed workflow.
+Workflows run on GitHub-hosted runners (`ubuntu-24.04`, or `ubuntu-slim` for `auto-assign-pr`). To use your own runner, edit `runs-on` in the installed workflow.
 `ghwm update` keeps your `runs-on` by default (`update-runs-on: false` in `ghwm.yml`, available from ghwm v1.13.0)
 and replaces it with the packaged value only when you set `update-runs-on: true` or pass `--update-runs-on`.
