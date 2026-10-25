@@ -71,7 +71,7 @@ graph TD
 
 | Job Name     | Purpose                                                                                                  | Dependencies          | Execution Context                                           |
 | ------------ | -------------------------------------------------------------------------------------------------------- | --------------------- | ----------------------------------------------------------- |
-| super-linter | Executes multi-language static code analysis, security scanning, and optional automated formatting fixes | None (standalone job) | Runner from `runs-on` (default `ubuntu-24.04`) |
+| super-linter | Executes multi-language static code analysis, security scanning, and optional automated formatting fixes | None (standalone job) | Runner from `runs-on` (default `ubuntu-24.04`)              |
 
 ## Requirements Matrix
 
