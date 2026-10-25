@@ -15,7 +15,7 @@ concurrency:
 jobs:
   check-paths:
     name: Check External Path Filters
-    runs-on: ubuntu-24.04
+    runs-on: ubuntu-slim
     permissions:
       contents: read
     outputs:

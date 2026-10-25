@@ -31,3 +31,13 @@ Each workflow package can install:
 | `super-linter` | Code linting using [Super-Linter](https://github.com/super-linter/super-linter) and pre-commit hooks | [Readme](super-linter/README.md) |
 | `publish-pypi` | Build a Python package and publish it to PyPI with trusted publishing | [Readme](publish-pypi/README.md) |
 | `super-linter-lean` | Build, scan and publish a Super-Linter image with only the linters a repository enables | [Readme](super-linter-lean/README.md) |
+
+## Runners
+
+Light jobs run on `ubuntu-slim`. Jobs that need a Docker daemon (`super-linter`, `super-linter-lean`, the
+`auto-release` release job and the `publish-pypi` publish job) run on `ubuntu-24.04`, because `ubuntu-slim` is an
+unprivileged container runner without Docker-in-Docker.
+
+To use your own runner, edit `runs-on` in the installed workflow. `ghwm update` keeps your `runs-on` by default
+(`update-runs-on: false` in `ghwm.yml`, available from ghwm v1.13.0) and replaces it with the packaged value only
+when you set `update-runs-on: true` or pass `--update-runs-on`.
