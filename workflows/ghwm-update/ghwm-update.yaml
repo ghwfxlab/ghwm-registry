@@ -28,7 +28,7 @@ env:
 jobs:
   update-ghwm:
     name: Update ghwm packages
-    runs-on: ubuntu-slim
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: read

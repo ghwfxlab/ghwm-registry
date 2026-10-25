@@ -34,10 +34,6 @@ Each workflow package can install:
 
 ## Runners
 
-Light jobs run on `ubuntu-slim`. Jobs that need a Docker daemon (`super-linter`, `super-linter-lean`, the
-`auto-release` release job and the `publish-pypi` publish job) run on `ubuntu-24.04`, because `ubuntu-slim` is an
-unprivileged container runner without Docker-in-Docker.
-
-To use your own runner, edit `runs-on` in the installed workflow. `ghwm update` keeps your `runs-on` by default
-(`update-runs-on: false` in `ghwm.yml`, available from ghwm v1.13.0) and replaces it with the packaged value only
-when you set `update-runs-on: true` or pass `--update-runs-on`.
+Every workflow runs on `ubuntu-24.04`. To use your own runner, edit `runs-on` in the installed workflow.
+`ghwm update` keeps your `runs-on` by default (`update-runs-on: false` in `ghwm.yml`, available from ghwm v1.13.0)
+and replaces it with the packaged value only when you set `update-runs-on: true` or pass `--update-runs-on`.

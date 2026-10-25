@@ -35,12 +35,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # The runner comes from the SUPER_LINTER_RUNS_ON repository (or organisation) variable, as JSON, like the
-  # super-linter workflow: unset runs on GitHub-hosted ubuntu-24.04, "my-runner" or ["self-hosted", "linux"]
-  # runs on your own runners. It is a variable, not an env value, because runs-on cannot read the workflow env.
   build:
     name: Build lean image
-    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
