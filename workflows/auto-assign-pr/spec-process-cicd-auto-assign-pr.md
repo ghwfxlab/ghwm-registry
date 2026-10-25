@@ -20,7 +20,7 @@ tags:
 
 **Purpose**: Automatically triage pull requests by assigning designated owners and requesting peer reviewers upon pull request creation or transition from draft status.
 **Trigger Events**: `pull_request` activities (`opened`, `ready_for_review`)
-**Target Environments**: GitHub Actions Runner (`ubuntu-24.04`) across consumer repositories
+**Target Environments**: GitHub Actions Runner (`ubuntu-slim` / Linux container) across consumer repositories
 
 ## Execution Flow Diagram
 
@@ -54,9 +54,9 @@ graph TD
 
 ## Jobs & Dependencies
 
-| Job Name    | Purpose                                                                               | Dependencies              | Execution Context                     |
-| ----------- | ------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------- |
-| add-reviews | Evaluates pull request state and executes automatic assignee and reviewer assignments | None (standalone trigger) | GitHub-hosted runner (`ubuntu-24.04`) |
+| Job Name    | Purpose                                                                               | Dependencies              | Execution Context                    |
+| ----------- | ------------------------------------------------------------------------------------- | ------------------------- | ------------------------------------ |
+| add-reviews | Evaluates pull request state and executes automatic assignee and reviewer assignments | None (standalone trigger) | GitHub-hosted runner (`ubuntu-slim`) |
 
 ## Requirements Matrix
 
@@ -86,7 +86,7 @@ graph TD
 | -------- | ------------------- | ------------------------- | ------------------------------------------------------ |
 | PERF-001 | Execution Latency   | < 30 seconds              | Total workflow run duration recorded by GitHub Actions |
 | PERF-002 | API Call Efficiency | <= 5 API requests per run | GitHub REST/GraphQL API rate limit accounting          |
-| PERF-003 | Cold Start Overhead | < 10 seconds              | Runner initialization duration on `ubuntu-24.04`       |
+| PERF-003 | Cold Start Overhead | < 10 seconds              | Runner initialization duration on `ubuntu-slim`        |
 
 ## Input/Output Contracts
 
@@ -140,7 +140,7 @@ triage_status: string # Outcome summary ('assigned' | 'skipped' | 'no-op')
 
 ### Environmental Constraints
 
-- **Runner Requirements**: `ubuntu-24.04` (or standard Linux x86_64 runner)
+- **Runner Requirements**: `ubuntu-slim` (or standard Linux x86_64 runner)
 - **Network Access**: Outbound HTTPS (port 443) to `api.github.com`
 - **Permissions**: `contents: write`, `pull-requests: write` at job scope
 
