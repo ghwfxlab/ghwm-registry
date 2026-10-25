@@ -110,7 +110,7 @@ jobs:
           exit-code: "0"
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-          version: v0.75.0
+          version: v0.76.0
           output: trivy-result.txt
 
       - name: Report Trivy scan result
