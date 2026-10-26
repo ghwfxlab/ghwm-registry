@@ -1,6 +1,6 @@
-# Managed by ghwm (super-linter@2.0.1)
+# Managed by ghwm (super-linter@2.0.2)
 # Source: @ghwfxlab/super-linter:super-linter.yaml
-# Hash: sha256:414f3c4901483698cc4fd49c6e5b44537cffdbb9bc40976bb5f4b7b16cff02a4
+# Hash: sha256:7dd2afc9d5a78a0b25f2d6ef39311e074b8aab1713d600d6fc4887d3556cbffc
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -37,11 +37,8 @@ env:
   RUN_SUPER_LINTER_CUSTOM_DRIFT_CHECK: false
 
 jobs:
-  # Every job reads its runner from the SUPER_LINTER_RUNS_ON repository (or organisation) variable, as JSON:
-  # unset runs on GitHub-hosted ubuntu-24.04, "my-runner" or ["self-hosted", "linux"] runs on your own runners.
-  # It is a variable, not an env value, because runs-on cannot read the workflow env.
   setup:
-    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     outputs:
       run_slim: ${{ env.RUN_SUPER_LINTER_SLIM }}
       run_custom: ${{ env.SUPER_LINTER_CUSTOM_IMAGE }}
@@ -52,7 +49,7 @@ jobs:
     name: Run Super-Linter
     needs: setup
     if: needs.setup.outputs.run_slim != 'true' && needs.setup.outputs.run_custom == ''
-    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       issues: write
@@ -106,7 +103,7 @@ jobs:
     name: Run Super-Linter Slim
     needs: setup
     if: needs.setup.outputs.run_slim == 'true' && needs.setup.outputs.run_custom == ''
-    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       issues: write
@@ -160,7 +157,7 @@ jobs:
     name: Run Super-Linter Custom Image
     needs: setup
     if: needs.setup.outputs.run_custom != ''
-    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     permissions:
       contents: write
       issues: write
