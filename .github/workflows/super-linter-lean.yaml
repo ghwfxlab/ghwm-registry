@@ -1,6 +1,6 @@
-# Managed by ghwm (super-linter-lean@1.0.0)
+# Managed by ghwm (super-linter-lean@1.0.2)
 # Source: @ghwfxlab/super-linter-lean:super-linter-lean.yaml
-# Hash: sha256:aed76ffd4fdbec22523a2928101212296bb0c2f54f735ae733da87234bc26ec5
+# Hash: sha256:aeb1300e64a3bfbdc73508e3cdae2415c477d82ee88e22815dcc49a306b094d4
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -40,12 +40,9 @@ concurrency:
   cancel-in-progress: false
 
 jobs:
-  # The runner comes from the SUPER_LINTER_RUNS_ON repository (or organisation) variable, as JSON, like the
-  # super-linter workflow: unset runs on GitHub-hosted ubuntu-24.04, "my-runner" or ["self-hosted", "linux"]
-  # runs on your own runners. It is a variable, not an env value, because runs-on cannot read the workflow env.
   build:
     name: Build lean image
-    runs-on: ${{ fromJSON(vars.SUPER_LINTER_RUNS_ON || '"ubuntu-24.04"') }}
+    runs-on: ubuntu-24.04
     permissions:
       contents: read
       packages: write
@@ -115,7 +112,7 @@ jobs:
           exit-code: "0"
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-          version: v0.75.0
+          version: v0.76.0
           output: trivy-result.txt
 
       - name: Report Trivy scan result
