@@ -29,7 +29,7 @@ jobs:
 
       - name: Run Renovate
         # v46.1.15
-        uses: renovatebot/github-action@f0f41e5f2e706165f6814b1d0f0d0e319de7d1d9
+        uses: renovatebot/github-action@a63d9a7bc606f7336fd20b47f2f32259a35e6213
         env:
           RENOVATE_REPOSITORIES: ${{ github.repository }}
           RENOVATE_ALLOWED_POST_UPGRADE_COMMANDS: '["^bash scripts/bump_renovate_packages\\.sh \"[A-Za-z0-9._/-]+\"$"]'
