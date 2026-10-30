@@ -1,6 +1,6 @@
-# Managed by ghwm (super-linter-lean@1.0.2)
+# Managed by ghwm (super-linter-lean@1.0.4)
 # Source: @ghwfxlab/super-linter-lean:super-linter-lean.yaml
-# Hash: sha256:aeb1300e64a3bfbdc73508e3cdae2415c477d82ee88e22815dcc49a306b094d4
+# Hash: sha256:e6aa34c568ed5c8ad111db72142a6693803e54d8c8c2f0f4b025590c8d51ff97
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -97,7 +97,7 @@ jobs:
 
       - name: Build the image and smoke-test it
         id: lean
-        uses: ghwfxlab/superlint-lean@776dcee1f0009f1432bd369504530662f24f23f8 # v0.0.14
+        uses: ghwfxlab/lintsmith@062d33af75b282de82153dfde2a88dd6613d324d # v0.0.16
         with:
           upstream-tag: ${{ steps.version.outputs.version }}
           env-files: ${{ env.SUPER_LINTER_CONFIG_PATH }}
@@ -112,7 +112,7 @@ jobs:
           exit-code: "0"
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-          version: v0.76.0
+          version: v0.76.1
           output: trivy-result.txt
 
       - name: Report Trivy scan result
