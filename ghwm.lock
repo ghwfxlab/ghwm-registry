@@ -29,10 +29,10 @@
       "files": [
         {
           "target": ".github/workflows/super-linter.yaml",
-          "source_hash": "sha256:7dd2afc9d5a78a0b25f2d6ef39311e074b8aab1713d600d6fc4887d3556cbffc"
+          "source_hash": "sha256:5ee6e96ac09f532f5b444b6cedb49d776290ed56a001d35a0fc25f5ad6926f91"
         }
       ],
-      "version": "2.0.2"
+      "version": "2.0.3"
     },
     {
       "name": "super-linter-lean",
@@ -40,10 +40,10 @@
       "files": [
         {
           "target": ".github/workflows/super-linter-lean.yaml",
-          "source_hash": "sha256:aeb1300e64a3bfbdc73508e3cdae2415c477d82ee88e22815dcc49a306b094d4"
+          "source_hash": "sha256:e6aa34c568ed5c8ad111db72142a6693803e54d8c8c2f0f4b025590c8d51ff97"
         }
       ],
-      "version": "1.0.2"
+      "version": "1.0.4"
     }
   ]
 }
