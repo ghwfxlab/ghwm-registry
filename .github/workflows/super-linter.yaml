@@ -1,6 +1,6 @@
-# Managed by ghwm (super-linter@2.0.2)
+# Managed by ghwm (super-linter@2.0.3)
 # Source: @ghwfxlab/super-linter:super-linter.yaml
-# Hash: sha256:7dd2afc9d5a78a0b25f2d6ef39311e074b8aab1713d600d6fc4887d3556cbffc
+# Hash: sha256:5ee6e96ac09f532f5b444b6cedb49d776290ed56a001d35a0fc25f5ad6926f91
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -204,7 +204,7 @@ jobs:
           # The lean image only has the linters the env file enables; fail when a changed file needs another one.
           report="${RUNNER_TEMP}/drift.md"
           status=0
-          uvx --from "superlint-lean==0.0.9" superlint-lean drift \
+          uvx --from "lintsmith==0.0.16" lintsmith drift \
             --env "${SUPER_LINTER_CONFIG_PATH}" --root . --base "origin/${BASE_REF}" --report "${report}" || status=$?
           cat "${report}" >> "$GITHUB_STEP_SUMMARY"
           exit "${status}"
