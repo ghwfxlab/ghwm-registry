@@ -1,6 +1,6 @@
 {
     "name": "@ghwfxlab/super-linter-lean",
-    "version": "1.0.4",
+    "version": "1.0.5",
     "description": "Build, scan and publish a Super-Linter image with only the linters a repository enables",
     "files": [
         "super-linter-lean.yaml",
