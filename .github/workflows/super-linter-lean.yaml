@@ -1,6 +1,6 @@
-# Managed by ghwm (super-linter-lean@1.0.4)
+# Managed by ghwm (super-linter-lean@1.0.5)
 # Source: @ghwfxlab/super-linter-lean:super-linter-lean.yaml
-# Hash: sha256:e6aa34c568ed5c8ad111db72142a6693803e54d8c8c2f0f4b025590c8d51ff97
+# Hash: sha256:6baa47696839d57cdd026b7507d179fbb747b3e6baf0646b0bc0fb164b1b5de0
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -63,7 +63,7 @@ jobs:
           persist-credentials: false
 
       - name: Log in to GHCR
-        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4.6.0
+        uses: docker/login-action@81c6f93d4bc991e510b342a00b419b3bb4efc5c6 # v4.7.0
         with:
           registry: ghcr.io
           username: ${{ github.actor }}
