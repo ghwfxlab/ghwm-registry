@@ -1,6 +1,6 @@
-# Managed by ghwm (ghwm-update@1.0.2)
+# Managed by ghwm (ghwm-update@1.0.3)
 # Source: @ghwfxlab/ghwm-update:ghwm-update.yaml
-# Hash: sha256:0f3433a0a7b439100c7efd631c287b54658f86901fab41765a9b6f5cbe0209bf
+# Hash: sha256:0364a8795042848285a293c048ecb7580e5efd810b634443103ec04ef432d60c
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -241,7 +241,7 @@ jobs:
 
       - name: Set up uv
         if: steps.check.outputs.has_updates == 'true'
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@07a047e608db84b3d8c06cd9a7c7dcc9c355c18e # v10.3.2
         with:
           prune-cache: true
 
