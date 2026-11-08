@@ -18,10 +18,10 @@
       "files": [
         {
           "target": ".github/workflows/ghwm-update.yaml",
-          "source_hash": "sha256:0364a8795042848285a293c048ecb7580e5efd810b634443103ec04ef432d60c"
+          "source_hash": "sha256:47ff68e81a11922f15b86c832c99af4ff6a0b553b957297b28d77ef9063f93bd"
         }
       ],
-      "version": "1.0.3"
+      "version": "1.0.4"
     },
     {
       "name": "super-linter",
@@ -29,10 +29,10 @@
       "files": [
         {
           "target": ".github/workflows/super-linter.yaml",
-          "source_hash": "sha256:192a23319d814bd75ab212832829c396a4a3c8eb4ad9a9e9b1e298ddba940848"
+          "source_hash": "sha256:0a969b7108a49dfa2967a55412e5e69fd5d4b7f2419eabfa34941b4c70558615"
         }
       ],
-      "version": "2.0.5"
+      "version": "2.0.6"
     },
     {
       "name": "super-linter-lean",
