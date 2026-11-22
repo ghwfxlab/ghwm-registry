@@ -1,6 +1,6 @@
-# Managed by ghwm (super-linter-lean@1.0.5)
+# Managed by ghwm (super-linter-lean@1.0.6)
 # Source: @ghwfxlab/super-linter-lean:super-linter-lean.yaml
-# Hash: sha256:6baa47696839d57cdd026b7507d179fbb747b3e6baf0646b0bc0fb164b1b5de0
+# Hash: sha256:20b8bf39c9aa252832fe635ce6f6ac0d9f4b685079a61330c3e19f7136046444
 # Re-run `ghwm install` to refresh this file.
 
 # ---
@@ -112,7 +112,7 @@ jobs:
           exit-code: "0"
           vuln-type: "os,library"
           severity: "CRITICAL,HIGH"
-          version: v0.76.1
+          version: v0.76.2
           output: trivy-result.txt
 
       - name: Report Trivy scan result
